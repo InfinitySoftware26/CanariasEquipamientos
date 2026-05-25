@@ -1,2 +1,18 @@
-# CanariasEquipamientos
-Sistema operativo de gestión y cobranza para Canarias Equipamientos
+# Canarias Equipamientos - Sistema de Gestión
+
+Este proyecto es un sistema de gestión de cobranza y ventas financiadas, desarrollado con **NestJS (backend)**, **React/Next (frontend)** y **PostgreSQL (base de datos)**.  
+Todo el stack se levanta con **Docker Compose** para asegurar entornos consistentes entre desarrolladores.
+
+---
+
+## 🚀 Requisitos previos
+- Docker Desktop instalado
+- Git para clonar el repositorio
+
+---
+
+## 📦 Instalación y ejecución
+
+1. Clonar el repositorio:
+   git clone https://github.com/tu-org/CanariasEquipamientos.git
+   cd CanariasEquipamientos
