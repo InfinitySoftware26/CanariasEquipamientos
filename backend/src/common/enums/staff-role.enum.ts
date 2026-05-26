@@ -1,6 +1,6 @@
 export enum StaffRole {
-  GERENTE        = 'gerente',
-  ADMINISTRATIVO = 'administrativo',
-  VENDEDOR       = 'vendedor',
-  COBRADOR       = 'cobrador',
+  MANAGER = "gerente",
+  ADMIN = "administrativo",
+  SELLER = "vendedor",
+  COLECTOR = "cobrador",
 }
