@@ -1,0 +1,5 @@
+packages:
+  - 'backend'
+  - 'canarias-frontend'
+  - 'database'
+  - 'devops'

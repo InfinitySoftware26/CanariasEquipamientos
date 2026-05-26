@@ -16,3 +16,19 @@ Todo el stack se levanta con **Docker Compose** para asegurar entornos consisten
 1. Clonar el repositorio:
    git clone https://github.com/tu-org/CanariasEquipamientos.git
    cd CanariasEquipamientos
+
+2. Instalar `pnpm` si aún no está disponible:
+   pnpm install -g pnpm
+
+3. Instalar dependencias en todo el monorepo:
+   pnpm install
+
+4. Ejecutar en modo desarrollo:
+   cd backend
+   pnpm run start:dev
+
+   cd ../canarias-frontend
+   pnpm dev
+
+> Este repositorio usa `pnpm` en modo monorepo. No usar `npm` ni `yarn`.
+

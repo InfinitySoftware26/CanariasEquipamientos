@@ -4,11 +4,14 @@ FROM node:20-alpine
 # Directorio de trabajo
 WORKDIR /app
 
-# Copiar package.json y package-lock.json
-COPY package*.json ./
+# Instalar pnpm globalmente
+RUN npm install -g pnpm
 
-# Instalar dependencias necesarias
-RUN npm ci --legacy-peer-deps
+# Copiar manifest y lockfile
+COPY package.json pnpm-lock.yaml ./
+
+# Instalar dependencias con pnpm
+RUN pnpm install
 
 # Copiar el resto del código
 COPY . .
@@ -17,4 +20,4 @@ COPY . .
 EXPOSE 3000
 
 # Comando de inicio
-CMD ["npm", "run", "start:dev"]
+CMD ["pnpm", "run", "start:dev"]
