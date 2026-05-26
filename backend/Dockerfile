@@ -1,5 +1,5 @@
 # Imagen base
-FROM node:18-alpine
+FROM node:20-alpine
 
 # Directorio de trabajo
 WORKDIR /app
@@ -7,8 +7,8 @@ WORKDIR /app
 # Copiar package.json y package-lock.json
 COPY package*.json ./
 
-# Instalar dependencias
-RUN npm install
+# Instalar dependencias necesarias
+RUN npm ci --legacy-peer-deps
 
 # Copiar el resto del código
 COPY . .
