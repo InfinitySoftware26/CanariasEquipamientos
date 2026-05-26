@@ -10,7 +10,7 @@ services:
       - ./backend/.env
 
   frontend:
-    build: ./frontend
+    build: ./canarias-frontend
     container_name: frontend_service
     ports:
       - "3000:3000"
