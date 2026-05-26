@@ -4,17 +4,20 @@ FROM node:20-alpine
 # Carpeta de trabajo
 WORKDIR /app
 
-# Copiar package files
-COPY package*.json ./
+# Instalar pnpm globalmente
+RUN npm install -g pnpm
 
-# Instalar dependencias
-RUN npm install
+# Copiar manifest y lockfile
+COPY package.json pnpm-lock.yaml ./
 
-# Copiar el resto
+# Instalar dependencias con pnpm
+RUN pnpm install
+
+# Copiar el resto del código
 COPY . .
 
 # Build producción
-RUN npm run build
+RUN pnpm run build
 
 # Exponer puerto
 EXPOSE 3000
@@ -24,4 +27,4 @@ ENV PORT=3000
 ENV NODE_ENV=production
 
 # Iniciar app
-CMD ["npm", "start"]
+CMD ["pnpm", "start"]
