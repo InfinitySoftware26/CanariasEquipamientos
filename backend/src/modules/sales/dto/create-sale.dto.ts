@@ -1,31 +1,39 @@
-import { IsUUID, IsEnum, IsNumber, IsPositive, IsDateString, IsOptional, IsString, IsArray, ValidateNested } from 'class-validator';
+import {
+  IsUUID, IsEnum, IsNumber, IsPositive,
+  IsDateString, IsOptional, IsString,
+  IsArray, ValidateNested,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { PaymentMethod } from '../../../common/enums/payment-method.enum';
-
-export class SaleProductDto {
-  @ApiProperty() @IsUUID()                 productId!: string;
-  @ApiProperty() @IsNumber() @IsPositive() quantity!: number;
-  @ApiProperty() @IsNumber() @IsPositive() unitPrice!: number;
-}
+import { SaleProductDto } from './sale-product.dto';
 
 export class CreateSaleDto {
-  @ApiProperty() @IsUUID()
+  @ApiProperty({ description: 'UUID del cliente' })
+  @IsUUID()
   clientId!: string;
 
-  @ApiProperty({ enum: PaymentMethod }) @IsEnum(PaymentMethod)
+  @ApiProperty({ enum: PaymentMethod, description: 'Método de pago' })
+  @IsEnum(PaymentMethod)
   paymentType!: PaymentMethod;
 
-  @ApiProperty() @IsNumber() @IsPositive()
+  @ApiProperty({ example: 120000, description: 'Monto total de la venta' })
+  @IsNumber()
+  @IsPositive()
   totalAmount!: number;
 
-  @ApiProperty() @IsDateString()
+  @ApiProperty({ example: '2026-05-22T10:00:00Z' })
+  @IsDateString()
   saleDate!: string;
 
-  @ApiPropertyOptional() @IsOptional() @IsString()
+  @ApiPropertyOptional({ description: 'Observaciones opcionales' })
+  @IsOptional()
+  @IsString()
   observation?: string;
 
-  @ApiProperty({ type: [SaleProductDto] })
-  @IsArray() @ValidateNested({ each: true }) @Type(() => SaleProductDto)
+  @ApiProperty({ type: [SaleProductDto], description: 'Productos incluidos en la venta' })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => SaleProductDto)
   products!: SaleProductDto[];
 }
