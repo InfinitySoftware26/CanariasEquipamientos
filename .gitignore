@@ -146,5 +146,5 @@ vite.config.ts.timestamp-*
 package-lock.json
 yarn.lock
 node_modules/
-
+.env
 
