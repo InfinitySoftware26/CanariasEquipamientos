@@ -90,7 +90,7 @@ export default function HomePage() {
 
           {/* RIGHT */}
           <div className="hidden items-center justify-center lg:flex">
-            <div className="card-base w-full max-w-xl rounded-[32px] border-white/10 bg-white/10 p-8 backdrop-blur-xl">
+            <div className="card-base w-full max-w-xl rounded-[32px] border-white/10 bg-blue-900/40 p-8 backdrop-blur-xl">
               <div className="mb-8 flex items-center justify-between">
                 <div>
                   <p className="text-sm text-white/60">Panel Administrativo</p>
