@@ -1,22 +1,170 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Staff } from '../entities/staff.entity';
+import {
+  Injectable,
+  Inject,
+  NotFoundException,
+  ConflictException,
+  ForbiddenException,
+  UnauthorizedException,
+} from "@nestjs/common";
+import * as bcrypt from "bcrypt";
+import {
+  IStaffRepository,
+  STAFF_REPOSITORY,
+} from "../interfaces/staff-repository.interface";
+import { CreateStaffDto } from "../dto/create-staff.dto";
+import { UpdateStaffDto } from "../dto/update-staff.dto";
+import { ChangePasswordDto } from "../dto/change-password.dto";
+import { Staff } from "../entities/staff.entity";
+import { StaffRole } from "../../../common/enums/staff-role.enum";
+import { JwtPayload } from "../../auth/interfaces/jwt-payload.interface";
+
+const SALT_ROUNDS = 12;
+
+/**
+ * Mapa de creación: define qué roles puede crear cada rol.
+ * OCP: agregar un nuevo rol solo requiere actualizar este mapa.
+ */
+const CREATION_PERMISSIONS: Readonly<Record<string, StaffRole[]>> = {
+  [StaffRole.MANAGER]: [StaffRole.ADMIN, StaffRole.SELLER, StaffRole.COLECTOR],
+  [StaffRole.ADMIN]: [StaffRole.SELLER, StaffRole.COLECTOR],
+};
 
 @Injectable()
 export class StaffService {
-  constructor(@InjectRepository(Staff) private readonly repo: Repository<Staff>) {}
+  constructor(
+    @Inject(STAFF_REPOSITORY)
+    private readonly staffRepo: IStaffRepository
+  ) {}
 
-  findByEmailWithPassword(email: string): Promise<Staff | null> {
-    return this.repo.createQueryBuilder('staff')
-      .addSelect('staff.passwordHash')
-      .where('staff.email = :email AND staff.isActive = true', { email })
-      .getOne();
+  // ─── QUERIES ──────────────────────────────────────────────────────────────
+
+  findAll(societyId: string): Promise<Staff[]> {
+    return this.staffRepo.findAll(societyId);
   }
 
   async findById(id: string): Promise<Staff> {
-    const staff = await this.repo.findOne({ where: { staffId: id, isActive: true } });
-    if (!staff) throw new NotFoundException('Empleado ' + id + ' no encontrado');
+    const staff = await this.staffRepo.findById(id);
+    if (!staff)
+      throw new NotFoundException("Empleado " + id + " no encontrado");
     return staff;
+  }
+
+  getProfile(currentUser: JwtPayload): Promise<Staff> {
+    return this.findById(currentUser.sub);
+  }
+
+  findByEmailWithPassword(email: string): Promise<Staff | null> {
+    return this.staffRepo.findByEmailWithPassword(email);
+  }
+
+  // ─── COMMANDS ─────────────────────────────────────────────────────────────
+
+  async create(dto: CreateStaffDto, currentUser: JwtPayload): Promise<Staff> {
+    this.assertCanCreateRole(currentUser.role, dto.role);
+    await this.assertUniqueEmailAndDni(dto.email, dto.dni);
+
+    const passwordHash = await bcrypt.hash(dto.password, SALT_ROUNDS);
+
+    return this.staffRepo.create({
+      name: dto.name,
+      dni: dto.dni,
+      email: dto.email,
+      passwordHash,
+      role: dto.role,
+      primarySocietyId: dto.societyId,
+      isActive: true,
+    });
+  }
+
+  async update(
+    id: string,
+    dto: UpdateStaffDto,
+    currentUser: JwtPayload
+  ): Promise<Staff> {
+    await this.findById(id);
+    this.assertCanUpdate(id, dto, currentUser);
+    return this.staffRepo.update(id, dto);
+  }
+
+  async changePassword(
+    id: string,
+    dto: ChangePasswordDto,
+    currentUser: JwtPayload
+  ): Promise<void> {
+    if (currentUser.sub !== id) {
+      throw new ForbiddenException("Solo puedes cambiar tu propia contrasena");
+    }
+
+    const staff = await this.staffRepo.findByEmailWithPassword(
+      (await this.findById(id)).email
+    );
+    if (!staff) throw new NotFoundException("Empleado no encontrado");
+
+    const isMatch = await bcrypt.compare(
+      dto.currentPassword,
+      staff.passwordHash
+    );
+    if (!isMatch)
+      throw new UnauthorizedException("La contrasena actual es incorrecta");
+
+    const newHash = await bcrypt.hash(dto.newPassword, SALT_ROUNDS);
+    await this.staffRepo.updatePassword(id, newHash);
+  }
+
+  async deactivate(id: string): Promise<void> {
+    await this.findById(id);
+    await this.staffRepo.update(id, { isActive: false });
+  }
+
+  // ─── GUARDS DE NEGOCIO (métodos privados con responsabilidad única) ────────
+
+  private assertCanCreateRole(
+    creatorRole: string,
+    targetRole: StaffRole
+  ): void {
+    const allowed = CREATION_PERMISSIONS[creatorRole] ?? [];
+    if (!allowed.includes(targetRole)) {
+      throw new ForbiddenException(
+        "No tienes permiso para crear usuarios con el rol " + targetRole
+      );
+    }
+  }
+
+  private async assertUniqueEmailAndDni(
+    email: string,
+    dni: string
+  ): Promise<void> {
+    const [byEmail, byDni] = await Promise.all([
+      this.staffRepo.findByEmail(email),
+      this.staffRepo.findByDni(dni),
+    ]);
+    if (byEmail)
+      throw new ConflictException("El email " + email + " ya esta registrado");
+    if (byDni)
+      throw new ConflictException("El DNI " + dni + " ya esta registrado");
+  }
+
+  private assertCanUpdate(
+    targetId: string,
+    dto: UpdateStaffDto,
+    currentUser: JwtPayload
+  ): void {
+    const isManager = currentUser.role === StaffRole.MANAGER;
+    const isAdmin = currentUser.role === StaffRole.ADMIN;
+    const isSelf = currentUser.sub === targetId;
+
+    // Solo el gerente puede cambiar rol o estado activo
+    if ((dto.role !== undefined || dto.isActive !== undefined) && !isManager) {
+      throw new ForbiddenException(
+        "Solo el gerente puede cambiar el rol o estado del empleado"
+      );
+    }
+
+    // Gerente y admin pueden editar a cualquiera; otros solo a sí mismos
+    if (!isManager && !isAdmin && !isSelf) {
+      throw new ForbiddenException(
+        "No tienes permiso para editar este empleado"
+      );
+    }
   }
 }

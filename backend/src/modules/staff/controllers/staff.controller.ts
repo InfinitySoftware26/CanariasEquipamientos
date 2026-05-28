@@ -1,0 +1,110 @@
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Body,
+  Param,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+  ParseUUIDPipe,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
+  ApiParam,
+  ApiResponse,
+} from '@nestjs/swagger';
+import { StaffService } from '../services/staff.service';
+import { CreateStaffDto } from '../dto/create-staff.dto';
+import { UpdateStaffDto } from '../dto/update-staff.dto';
+import { ChangePasswordDto } from '../dto/change-password.dto';
+import { StaffResponseDto } from '../dto/staff-response.dto';
+import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../../common/guards/roles.guard';
+import { SocietyGuard } from '../../../common/guards/society.guard';
+import { Roles } from '../../../common/decorators/roles.decorator';
+import { CurrentUser } from '../../../common/decorators/current-user.decorator';
+import { StaffRole } from '../../../common/enums/staff-role.enum';
+import { JwtPayload } from '../../auth/interfaces/jwt-payload.interface';
+
+@ApiTags('staff')
+@ApiBearerAuth('access-token')
+@UseGuards(JwtAuthGuard, RolesGuard, SocietyGuard)
+@Controller('staff')
+export class StaffController {
+  constructor(private readonly staffService: StaffService) {}
+
+  @Get('me')
+  @ApiOperation({ summary: 'Obtener perfil del usuario autenticado' })
+  @ApiResponse({ status: 200, type: StaffResponseDto })
+  getProfile(@CurrentUser() user: JwtPayload) {
+    return this.staffService.getProfile(user);
+  }
+
+  @Get()
+  @Roles(StaffRole.MANAGER, StaffRole.ADMIN)
+  @ApiOperation({ summary: 'Listar empleados de la sociedad' })
+  @ApiResponse({ status: 200, type: [StaffResponseDto] })
+  findAll(@CurrentUser() user: JwtPayload) {
+    return this.staffService.findAll(user.societyId);
+  }
+
+  @Get(':id')
+  @Roles(StaffRole.MANAGER, StaffRole.ADMIN)
+  @ApiOperation({ summary: 'Obtener empleado por ID' })
+  @ApiParam({ name: 'id', description: 'UUID del empleado' })
+  @ApiResponse({ status: 200, type: StaffResponseDto })
+  findOne(@Param('id', ParseUUIDPipe) id: string) {
+    return this.staffService.findById(id);
+  }
+
+  @Post()
+  @Roles(StaffRole.MANAGER, StaffRole.ADMIN)
+  @ApiOperation({ summary: 'Registrar nuevo empleado' })
+  @ApiResponse({ status: 201, type: StaffResponseDto })
+  @ApiResponse({ status: 409, description: 'Email o DNI ya registrado' })
+  @ApiResponse({ status: 403, description: 'Sin permiso para crear ese rol' })
+  create(
+    @Body() dto: CreateStaffDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.staffService.create(dto, user);
+  }
+
+  @Patch(':id')
+  @ApiOperation({ summary: 'Actualizar datos del empleado' })
+  @ApiParam({ name: 'id', description: 'UUID del empleado' })
+  @ApiResponse({ status: 200, type: StaffResponseDto })
+  update(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateStaffDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.staffService.update(id, dto, user);
+  }
+
+  @Patch(':id/password')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Cambiar contrasena — solo el propio usuario' })
+  @ApiParam({ name: 'id', description: 'UUID del empleado' })
+  changePassword(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ChangePasswordDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.staffService.changePassword(id, dto, user);
+  }
+
+  @Delete(':id')
+  @Roles(StaffRole.MANAGER)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Desactivar empleado — soft delete, solo gerente' })
+  @ApiParam({ name: 'id', description: 'UUID del empleado' })
+  deactivate(@Param('id', ParseUUIDPipe) id: string) {
+    return this.staffService.deactivate(id);
+  }
+}
