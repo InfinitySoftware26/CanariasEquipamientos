@@ -1,84 +1,86 @@
 import {
-  Controller, Post, UseGuards,
-  HttpCode, HttpStatus, Req, Res,
-} from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
-import { ApiTags, ApiOperation, ApiBody } from '@nestjs/swagger';
-import { Request, Response } from 'express';
-import { AuthService } from '../services/auth.service';
-import { LoginDto } from '../dto/login.dto';
-import { Public } from '../../../common/decorators/public.decorator';
-import { CurrentUser } from '../../../common/decorators/current-user.decorator';
-import { JwtPayload } from '../interfaces/jwt-payload.interface';
+  Controller,
+  Post,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+  Req,
+  Res,
+  UnauthorizedException,
+} from "@nestjs/common";
+import { AuthGuard } from "@nestjs/passport";
+import { ApiTags, ApiOperation, ApiBody } from "@nestjs/swagger";
+import { Request, Response } from "express";
+import { AuthService } from "../services/auth.service";
+import { LoginDto } from "../dto/login.dto";
+import { Public } from "../../../common/decorators/public.decorator";
+import { CurrentUser } from "../../../common/decorators/current-user.decorator";
+import { JwtPayload } from "../interfaces/jwt-payload.interface";
 
-const COOKIE_OPTIONS = {
+const REFRESH_COOKIE = "refresh_token";
+
+const cookieOptions = (isProduction: boolean) => ({
   httpOnly: true,
-  sameSite: 'strict' as const,
-  path:     '/',
-};
+  sameSite: "strict" as const,
+  secure: isProduction,
+  path: "/",
+  maxAge: 7 * 24 * 60 * 60 * 1000,
+});
 
-@ApiTags('auth')
-@Controller('auth')
+@ApiTags("auth")
+@Controller("auth")
 export class AuthController {
+  private readonly isProduction = process.env.NODE_ENV === "production";
+
   constructor(private readonly authService: AuthService) {}
 
   @Public()
-  @Post('login')
+  @Post("login")
   @HttpCode(HttpStatus.OK)
-  @UseGuards(AuthGuard('local'))
-  @ApiOperation({ summary: 'Iniciar sesion' })
+  @UseGuards(AuthGuard("local"))
+  @ApiOperation({
+    summary:
+      "Iniciar sesion — devuelve accessToken y datos basicos del usuario",
+  })
   @ApiBody({ type: LoginDto })
-  login(
+  async login(
     @Req() req: Request & { user: JwtPayload },
-    @Res({ passthrough: true }) res: Response,
+    @Res({ passthrough: true }) res: Response
   ) {
-    const result = this.authService.login(req.user);
+    const { accessToken, refreshToken, user } = await this.authService.login(
+      req.user
+    );
 
-    // El controller es el único responsable de manejar cookies
-    res.cookie('refresh_token', result.accessToken, {
-      ...COOKIE_OPTIONS,
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
+    res.cookie(REFRESH_COOKIE, refreshToken, cookieOptions(this.isProduction));
 
-    return { accessToken: result.accessToken, user: result.user };
+    return { accessToken, user };
   }
 
   @Public()
-  @Post('refresh')
+  @Post("refresh")
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Renovar access token usando refresh token (cookie)' })
-  refresh(
-    @Req() req: Request,
-    @Res({ passthrough: true }) res: Response,
-  ) {
-    const token = (req.cookies as Record<string, string>)?.refresh_token;
-    if (!token) {
-      return res.status(HttpStatus.UNAUTHORIZED).json({
-        statusCode: 401,
-        message:    'Sin refresh token',
-      });
-    }
+  @ApiOperation({
+    summary: "Renovar access token usando refresh token (cookie HttpOnly)",
+  })
+  refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    const token = (req.cookies as Record<string, string>)?.[REFRESH_COOKIE];
+    if (!token) throw new UnauthorizedException("Sin refresh token");
 
-    const tokens = this.authService.refreshTokens(token);
+    const { accessToken, refreshToken } = this.authService.refresh(token);
 
-    res.cookie('refresh_token', tokens.refreshToken, {
-      ...COOKIE_OPTIONS,
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
+    res.cookie(REFRESH_COOKIE, refreshToken, cookieOptions(this.isProduction));
 
-    return { accessToken: tokens.accessToken };
+    return { accessToken };
   }
 
-  @Post('logout')
+  @Post("logout")
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Cerrar sesion — limpia el refresh token' })
+  @ApiOperation({ summary: "Cerrar sesion — limpia el refresh token" })
   logout(
     @CurrentUser() _user: JwtPayload,
-    @Res({ passthrough: true }) res: Response,
+    @Res({ passthrough: true }) res: Response
   ): void {
     this.authService.logout();
-    res.clearCookie('refresh_token', { path: '/' });
+    res.clearCookie(REFRESH_COOKIE, { path: "/" });
   }
 }
