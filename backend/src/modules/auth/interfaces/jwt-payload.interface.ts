@@ -1,10 +1,5 @@
-import { StaffRole } from '../../../common/enums/staff-role.enum';
-
-export interface JwtPayload {
-  sub:       string;
-  email:     string;
-  role:      StaffRole;
-  societyId: string;
-  iat?:      number;
-  exp?:      number;
-}
+/**
+ * Re-exportado desde common/interfaces para compatibilidad con imports existentes.
+ * La fuente de verdad es common/interfaces/jwt-payload.interface.ts
+ */
+export { JwtPayload } from '../../../common/interfaces/jwt-payload.interface';

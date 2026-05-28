@@ -1,6 +1,11 @@
+/**
+ * Jerarquía de roles:
+ * SUPER_ADMIN → MANAGER → ADMIN → SELLER / COLLECTOR
+ */
 export enum StaffRole {
-  MANAGER = "gerente",
-  ADMIN = "administrativo",
-  SELLER = "vendedor",
-  COLECTOR = "cobrador",
+  SUPER_ADMIN = 'super_admin',    // Duenos del sistema — acceso global
+  MANAGER     = 'gerente',        // Gerente de sociedad
+  ADMIN       = 'administrativo', // Administrativo
+  SELLER      = 'vendedor',       // Vendedor
+  COLLECTOR   = 'cobrador',       // Cobrador
 }
