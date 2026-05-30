@@ -11,6 +11,8 @@ services:
     env_file:
       - ./backend/.env
     volumes:
+      - ./backend/package.json:/app/package.json
+      - ./backend/pnpm-lock.yaml:/app/pnpm-lock.yaml
       - ./backend/src:/app/src
       - ./backend/.env:/app/.env
       - backend_node_modules:/app/node_modules
