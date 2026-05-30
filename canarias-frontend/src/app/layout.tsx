@@ -2,7 +2,10 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Canarias Equipamientos",
+  title: {
+    default: "Canarias Equipamientos",
+    template: "%s | Canarias Equipamientos",
+  },
   description: "Sistema de gestión empresarial",
 };
 
@@ -12,12 +15,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es">
-      <body>
-        <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
-          {children}
-        </div>
-      </body>
+    <html lang="es" suppressHydrationWarning>
+      <body className="min-h-screen antialiased">{children}</body>
     </html>
   );
 }
