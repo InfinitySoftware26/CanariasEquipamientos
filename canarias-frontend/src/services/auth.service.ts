@@ -1,4 +1,4 @@
-const App = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+const App = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api/v1";
 
 export interface LoginPayload {
   email: string;
