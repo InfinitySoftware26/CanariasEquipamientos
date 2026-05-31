@@ -16,5 +16,6 @@ export async function loginRequest(data: LoginPayload) {
   });
   if (!response.ok) throw new Error("Credenciales Invalidas");
 
-  return response.json();
+  const json = await response.json();
+  return json.data ?? json;
 }
