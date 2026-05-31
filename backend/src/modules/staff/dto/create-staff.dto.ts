@@ -9,7 +9,7 @@ import {
   Matches,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { StaffRole } from '../../../common/enums/staff-role.enum';
+import { AssignableRole } from '../../../common/enums/assignable-role.enum';
 
 export class CreateStaffDto {
   @ApiProperty({ example: 'Juan Perez' })
@@ -36,9 +36,12 @@ export class CreateStaffDto {
   })
   password!: string;
 
-  @ApiProperty({ enum: StaffRole, description: 'Rol del empleado' })
-  @IsEnum(StaffRole)
-  role!: StaffRole;
+  @ApiProperty({
+    enum: AssignableRole,
+    description: 'Rol del empleado. Para crear SUPER_ADMIN usar POST /staff/super-admin',
+  })
+  @IsEnum(AssignableRole)
+  role!: AssignableRole;
 
   @ApiProperty({ description: 'UUID de la sociedad principal del empleado' })
   @IsUUID()

@@ -1,7 +1,8 @@
 import { create } from "zustand";
 
 interface User {
-  sub: string;
+  staffId: string;
+  name: string;
   email: string;
   role: string;
   societyId: string;
