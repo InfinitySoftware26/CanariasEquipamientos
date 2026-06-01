@@ -24,7 +24,7 @@ EXPOSE 3000
 
 # Variables de entorno
 ENV PORT=3000
-ENV NODE_ENV=production
+ENV NODE_ENV=development
 
 # Iniciar app
 CMD ["pnpm", "start"]

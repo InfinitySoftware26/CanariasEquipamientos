@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Eye, EyeOff } from "lucide-react";
 
 import { useAuthStore } from "@/store/auth.store";
 import { loginRequest } from "@/services/auth.service";
+import { getDashboardRoute } from "@/lib/redirection-role";
 
 export function LoginForm() {
   const router = useRouter();
@@ -13,6 +15,7 @@ export function LoginForm() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const [loading, setLoading] = useState(false);
 
@@ -30,9 +33,12 @@ export function LoginForm() {
         password,
       });
 
-      setAuth(data);
+      setAuth({
+        user: data.user,
+        accessToken: data.accessToken,
+      });
 
-      router.push("/dashboard");
+      router.replace(getDashboardRoute(data.user.role));
     } catch {
       setError("Credenciales incorrectas");
     } finally {
@@ -103,30 +109,43 @@ export function LoginForm() {
             />
           </div>
 
-          <div>
-            <label className="mb-2 block text-sm text-white/70">
-              Contraseña
-            </label>
-
+          <div className="relative">
             <input
-              type="password"
+              type={showPassword ? "text" : "password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
               className="
-                w-full
-                rounded-xl
-                border
-                border-white/10
-                bg-white/[0.03]
-                px-4
-                py-3
-                text-white
-                outline-none
-                transition
-                focus:border-[#F5A300]
-              "
+      w-full
+      rounded-xl
+      border
+      border-white/10
+      bg-white/[0.03]
+      px-4
+      py-3
+      pr-12
+      text-white
+      outline-none
+      transition
+      focus:border-[#F5A300]
+    "
             />
+
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="
+      absolute
+      right-3
+      top-1/2
+      -translate-y-1/2
+      text-white/40
+      transition
+      hover:text-white/80
+    "
+            >
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
           </div>
 
           {error && (
@@ -134,6 +153,15 @@ export function LoginForm() {
               {error}
             </div>
           )}
+
+          <button
+            type="button"
+            onClick={() =>
+              alert("Contacte al administrador para restablecer su contraseña.")
+            }
+          >
+            ¿Olvidaste tu contraseña?
+          </button>
 
           <button
             type="submit"

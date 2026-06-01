@@ -27,7 +27,7 @@ services:
     volumes:
       - ./canarias-frontend:/app
       - /app/node_modules
-    command: pnpm dev
+    command: pnpm exec next dev --webpack
 
   db:
     image: postgres:15-alpine

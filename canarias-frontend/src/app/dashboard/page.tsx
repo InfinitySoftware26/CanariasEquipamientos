@@ -1,10 +1,16 @@
-// src/app/dashboard/page.tsx
+"use client";
+
+import { redirect } from "next/navigation";
+
+import { useAuthStore } from "@/store/auth.store";
+import { getDashboardRoute } from "@/lib/redirection-role";
 
 export default function DashboardPage() {
-  return (
-    <main className="p-10">
-      <h1>Dashboard</h1>
-      <p>Login funcionando correctamente 🚀</p>
-    </main>
-  );
+  const role = useAuthStore((state) => state.user?.role);
+
+  if (!role) {
+    redirect("/login");
+  }
+
+  redirect(getDashboardRoute(role));
 }
