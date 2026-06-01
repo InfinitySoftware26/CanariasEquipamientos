@@ -20,6 +20,7 @@ import {
 } from '@nestjs/swagger';
 import { StaffService } from '../services/staff.service';
 import { CreateStaffDto } from '../dto/create-staff.dto';
+import { CreateSuperAdminDto } from '../dto/create-super-admin.dto';
 import { UpdateStaffDto } from '../dto/update-staff.dto';
 import { ChangePasswordDto } from '../dto/change-password.dto';
 import { StaffResponseDto } from '../dto/staff-response.dto';
@@ -29,7 +30,7 @@ import { SocietyGuard } from '../../../common/guards/society.guard';
 import { Roles } from '../../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 import { StaffRole } from '../../../common/enums/staff-role.enum';
-import { JwtPayload } from '../../auth/interfaces/jwt-payload.interface';
+import { JwtPayload } from '../../../common/interfaces/jwt-payload.interface';
 
 @ApiTags('staff')
 @ApiBearerAuth('access-token')
@@ -38,6 +39,7 @@ import { JwtPayload } from '../../auth/interfaces/jwt-payload.interface';
 export class StaffController {
   constructor(private readonly staffService: StaffService) {}
 
+  // ── GET /staff/me ──────────────────────────────────────────────────────────
   @Get('me')
   @ApiOperation({ summary: 'Obtener perfil del usuario autenticado' })
   @ApiResponse({ status: 200, type: StaffResponseDto })
@@ -45,16 +47,18 @@ export class StaffController {
     return this.staffService.getProfile(user);
   }
 
+  // ── GET /staff ─────────────────────────────────────────────────────────────
   @Get()
-  @Roles(StaffRole.MANAGER, StaffRole.ADMIN)
+  @Roles(StaffRole.SUPER_ADMIN, StaffRole.MANAGER, StaffRole.ADMIN)
   @ApiOperation({ summary: 'Listar empleados de la sociedad' })
   @ApiResponse({ status: 200, type: [StaffResponseDto] })
   findAll(@CurrentUser() user: JwtPayload) {
     return this.staffService.findAll(user.societyId);
   }
 
+  // ── GET /staff/:id ─────────────────────────────────────────────────────────
   @Get(':id')
-  @Roles(StaffRole.MANAGER, StaffRole.ADMIN)
+  @Roles(StaffRole.SUPER_ADMIN, StaffRole.MANAGER, StaffRole.ADMIN)
   @ApiOperation({ summary: 'Obtener empleado por ID' })
   @ApiParam({ name: 'id', description: 'UUID del empleado' })
   @ApiResponse({ status: 200, type: StaffResponseDto })
@@ -62,9 +66,10 @@ export class StaffController {
     return this.staffService.findById(id);
   }
 
+  // ── POST /staff ────────────────────────────────────────────────────────────
   @Post()
-  @Roles(StaffRole.MANAGER, StaffRole.ADMIN)
-  @ApiOperation({ summary: 'Registrar nuevo empleado' })
+  @Roles(StaffRole.SUPER_ADMIN, StaffRole.MANAGER, StaffRole.ADMIN)
+  @ApiOperation({ summary: 'Registrar nuevo empleado (roles: MANAGER, ADMIN, SELLER, COLLECTOR)' })
   @ApiResponse({ status: 201, type: StaffResponseDto })
   @ApiResponse({ status: 409, description: 'Email o DNI ya registrado' })
   @ApiResponse({ status: 403, description: 'Sin permiso para crear ese rol' })
@@ -75,6 +80,20 @@ export class StaffController {
     return this.staffService.create(dto, user);
   }
 
+  // ── POST /staff/super-admin ────────────────────────────────────────────────
+  @Post('super-admin')
+  @Roles(StaffRole.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Crear nuevo SUPER_ADMIN — exclusivo para superadmin' })
+  @ApiResponse({ status: 201, type: StaffResponseDto })
+  @ApiResponse({ status: 409, description: 'Email o DNI ya registrado' })
+  createSuperAdmin(
+    @Body() dto: CreateSuperAdminDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.staffService.createSuperAdmin(dto, user);
+  }
+
+  // ── PATCH /staff/:id ───────────────────────────────────────────────────────
   @Patch(':id')
   @ApiOperation({ summary: 'Actualizar datos del empleado' })
   @ApiParam({ name: 'id', description: 'UUID del empleado' })
@@ -87,6 +106,7 @@ export class StaffController {
     return this.staffService.update(id, dto, user);
   }
 
+  // ── PATCH /staff/:id/password ──────────────────────────────────────────────
   @Patch(':id/password')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Cambiar contrasena — solo el propio usuario' })
@@ -99,10 +119,11 @@ export class StaffController {
     return this.staffService.changePassword(id, dto, user);
   }
 
+  // ── DELETE /staff/:id ──────────────────────────────────────────────────────
   @Delete(':id')
-  @Roles(StaffRole.MANAGER)
+  @Roles(StaffRole.SUPER_ADMIN, StaffRole.MANAGER)
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Desactivar empleado — soft delete, solo gerente' })
+  @ApiOperation({ summary: 'Desactivar empleado — soft delete' })
   @ApiParam({ name: 'id', description: 'UUID del empleado' })
   deactivate(@Param('id', ParseUUIDPipe) id: string) {
     return this.staffService.deactivate(id);

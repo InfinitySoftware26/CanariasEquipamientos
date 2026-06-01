@@ -14,10 +14,12 @@ async function bootstrap() {
   const reflector = app.get(Reflector);
 
   app.use(helmet());
+  const frontendUrl = config.get<string>('FRONTEND_URL') ?? 'http://localhost:3000';
   app.enableCors({
-    origin: config.get('FRONTEND_URL'),
+    origin: [frontendUrl, frontendUrl.replace('://', '://www.')],
     credentials: true,
     methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   });
   app.setGlobalPrefix('api/v1');
   app.useGlobalPipes(new ValidationPipe({
