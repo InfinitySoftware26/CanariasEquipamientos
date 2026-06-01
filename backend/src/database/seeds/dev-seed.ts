@@ -97,23 +97,47 @@ async function run(): Promise<void> {
       console.log("[dev-seed] Seller creado:", sellerEmail);
     } else console.log("[dev-seed] Seller ya existe");
 
-    // Create a test client
+    // Create collector
+    const collectorEmail = process.env.SEED_COLLECTOR_EMAIL ?? "collector@seed.local";
+    const collectorDni = process.env.SEED_COLLECTOR_DNI ?? "70000004";
+    const collectorPass = process.env.SEED_COLLECTOR_PASSWORD ?? "Pass1234";
+
+    const [colEmail] = await dataSource.query(
+      'SELECT staff_id FROM "STAFF" WHERE email=$1 LIMIT 1',
+      [collectorEmail]
+    );
+    if (!colEmail) {
+      const hash = await bcrypt.hash(collectorPass, SALT_ROUNDS);
+      await dataSource.query(
+        `INSERT INTO "STAFF" (staff_id, name, dni, email, password_hash, role, society_id, is_active, created_at, updated_at)
+         VALUES (uuid_generate_v4(), $1, $2, $3, $4, 'cobrador', $5, true, NOW(), NOW())`,
+        ["Seed Collector", collectorDni, collectorEmail, hash, societyId]
+      );
+      console.log("[dev-seed] Collector creado:", collectorEmail);
+    } else console.log("[dev-seed] Collector ya existe");
+
+    // Create a test client (for filtering)
     const clientDni = process.env.SEED_CLIENT_DNI ?? "90000001";
+    const clientEmail = process.env.SEED_CLIENT_EMAIL ?? "client@seed.local";
     const [cByDni] = await dataSource.query(
       'SELECT client_id FROM "CLIENT" WHERE document_number=$1 LIMIT 1',
       [clientDni]
     );
     if (!cByDni) {
       const res = await dataSource.query(
-        `INSERT INTO "CLIENT" (client_id, name, surname, document_number, address, phone, email, society_id, created_at, updated_at)
-         VALUES (uuid_generate_v4(), $1, $2, $3, $4, $5, $6, $7, NOW(), NOW()) RETURNING client_id`,
+        `INSERT INTO "CLIENT"
+           (client_id, name, surname, document_number, address, phone, email,
+            support_dni, support_bill, support_visit, observations, society_id, created_at, updated_at)
+         VALUES (uuid_generate_v4(), $1, $2, $3, $4, $5, $6, true, false, false, $7, $8, NOW(), NOW())
+         RETURNING client_id`,
         [
           "Juan",
-          "Seed",
+          "Pérez",
           clientDni,
-          "Calle Seed 123",
-          "3410000000",
-          "client@seed.local",
+          "Av. Seed 456, Piso 2",
+          "3412345678",
+          clientEmail,
+          "Cliente de prueba para desarrollo",
           societyId,
         ]
       );
