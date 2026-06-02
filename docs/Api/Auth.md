@@ -26,12 +26,13 @@ El módulo auth será responsable de:
 
 # Roles del Sistema
 
-| Rol       | Descripción                       |
-| --------- | --------------------------------- |
-| ADMIN     | Gestión operativa total           |
-| MANAGER   | Visualización reportes y métricas |
-| COLLECTOR | Gestión cobranzas y entregas      |
-| SELLER    | Gestión clientes y ventas         |
+| Rol         | Descripción                                               |
+| ----------- | --------------------------------------------------------- |
+| SUPER_ADMIN | Acceso total a todas las sociedades y creación de super admins |
+| ADMIN       | Gestión operativa total                                   |
+| MANAGER     | Visualización reportes y métricas                         |
+| COLLECTOR   | Gestión cobranzas y entregas                              |
+| SELLER      | Gestión clientes y ventas                                 |
 
 ---
 

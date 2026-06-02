@@ -316,14 +316,14 @@ routes/
 
 # Frontend
 
-| Tecnología   | Uso           |
-| ------------ | ------------- |
-| React        | UI            |
-| TypeScript   | Tipado        |
-| TailwindCSS  | Estilos       |
-| Zustand      | Estado global |
-| React Query  | Manejo APIs   |
-| React Router | Navegación    |
+| Tecnología       | Uso                                          |
+| ---------------- | -------------------------------------------- |
+| Next.js          | Framework React con App Router y SSR         |
+| React            | UI                                           |
+| TypeScript       | Tipado                                      |
+| TailwindCSS      | Estilos                                     |
+| Zustand          | Estado global                               |
+| React Query      | Manejo APIs                                 |
 
 ---
 
@@ -331,6 +331,8 @@ routes/
 
 | Tecnología      | Uso                |
 | --------------- | ------------------ |
+| Node.js         | Runtime backend    |
+| pnpm            | Gestor de paquetes |
 | NestJS          | Framework backend  |
 | TypeScript      | Tipado             |
 | TypeORM         | ORM                |

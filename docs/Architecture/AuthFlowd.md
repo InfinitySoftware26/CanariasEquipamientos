@@ -127,11 +127,20 @@ NestJS Guards deberán validar:
 # Roles Iniciales
 
 ```text id="j5z2sy"
+SUPER_ADMIN
 ADMIN
 SELLER
 COLLECTOR
 MANAGER
 ```
+
+---
+
+# SUPER_ADMIN
+
+* Acceso global a todas las sociedades.
+* Puede crear y administrar otros SUPER_ADMIN.
+* Solamente para uso de administración central y pruebas de configuración.
 
 ---
 
