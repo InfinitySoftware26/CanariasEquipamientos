@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 
 import { navigationByRole } from "@/lib/navigation";
 import { useAuthStore } from "@/store/auth.store";
+import { logoutRequest } from "@/services/auth.service";
 
 const roleLabels = {
   super_admin: "Super Administrador",
@@ -25,8 +26,15 @@ export function Sidebar() {
 
   const links = navigationByRole[user.role] ?? [];
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await logoutRequest();
+    } catch (error) {
+      console.error(error);
+    }
+
     logout();
+
     router.replace("/login");
   };
 

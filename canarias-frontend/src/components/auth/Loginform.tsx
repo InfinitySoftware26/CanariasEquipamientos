@@ -144,7 +144,11 @@ export function LoginForm() {
       hover:text-white/80
     "
             >
-              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              {showPassword ? (
+                <EyeOff size={18} color="grey" />
+              ) : (
+                <Eye size={18} color="grey" />
+              )}
             </button>
           </div>
 
