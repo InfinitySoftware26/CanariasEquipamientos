@@ -16,15 +16,16 @@ Definir la arquitectura frontend del sistema Canarias System, incluyendo:
 
 # Stack Tecnológico
 
-| Tecnología   | Uso           |
-| ------------ | ------------- |
-| React        | UI            |
-| TypeScript   | Tipado        |
-| TailwindCSS  | Estilos       |
-| Zustand      | Estado global |
-| React Query  | Manejo APIs   |
-| React Router | Navegación    |
-| Axios        | HTTP Client   |
+| Tecnología       | Uso                                           |
+| ---------------- | --------------------------------------------- |
+| Next.js          | Framework React con App Router y server rendering |
+| React            | UI                                            |
+| TypeScript       | Tipado                                       |
+| TailwindCSS      | Estilos                                      |
+| Zustand          | Estado global                                |
+| React Query      | Manejo APIs                                  |
+| Axios            | HTTP Client                                  |
+| pnpm             | Gestor de paquetes del monorepo              |
 
 ---
 
@@ -46,17 +47,20 @@ El objetivo es garantizar:
 ```text id="n7f5sp"
 src/
 │
+├── app/
+│   ├── layout.tsx
+│   ├── page.tsx
+│   └── ...
 ├── modules/
 ├── components/
 ├── layouts/
-├── routes/
 ├── services/
 ├── store/
 ├── hooks/
 ├── types/
 ├── utils/
 ├── constants/
-└── main.tsx
+└── globals.css
 ```
 
 ---
@@ -163,11 +167,14 @@ La navegación cambiará según:
 
 # Routing
 
-El sistema utilizará:
+El sistema utilizará enrutamiento basado en:
 
 ```text id="m8f7wx"
-React Router
+Next.js App Router / file-based routing
 ```
+
+* Las rutas públicas y privadas se definen mediante la estructura de carpetas `src/app/`.
+* La protección de páginas se implementa con componentes de autenticación y redirección en frontend.
 
 ---
 

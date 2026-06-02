@@ -48,17 +48,30 @@ La arquitectura backend prioriza:
 
 # Stack Tecnológico
 
-| Tecnología      | Uso                |
-| --------------- | ------------------ |
-| NestJS          | Framework backend  |
-| TypeScript      | Lenguaje principal |
-| PostgreSQL      | Base de datos      |
-| TypeORM         | ORM                |
-| JWT             | Autenticación      |
-| Swagger         | Documentación APIs |
-| Docker          | Contenedores       |
-| bcrypt          | Hash passwords     |
-| class-validator | Validaciones       |
+| Tecnología      | Uso                                |
+| --------------- | ---------------------------------- |
+| Node.js         | Runtime backend                    |
+| pnpm            | Gestor de paquetes monorepo        |
+| NestJS          | Framework backend                  |
+| TypeScript      | Lenguaje principal                 |
+| PostgreSQL      | Base de datos                      |
+| TypeORM         | ORM                                |
+| JWT             | Autenticación                      |
+| Swagger         | Documentación APIs                 |
+| Docker          | Contenedores                       |
+| bcrypt          | Hash passwords                     |
+| class-validator | Validaciones                       |
+
+---
+
+# Herramientas de desarrollo
+
+El backend se desarrollará con:
+
+* `pnpm` como gestor de paquetes.
+* `Node.js` 20+.
+* `Jest` para pruebas unitarias e integradas.
+* `ts-node` para tareas de ejecución de migraciones y seeders en desarrollo.
 
 ---
 

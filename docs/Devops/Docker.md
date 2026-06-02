@@ -72,6 +72,7 @@ docker compose up
 ## Stack
 
 * Node.js
+* pnpm
 * NestJS
 * TypeORM
 
@@ -82,7 +83,8 @@ docker compose up
 ## Stack
 
 * React
-* Vite
+* Next.js
+* pnpm
 * Nginx futuro
 
 ---

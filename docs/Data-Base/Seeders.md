@@ -56,10 +56,22 @@ Crear sociedades operativas iniciales:
 
 ## Roles Iniciales
 
+* SUPER_ADMIN
 * ADMIN
 * MANAGER
 * COLLECTOR
 * SELLER
+
+---
+
+# SUPER_ADMIN inicial
+
+## Usuario super admin de prueba
+
+En el primer sprint se carga de forma temporal un `SUPER_ADMIN` mediante un seeder para pruebas de funcionalidad global.
+
+* Su uso es válido en ambientes de desarrollo y testing.
+* En producción, este usuario debe generarse mediante un flujo seguro o migración controlada.
 
 ---
 

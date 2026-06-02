@@ -61,12 +61,12 @@ Este sprint tiene como objetivo dejar operativa la base completa del proyecto:
 
 ## Frontend
 
-* Inicializar React
-* Configurar Vite
+* Inicializar React con Next.js
+* Configurar Next.js App Router
 * Configurar Tailwind
 * Configurar Shadcn
 * Configurar Zustand
-* Configurar React Router
+* Definir rutas mediante `src/app/`
 * Crear layout principal
 * Crear login
 * Crear protected routes

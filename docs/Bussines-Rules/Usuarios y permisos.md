@@ -8,12 +8,13 @@ Definir roles, permisos y restricciones operativas del sistema.
 
 # Roles del Sistema
 
-| Rol       | Descripción                        |
-| --------- | ---------------------------------- |
-| ADMIN     | Operación y administración general |
-| SELLER    | Registro de clientes y ventas      |
-| COLLECTOR | Cobranza y entregas                |
-| MANAGER   | Supervisión y análisis             |
+| Rol         | Descripción                                     |
+| ----------- | ----------------------------------------------- |
+| SUPER_ADMIN | Acceso global a todas las sociedades y gestión de super admins |
+| ADMIN       | Operación y administración general              |
+| SELLER      | Registro de clientes y ventas                   |
+| COLLECTOR   | Cobranza y entregas                             |
+| MANAGER     | Supervisión y análisis                          |
 
 ---
 
@@ -145,6 +146,23 @@ Las acciones críticas deben auditarse.
 
 * Acceso mayormente lectura.
 * No participa operatoria diaria.
+
+---
+
+# SUPER_ADMIN
+
+## Accesos
+
+* Acceso global a todas las sociedades
+* Gestión de roles y permisos de alto nivel
+* Creación y administración de otros SUPER_ADMIN
+* Supervisión de configuración y auditoría centralizada
+
+## Restricciones
+
+* Uso restringido a administración de sistema.
+* Debe aplicarse con controles adicionales de seguridad.
+* No debe utilizarse para operación diaria de sociedad específica.
 
 ---
 
