@@ -74,15 +74,11 @@ body {
    TYPOGRAPHY
 ========== */
 
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
+h1 {
   margin: 0;
   font-weight: 700;
   letter-spacing: -0.03em;
+  color: #f5a300;
 }
 
 p {

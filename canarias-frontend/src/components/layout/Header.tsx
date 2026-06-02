@@ -2,7 +2,12 @@
 
 import { Menu } from "lucide-react";
 
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 
 import { Sidebar } from "./Sidebar";
 import { useAuthStore } from "@/store/auth.store";
@@ -66,12 +71,14 @@ export function Header() {
             <SheetContent
               side="left"
               className="
-                w-72
-                border-none
-                bg-transparent
-                p-0
-              "
+    w-72
+    border-none
+    bg-transparent
+    p-0
+  "
             >
+              <SheetTitle className="sr-only">Menú principal</SheetTitle>
+
               <Sidebar />
             </SheetContent>
           </Sheet>
