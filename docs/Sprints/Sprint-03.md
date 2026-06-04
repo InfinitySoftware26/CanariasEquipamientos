@@ -1,4 +1,4 @@
-# Canarias System — Sprint 02
+# Canarias System — Sprint 03
 
 # Fecha Sprint Review
 
@@ -14,15 +14,15 @@
 
 # Objetivo General
 
-Construcción completa del dominio comercial.
+Construcción del flujo operativo de cobranzas.
 
 El objetivo es dejar operativo:
 
-* clientes
-* productos
-* financiación
-* ventas
-* cuotas
+* generación de hojas de ruta
+* asignación de cobradores
+* organización de recorridos
+* liquidaciones de cobradores
+* configuración financiera del negocio
 
 ---
 
@@ -42,112 +42,127 @@ El objetivo es dejar operativo:
 
 # Entidades Sprint
 
-* customer
-* customer_address
-* product
-* category
-* financing_configuration
-* sale
-* installment
+* route_sheets
+* route_sheet_items
+* settlements
+* financing_configurations
 
 ---
 
 # Backend Tasks
 
-## Customers Module
+## Route Sheets Module
 
-* CRUD clientes
-* validaciones DNI
-* validaciones teléfono
-* direcciones cliente
-* búsqueda avanzada
-
----
-
-## Products Module
-
-* CRUD productos
-* categorías
-* precios
-* configuración stock
+* generación automática de hojas de ruta
+* asignación de cobradores
+* organización por zonas
+* filtros por sociedad
 
 ---
 
-## Financing Module
+## Route Sheet Items Module
+
+* clientes asignados a recorrido
+* cuotas pendientes asociadas
+* visitas programadas
+* estados de visita
+
+---
+
+## Settlements Module
+
+* liquidación diaria cobrador
+* validación administrativa
+* conciliación de importes
+* auditoría de cierres
+
+---
+
+## Financing Configuration Module
 
 * financiación global
-* financiación individual producto
-* cálculo cuotas
+* financiación por producto
 * interés configurable
-
----
-
-## Sales Module
-
-* alta venta
-* generación automática cuotas
-* estados venta
-* validaciones negocio
+* cantidad máxima de cuotas
+* validaciones comerciales
 
 ---
 
 # API Endpoints
 
-## Customers
+## Route Sheets
 
-### POST /customers
+### POST /route-sheets
 
-### GET /customers
+### GET /route-sheets
 
-### GET /customers/:id
-
-### PATCH /customers/:id
+### GET /route-sheets/:id
 
 ---
 
-## Products
+## Route Sheet Items
 
-### POST /products
+### GET /route-sheet-items
 
-### GET /products
+### PATCH /route-sheet-items/:id
 
 ---
 
-## Sales
+## Settlements
 
-### POST /sales
+### POST /settlements
 
-### GET /sales
+### GET /settlements
 
-### GET /sales/:id
+### GET /settlements/:id
+
+---
+
+## Financing Configurations
+
+### POST /financing-configurations
+
+### GET /financing-configurations
+
+### PATCH /financing-configurations/:id
 
 ---
 
 # Frontend Tasks
 
-## Customers UI
+## Route Sheets UI
 
-* alta cliente
-* edición cliente
-* ficha cliente
-* tabla clientes
-
----
-
-## Products UI
-
-* alta producto
-* listado productos
-* categorías
+* generación hoja de ruta
+* visualización recorridos
+* detalle hoja
+* asignación cobrador
 
 ---
 
-## Sales UI
+## Route Management UI
 
-* formulario venta
-* cálculo cuotas realtime
-* resumen venta
-* validaciones visuales
+* clientes asignados
+* cuotas asociadas
+* estado de visitas
+* seguimiento recorrido
+
+---
+
+## Settlements UI
+
+* liquidación diaria
+* resumen cobrador
+* validación administración
+* historial liquidaciones
+
+---
+
+## Financing UI
+
+* configuración financiación
+* simulador de cuotas
+* reglas comerciales
+* parámetros financieros
 
 ---
 
@@ -155,31 +170,34 @@ El objetivo es dejar operativo:
 
 ## Validaciones
 
-* alta cliente
-* cálculo financiación
-* generación cuotas
-* reglas negocio
+* generación hoja ruta
+* asignación cobrador
+* cálculo liquidación
+* conciliación importes
+* configuración financiación
+* simulación cuotas
 
 ---
 
 # Riesgos
 
-| Riesgo             | Mitigación       |
-| ------------------ | ---------------- |
-| complejidad cuotas | testing temprano |
-| cambios negocio    | demo continua    |
+| Riesgo                       | Mitigación                      |
+| ---------------------------- | ------------------------------- |
+| cambios operativos           | revisión con cobradores         |
+| errores liquidación          | doble validación administrativa |
+| reglas financieras variables | parametrización completa        |
 
 ---
 
 # Entregables
 
-* flujo venta funcional
-* clientes operativos
-* cuotas automáticas
-* financiación configurable
+* hojas de ruta operativas
+* recorridos asignados
+* liquidaciones funcionales
+* configuración financiera parametrizable
 
 ---
 
 # Sprint Goal
 
-Flujo comercial completamente funcional.
+Operación de cobranzas organizada y preparada para la gestión de pagos.

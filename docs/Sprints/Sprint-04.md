@@ -14,15 +14,15 @@
 
 # Objetivo General
 
-Automatizar completamente la operación diaria de cobradores y administración.
+Construcción completa del dominio de cobranzas.
 
-Este sprint busca dejar operativo:
+El objetivo es dejar operativo:
 
-* hojas de ruta
-* entregas
-* asignaciones
-* cierres diarios
-* movimientos caja
+* registro de pagos
+* imputación de cuotas cobradas
+* control de visitas fallidas
+* cierres diarios de cobradores
+* reportes operativos de cobranza
 
 ---
 
@@ -42,116 +42,89 @@ Este sprint busca dejar operativo:
 
 # Entidades Sprint
 
-* route_sheet
-* route_item
-* delivery
-* daily_closure
-* cash_movement
-
----
-
-# Objetivos Técnicos
-
-## Backend
-
-* generación hojas ruta
-* asignación cobradores
-* entregas
-* cierre diario
-* validación admin
-* auditoría movimientos
-
----
-
-## Frontend
-
-* dashboard cobrador
-* hoja ruta diaria
-* pantalla entregas
-* cierre jornada
-* validación administrativa
+* payments
+* payment_installments
+* failed_visits
+* daily_closures
 
 ---
 
 # Backend Tasks
 
-## Route Sheets Module
+## Payments Module
 
-### Funcionalidades
-
-* generar hoja diaria
-* asignar cobrador
-* asignar entregas
-* agrupar por sociedad
-* agrupar por zona
+* registro de pagos
+* validación de importes
+* asociación a cliente
+* asociación a cobrador
+* asociación a sociedad
 
 ---
 
-## Route Items
+## Payment Installments Module
 
-### Funcionalidades
-
-* cuotas asignadas
-* entregas pendientes
-* estados recorrido
+* imputación automática de cuotas
+* imputación manual
+* validación de saldo pendiente
+* control de cuotas canceladas
 
 ---
 
-## Deliveries Module
+## Failed Visits Module
 
-### Funcionalidades
-
-* registrar entrega
-* observaciones entrega
-* estados entrega
-* validación entrega
+* registro de visita fallida
+* motivo de visita fallida
+* reprogramación de visita
+* historial de intentos
 
 ---
 
 ## Daily Closures Module
 
-### Funcionalidades
-
-* cierre cobrador
-* total efectivo
-* observaciones cierre
-* diferencias caja
-* validación admin
+* cierre diario cobrador
+* consolidación de pagos
+* validación administrativa
+* auditoría de cierres
 
 ---
 
-## Cash Movements
+## Reports Module
 
-### Funcionalidades
-
-* ingresos
-* egresos
-* auditoría
-* historial movimientos
+* generación hoja de ruta PDF
+* reporte de cobranzas diarias Excel
+* reporte de cuotas pendientes Excel
+* reporte de visitas fallidas PDF
+* exportación de datos operativos
 
 ---
 
 # API Endpoints
 
-## Route Sheets
+## Payments
 
-### POST /route-sheets/generate
+### POST /payments
 
-Generar hoja ruta.
+### GET /payments
 
----
-
-### GET /route-sheets
-
-Listado hojas ruta.
+### GET /payments/:id
 
 ---
 
-## Deliveries
+## Payment Installments
 
-### POST /deliveries
+### POST /payment-installments
 
-Registrar entrega.
+### GET /payment-installments
+
+---
+
+## Failed Visits
+
+### POST /failed-visits
+
+### GET /failed-visits
+
+### PATCH /failed-visits/:id
 
 ---
 
@@ -159,49 +132,56 @@ Registrar entrega.
 
 ### POST /daily-closures
 
-Registrar cierre.
+### GET /daily-closures
 
----
-
-### PATCH /daily-closures/:id/approve
-
-Aprobar cierre.
+### GET /daily-closures/:id
 
 ---
 
 # Frontend Tasks
 
-## Collector Dashboard
+## Payments UI
 
-* hoja ruta diaria
-* cobranzas asignadas
-* entregas asignadas
-* resumen jornada
-
----
-
-## Deliveries UI
-
-* confirmar entrega
-* estados entrega
-* observaciones
+* registrar pago
+* detalle pago
+* historial pagos
+* búsqueda avanzada
 
 ---
 
-## Closures UI
+## Installments Collection UI
+
+* cuotas pendientes
+* cuotas cobradas
+* imputación manual
+* resumen deuda
+
+---
+
+## Failed Visits UI
+
+* registrar visita fallida
+* motivo visita
+* historial visitas
+* reprogramación
+
+---
+
+## Daily Closures UI
 
 * cierre diario
-* resumen efectivo
-* diferencias caja
-* observaciones
+* resumen cobrador
+* validación administración
+* historial cierres
 
 ---
 
-## Admin UI
+## Reports UI
 
-* validar cierres
-* aprobar cierres
-* visualizar diferencias
+* exportar cobranzas Excel
+* exportar cuotas pendientes Excel
+* exportar visitas fallidas PDF
+* descarga hoja de ruta PDF
 
 ---
 
@@ -209,33 +189,38 @@ Aprobar cierre.
 
 ## Validaciones
 
-* generación hoja ruta
-* entregas
+* registro pago
+* imputación cuotas
+* cálculo saldo
+* visita fallida
 * cierre diario
-* diferencias caja
-* validación admin
+* conciliación de importes
+* generacion PDF
+* generacion Excel
 
 ---
 
 # Riesgos
 
-| Riesgo               | Mitigación            |
-| -------------------- | --------------------- |
-| errores caja         | doble validación      |
-| inconsistencias ruta | testing operativo     |
-| diferencias efectivo | auditoría movimientos |
+| Riesgo              | Mitigación               |
+| ------------------- | ------------------------ |
+| errores imputación  | validaciones automáticas |
+| diferencias de caja | conciliación diaria      |
+| cambios operativos  | feedback cobradores      |
+| generación reportes | pruebas con datos reales |
 
 ---
 
 # Entregables
 
-* operación diaria automatizada
-* hojas ruta funcionales
-* entregas operativas
+* pagos operativos
+* cuotas imputadas correctamente
+* control de visitas fallidas
 * cierres diarios funcionales
+* reportes operativos PDF y Excel
 
 ---
 
 # Sprint Goal
 
-Automatizar completamente la operación diaria del negocio.
+Proceso de cobranza completamente operativo.

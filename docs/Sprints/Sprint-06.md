@@ -14,169 +14,132 @@
 
 # Objetivo General
 
-Preparar el sistema para producción.
+Construcción de funcionalidades transversales y preparación para puesta en producción.
 
-Este sprint está enfocado en:
+El objetivo es dejar operativo:
 
-* estabilidad
-* optimización
-* seguridad
-* testing final
-* deploy
-* hardening producción
+* sistema de notificaciones
+* entrega de notificaciones
+* configuraciones de usuario
+* optimización general del sistema
+* hardening para producción
 
 ---
 
 # Eventos Sprint
 
-| Fecha | Evento                     |
-| ----- | -------------------------- |
-| 03/08 | Daily                      |
-| 05/08 | Daily                      |
-| 07/08 | Daily                      |
-| 10/08 | Daily                      |
-| 12/08 | Daily                      |
-| 13/08 | Pre-Demo QA                |
-| 14/08 | Sprint Review + Demo Final |
+| Fecha | Evento               |
+| ----- | -------------------- |
+| 03/08 | Daily                |
+| 05/08 | Daily                |
+| 07/08 | Daily                |
+| 10/08 | Daily                |
+| 12/08 | Daily                |
+| 13/08 | Pre-Demo QA          |
+| 14/08 | Sprint Review + Demo |
 
 ---
 
-# Objetivos Técnicos
+# Entidades Sprint
 
-## Backend
-
-* optimización queries
-* seguridad
-* testing final
-* deploy producción
-* estabilidad sistema
-
----
-
-## Frontend
-
-* optimización renders
-* UX final
-* responsive final
-* manejo errores UI
+* notifications
+* notification_deliveries
+* user_configurations
 
 ---
 
 # Backend Tasks
 
-## Performance Optimization
+## Notifications Module
 
-### Funcionalidades
-
-* optimización queries TypeORM
-* optimización índices
-* revisión joins
-* paginación endpoints
-* reducción payloads
+* generación notificaciones
+* notificaciones por eventos
+* notificaciones de cobranzas
+* notificaciones administrativas
 
 ---
 
-## Security Hardening
+## Notification Deliveries Module
 
-### Funcionalidades
-
-* validación permisos
-* rate limiting
-* validaciones DTO
-* sanitización inputs
-* manejo errores seguro
+* seguimiento entregas
+* estado de lectura
+* historial envíos
+* reintentos automáticos
 
 ---
 
-## Testing Final
+## User Configurations Module
 
-### Testing
-
-* acceptance testing
-* regression testing
-* testing workflows
-* testing permisos
-* testing financiero
+* preferencias usuario
+* configuraciones dashboard
+* personalización interfaz
+* parámetros operativos
 
 ---
 
-## Deploy Preparation
+## Production Hardening
 
-### Producción
-
-* Docker production
-* environments producción
-* backups
-* restore strategy
-* logs producción
+* optimización consultas
+* revisión índices
+* revisión permisos
+* auditoría seguridad
+* logs aplicación
 
 ---
 
-## Monitoring
+# API Endpoints
 
-### Configuración
+## Notifications
 
-* logs backend
-* logs frontend
-* logs errores
-* monitoreo básico
+### POST /notifications
+
+### GET /notifications
+
+### GET /notifications/:id
 
 ---
 
-# API Improvements
+## Notification Deliveries
 
-## Mejoras Finales
+### GET /notification-deliveries
 
-* estandarizar responses
-* manejo errores final
-* documentación endpoints
-* validaciones consistentes
+### PATCH /notification-deliveries/:id
+
+---
+
+## User Configurations
+
+### GET /user-configurations
+
+### PATCH /user-configurations
 
 ---
 
 # Frontend Tasks
 
-## UX Improvements
+## Notifications UI
 
-### Funcionalidades
-
-* loading states
-* empty states
-* errores visuales
-* mejoras navegación
-* feedback usuario
+* centro de notificaciones
+* historial notificaciones
+* estado lectura
+* filtros
 
 ---
 
-## Responsive Final
+## User Settings UI
 
-### Validaciones
-
-* mobile
-* tablet
-* desktop
+* preferencias usuario
+* configuración dashboard
+* personalización interfaz
 
 ---
 
-## Performance Frontend
+## System Improvements
 
-### Mejoras
-
-* lazy loading
-* optimización renders
-* limpieza estados
-* cache básico
-
----
-
-## Final Polish
-
-### UI
-
-* consistencia visual
-* iconografía
-* spacing
-* accesibilidad básica
+* mejoras UX
+* optimización responsive
+* mejoras accesibilidad
+* refinamiento visual
 
 ---
 
@@ -184,73 +147,34 @@ Este sprint está enfocado en:
 
 ## Validaciones
 
-* workflows completos
-* ventas
-* cobranzas
-* entregas
-* cierres
-* stock
-* balances
-* permisos
-* seguridad
-
----
-
-# Acceptance Testing
-
-## Escenarios Críticos
-
-* venta completa
-* cobranza completa
-* cierre diario
-* aprobación admin
-* stock crítico
-* pagos proveedores
-* reportes financieros
+* generación notificaciones
+* entrega notificaciones
+* lectura notificaciones
+* configuración usuario
+* pruebas integrales sistema
+* pruebas regresión
 
 ---
 
 # Riesgos
 
-| Riesgo                | Mitigación          |
-| --------------------- | ------------------- |
-| errores producción    | QA fuerte           |
-| problemas rendimiento | optimización previa |
-| errores permisos      | testing roles       |
+| Riesgo                 | Mitigación          |
+| ---------------------- | ------------------- |
+| volumen notificaciones | pruebas carga       |
+| problemas rendimiento  | optimización previa |
+| errores producción     | hardening completo  |
 
 ---
 
 # Entregables
 
-* sistema listo producción
-* release candidate
-* documentación final
-* arquitectura estabilizada
-
----
-
-# Deploy Checklist
-
-* variables producción
-* backups funcionando
-* logs activos
-* Docker validado
-* PostgreSQL optimizado
-
----
-
-# Objetivo Final
-
-Entregar un sistema:
-
-* estable
-* operativo
-* mantenible
-* escalable
-* preparado para crecimiento futuro
+* sistema de notificaciones operativo
+* configuraciones de usuario funcionales
+* optimización general completada
+* sistema preparado para producción
 
 ---
 
 # Sprint Goal
 
-Release final listo para producción.
+Sistema Canarias completamente operativo y preparado para despliegue productivo.
