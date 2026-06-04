@@ -103,26 +103,25 @@ La estructura facilita:
 
 ## Core Business Domain
 
-* society
+* societyes
 * staff
-* staff_societies
+* staff_societys
 * staff_zones
-* user_configurations
 * zones
 * clients
+* client_historys
 * sales
 * sale_validations
-* sale_products
+* installments 
 
 ---
 
 ## Collections Domain
 
-* installments
 * payments
 * payment_installments
-* receipts
 * failed_visits
+* daily_closures
 
 ---
 
@@ -130,7 +129,6 @@ La estructura facilita:
 
 * route_sheets
 * route_sheet_items
-* daily_closures
 * settlements
 
 ---
@@ -139,7 +137,8 @@ La estructura facilita:
 
 * cashbox
 * cash_movements
-* financing
+* financing_configurations
+* receipts
 
 ---
 
@@ -147,15 +146,15 @@ La estructura facilita:
 
 * products
 * suppliers
-* supplier_societies
 * supplier_payments
 
 ---
 
-## Notifications Domain
+## Notifications y configurations Domain
 
 * notifications
 * notification_deliveries
+* user_configurations
 
 ---
 

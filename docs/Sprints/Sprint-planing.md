@@ -292,8 +292,8 @@ Construir flujo comercial inicial.
 
 # Backend
 
-* customers module
-* products module
+* staff module
+* zonas asignables por cobrador
 * financing configuration
 * sales entities
 * installments generation

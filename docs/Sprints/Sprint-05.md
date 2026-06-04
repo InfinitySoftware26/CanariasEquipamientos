@@ -8,163 +8,129 @@
 
 # Duración Sprint
 
-20/07/2026 → 31/08/2026
+20/07/2026 → 31/07/2026
 
 ---
 
 # Objetivo General
 
-Consolidar completamente:
+Construcción completa del dominio financiero y de abastecimiento.
 
-* stock
-* proveedores
-* finanzas
-* balances
-* reportes
-* notificaciones
+El objetivo es dejar operativo:
 
-Este sprint tiene como objetivo transformar el sistema en una plataforma administrativa completa.
+* gestión de productos
+* gestión de proveedores
+* pagos a proveedores
+* gestión de caja
+* movimientos financieros
+* emisión de recibos
+* reportes financieros
 
 ---
 
 # Eventos Sprint
 
-| Fecha | Evento               |
-| ----- | -------------------- |
-| 20/07 | Daily                |
-| 22/07 | Daily                |
-| 24/07 | Daily                |
-| 27/07 | Daily                |
-| 29/07 | Daily                |
-| 30/07 | Pre-Demo QA          |
+| Fecha | Evento |
+|--------|--------|
+| 20/07 | Daily |
+| 22/07 | Daily |
+| 24/07 | Daily |
+| 27/07 | Daily |
+| 29/07 | Daily |
+| 30/07 | Pre-Demo QA |
 | 31/07 | Sprint Review + Demo |
 
 ---
 
 # Entidades Sprint
 
-* stock
-* stock_movement
-* stock_alert
-* supplier
-* supplier_payment
-* cash_box
-* report
-* notification
-
----
-
-# Objetivos Técnicos
-
-## Backend
-
-* control stock
-* movimientos stock
-* balances financieros
-* pagos proveedores
-* reportes operativos
-* sistema notificaciones
-
----
-
-## Frontend
-
-* dashboard stock
-* dashboard finanzas
-* dashboard gerencial
-* proveedores
-* balances
-* reportes
+* products
+* suppliers
+* supplier_payments
+* cashbox
+* cash_movements
+* receipts
 
 ---
 
 # Backend Tasks
 
-## Stock Module
+## Products Module
 
-### Funcionalidades
-
-* stock actual
-* ingresos stock
-* egresos stock
-* movimientos históricos
-* alertas stock mínimo
-* control inventario
-
----
-
-## Business Rules
-
-### Reglas
-
-* productos Canarias 1 y 2 pueden venderse sin stock
-* productos Canarias S.R.L. requieren stock real
-* alertas críticas configurables
+* CRUD productos
+* categorías
+* precios
+* activación/desactivación
+* validaciones comerciales
 
 ---
 
 ## Suppliers Module
 
-### Funcionalidades
-
 * CRUD proveedores
-* pagos proveedores
-* deuda proveedor
-* historial pagos
-* movimientos asociados
+* información comercial
+* historial operaciones
+* asociación a sociedades
 
 ---
 
-## Cash Box Module
+## Supplier Payments Module
 
-### Funcionalidades
+* pagos proveedores
+* control deuda proveedor
+* historial pagos
+* validaciones financieras
 
-* caja por sociedad
+---
+
+## Cashbox Module
+
+* apertura caja
+* cierre caja
+* saldo actual
+* validaciones operativas
+
+---
+
+## Cash Movements Module
+
 * ingresos
 * egresos
-* balances diarios
-* balances mensuales
+* transferencias internas
+* auditoría movimientos
+
+---
+
+## Receipts Module
+
+* generación recibos
+* numeración automática
+* asociación pagos
+* emisión PDF
 
 ---
 
 ## Reports Module
 
-### Reportes
-
-* dinero en calle
-* ventas diarias
-* cobranzas diarias
-* balances sociedad
-* mora clientes
-* productividad cobradores
-* productividad vendedores
-
----
-
-## Notifications Module
-
-### Funcionalidades
-
-* alertas mora
-* alertas stock
-* eventos sistema
-* avisos administrativos
+* cierre de caja PDF
+* movimientos financieros Excel
+* pagos a proveedores Excel
+* exportación de recibos PDF
+* reportes administrativos
 
 ---
 
 # API Endpoints
 
-## Stock
+## Products
 
-### GET /stock
+### POST /products
 
-Listado stock.
+### GET /products
 
----
+### GET /products/:id
 
-### POST /stock/movements
-
-Registrar movimiento.
+### PATCH /products/:id
 
 ---
 
@@ -172,86 +138,113 @@ Registrar movimiento.
 
 ### POST /suppliers
 
-Alta proveedor.
+### GET /suppliers
+
+### PATCH /suppliers/:id
 
 ---
+
+## Supplier Payments
 
 ### POST /supplier-payments
 
-Registrar pago proveedor.
+### GET /supplier-payments
 
 ---
 
-## Cash Boxes
+## Cashbox
 
-### GET /cash-boxes
+### POST /cashbox
 
-Listado cajas.
+### GET /cashbox
+
+### GET /cashbox/:id
 
 ---
+
+## Cash Movements
 
 ### POST /cash-movements
 
-Registrar movimiento.
+### GET /cash-movements
+
+---
+
+## Receipts
+
+### POST /receipts
+
+### GET /receipts
+
+### GET /receipts/:id
 
 ---
 
 ## Reports
 
-### GET /reports/street-money
+### GET /reports/cashbox/pdf
 
-Dinero en calle.
+### GET /reports/cash-movements/excel
 
----
+### GET /reports/supplier-payments/excel
 
-### GET /reports/daily-sales
-
-Ventas diarias.
+### GET /reports/receipts/pdf
 
 ---
 
 # Frontend Tasks
 
-## Stock UI
+## Products UI
 
-* panel stock
-* tabla movimientos
-* alertas visuales
-* filtros stock
+* alta producto
+* edición producto
+* listado productos
+* administración precios
 
 ---
 
 ## Suppliers UI
 
+* alta proveedor
+* edición proveedor
 * listado proveedores
-* pagos
-* deuda
-* historial proveedor
+* detalle proveedor
 
 ---
 
-## Cash UI
+## Supplier Payments UI
 
-* dashboard cajas
-* balances
-* movimientos financieros
+* registrar pago
+* historial pagos
+* deuda proveedor
+* resumen financiero
+
+---
+
+## Cashbox UI
+
+* apertura caja
+* cierre caja
+* movimientos caja
+* resumen financiero
+
+---
+
+## Receipts UI
+
+* emisión recibo
+* impresión recibo
+* historial recibos
+* búsqueda recibos
 
 ---
 
 ## Reports UI
 
-* dashboard gerente
-* gráficos
-* KPIs
-* tablas reportes
-
----
-
-## Notifications UI
-
-* campana notificaciones
-* alertas visuales
-* estados notificaciones
+* exportar cierre caja PDF
+* exportar movimientos Excel
+* exportar pagos proveedores Excel
+* exportar recibos PDF
 
 ---
 
@@ -259,33 +252,42 @@ Ventas diarias.
 
 ## Validaciones
 
-* movimientos stock
-* balances
-* reportes
-* pagos proveedores
-* alertas sistema
+* alta producto
+* edición producto
+* alta proveedor
+* pago proveedor
+* apertura caja
+* cierre caja
+* generación recibos
+* movimientos financieros
+* generación PDF
+* generación Excel
 
 ---
 
 # Riesgos
 
-| Riesgo                      | Mitigación            |
-| --------------------------- | --------------------- |
-| inconsistencias financieras | auditoría movimientos |
-| errores stock               | validaciones fuertes  |
-| reportes lentos             | optimización queries  |
+| Riesgo | Mitigación |
+|----------|----------|
+| diferencias financieras | conciliación administrativa |
+| errores recibos | validaciones automáticas |
+| inconsistencias proveedores | auditoría de pagos |
+| cambios catálogo productos | parametrización flexible |
+| generación reportes | validación con usuarios finales |
 
 ---
 
 # Entregables
 
-* stock operativo
-* balances funcionales
-* reportes iniciales
-* notificaciones funcionando
+* productos administrables
+* gestión proveedores operativa
+* pagos proveedores funcionales
+* caja operativa
+* recibos automáticos
+* reportes financieros PDF y Excel
 
 ---
 
 # Sprint Goal
 
-Sistema administrativo completamente consolidado.
+Administración financiera y de abastecimiento completamente integrada al sistema.

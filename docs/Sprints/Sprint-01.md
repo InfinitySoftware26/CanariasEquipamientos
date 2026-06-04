@@ -77,10 +77,10 @@ Este sprint tiene como objetivo dejar operativa la base completa del proyecto:
 # Entidades Sprint
 
 * staff
-* role
-* permission
-* society
-* configuration
+* clients
+* societys
+* client_history
+* sales
 
 ---
 
