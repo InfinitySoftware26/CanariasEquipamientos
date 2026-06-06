@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { navigationByRole } from "@/lib/navigation";
 import { useAuthStore } from "@/store/auth.store";
 import { logoutRequest } from "@/services/auth.service";
+import Image from "next/image";
 
 const roleLabels = {
   super_admin: "Super Administrador",
@@ -41,27 +42,35 @@ export function Sidebar() {
   return (
     <aside
       className="
-        fixed
-        left-0
-        top-0
-        z-40
-        flex
-        h-screen
-        w-72
-        flex-col
-        border-r
-        border-white/10
-        bg-[#081220]
-      "
+    fixed
+    left-0
+    top-0
+    z-40
+    flex
+    h-screen
+    w-72
+    flex-col
+    border-r
+    border-white/10
+    bg-[#075087]
+  "
     >
       {/* LOGO */}
 
       <div className="border-b border-white/10 p-6">
-        <h1 className="text-xl font-bold text-white">Canarias Equipamientos</h1>
+        <Image
+          src="/LogoCanariasBlue.png"
+          alt="Canarias Equipamientos"
+          width={180}
+          height={90}
+          className="mx-auto h-auto w-40"
+          priority
+        />
 
-        <p className="mt-1 text-sm text-white/50">Sistema Comercial</p>
+        <p className="mt-3 text-center font-semibold text-sm text-white/80">
+          Sistema Comercial
+        </p>
       </div>
-
       {/* USUARIO */}
 
       <div className="border-b border-white/10 p-6">
@@ -94,8 +103,8 @@ export function Sidebar() {
 
                     ${
                       active
-                        ? "bg-[#F5A300] text-black shadow-md"
-                        : "text-white/70 hover:bg-white/5 hover:text-white"
+                        ? "bg-[#ffa408] text-black font-semibold shadow-md"
+                        : "text-black/70 hover:bg-black/5 hover:text-white"
                     }
                   `}
                 >

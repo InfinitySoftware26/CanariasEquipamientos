@@ -7,6 +7,7 @@ import { Eye, EyeOff } from "lucide-react";
 import { useAuthStore } from "@/store/auth.store";
 import { loginRequest } from "@/services/auth.service";
 import { getDashboardRoute } from "@/lib/redirection-role";
+import Image from "next/image";
 
 export function LoginForm() {
   const router = useRouter();
@@ -47,44 +48,68 @@ export function LoginForm() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-md">
+    <div className="mx-auto w-full max-w-md px-2 sm:px-0">
       {/* LOGO */}
 
-      <div className="mb-10 text-center">
-        <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl border border-white/10 bg-white/5">
-          <span className="text-3xl font-bold text-white">C</span>
-        </div>
-
-        <h1 className="text-3xl font-semibold tracking-tight text-white">
-          CANARIAS
-        </h1>
-
-        <p className="mt-2 text-sm text-white/50">Control Comercial</p>
+      <div className="mb-6 text-center">
+        <Image
+          src="/LogoCanariasBlue.png"
+          alt="Canarias Equipamientos"
+          width={280}
+          height={140}
+          className="
+      mx-auto
+      w-[220px]
+      sm:w-[260px]
+      md:w-[300px]
+      h-auto
+    "
+          priority
+        />
       </div>
-
+      <h2
+        className="mt-1 mb-8 font-semibold text-xl text-center text-[#ffffff]/80"
+        style={{
+          textShadow: "0 5px 10px rgba(0, 0, 0, 0.5)",
+        }}
+      >
+        Sistema de Control Comercial
+      </h2>
       {/* CARD */}
 
       <div
         className="
-          rounded-3xl
-          border
-          border-white/10
-          bg-white/[0.03]
-          p-6
-          backdrop-blur-xl
-        "
+    rounded-3xl
+    border
+    border-white/10
+    bg-[#0A2E4E]/90
+    p-6
+    backdrop-blur-xl
+  "
       >
         <div className="mb-6">
-          <h2 className="text-xl font-semibold text-white">Iniciar sesión</h2>
+          <h2
+            className="text-xl font-semibold text-[#ffa408]"
+            style={{
+              textShadow: "0 2px 8px rgba(0, 0, 0, 0.5)",
+            }}
+          >
+            Iniciar sesión
+          </h2>
 
-          <p className="mt-2 text-sm text-white/50">
+          <p className="mt-2 text-left text-white/80">
             Ingresá con tus credenciales corporativas
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="mb-2 block text-sm text-white/70">
+            <label
+              className="mb-2 block text-left font-semibold text-[#ffa408]"
+              style={{
+                textShadow: "0 2px 8px rgba(0, 0, 0, 0.5)",
+              }}
+            >
               Correo electrónico
             </label>
 
@@ -104,18 +129,27 @@ export function LoginForm() {
                 text-white
                 outline-none
                 transition
-                focus:border-[#F5A300]
+                focus:border-[#ffa408]
               "
             />
           </div>
 
           <div className="relative">
-            <input
-              type={showPassword ? "text" : "password"}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              className="
+            <label
+              className="mb-2 block text-left font-semibold text-[#ffa408]"
+              style={{
+                textShadow: "0 2px 8px rgba(0, 0, 0, 0.5)",
+              }}
+            >
+              Contraseña
+            </label>
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="
       w-full
       rounded-xl
       border
@@ -127,14 +161,14 @@ export function LoginForm() {
       text-white
       outline-none
       transition
-      focus:border-[#F5A300]
+      focus:border-[#ffa408]
     "
-            />
+              />
 
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="
       absolute
       right-3
       top-1/2
@@ -143,23 +177,24 @@ export function LoginForm() {
       transition
       hover:text-white/80
     "
-            >
-              {showPassword ? (
-                <EyeOff size={18} color="grey" />
-              ) : (
-                <Eye size={18} color="grey" />
-              )}
-            </button>
-          </div>
-
-          {error && (
-            <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-300">
-              {error}
+              >
+                {showPassword ? (
+                  <EyeOff size={18} color="grey" />
+                ) : (
+                  <Eye size={18} color="grey" />
+                )}
+              </button>
             </div>
-          )}
 
+            {error && (
+              <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-300">
+                {error}
+              </div>
+            )}
+          </div>
           <button
             type="button"
+            className="text-left text-white/80"
             onClick={() =>
               alert("Contacte al administrador para restablecer su contraseña.")
             }
@@ -173,9 +208,10 @@ export function LoginForm() {
             className="
               w-full
               rounded-xl
-              bg-[#F5A300]
-              py-3
+              bg-[#ffa408]
+              py-2
               font-semibold
+              text-lg
               text-black
               transition
               hover:opacity-90
@@ -186,7 +222,12 @@ export function LoginForm() {
         </form>
       </div>
 
-      <p className="mt-6 text-center text-xs text-white/30">
+      <p
+        className="mt-4 text-center text-[#ffffff]/80"
+        style={{
+          textShadow: "0 5px 10px rgba(0, 0, 0, 0.5)",
+        }}
+      >
         Canarias Equipamientos © 2026
       </p>
     </div>
