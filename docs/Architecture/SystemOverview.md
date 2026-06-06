@@ -54,6 +54,83 @@ PostgreSQL
 
 ---
 
+# Frontend
+
+El frontend es una aplicación `Next.js` con `React` y `TypeScript` que provee:
+
+- login seguro y rutas protegidas.
+- dashboards diferenciados por rol.
+- integración con la API backend mediante `NEXT_PUBLIC_API_URL`.
+- manejo de estado con `Zustand`.
+- consumo de APIs con `Axios` y `React Query`.
+- layouts responsivos para sidebar, navbar y contenido de módulos.
+
+La capa frontend se encarga de la experiencia de usuario y de validar la sesión antes de mostrar páginas privadas.
+
+---
+
+# Backend
+
+El backend es una API modular construida con `NestJS`, `TypeORM` y `PostgreSQL`.
+
+- Arquitectura modular por dominios funcionales.
+- Autenticación con JWT.
+- Roles y permisos centralizados.
+- Validaciones con `class-validator` y `Joi`.
+- Separación de responsabilidades entre controllers, services y repositories.
+
+---
+
+# Base de datos
+
+La base de datos es relacional y centralizada en un único esquema PostgreSQL.
+
+- Modelo normalizado para entidades operativas.
+- `UUID` como identificador principal.
+- auditoría con campos `created_at`, `updated_at`, `deleted_at`, `created_by`, `updated_by`.
+- integridad referencial con `foreign keys`.
+- soporte explícito para segmentación por sociedad con `society_id`.
+
+---
+
+# JWT
+
+La autenticación se basa en `JWT` para mantener sesiones seguras y evitar cookies inseguras:
+
+- `access token` firmado con `JWT_SECRET`.
+- `refresh token` firmado con `JWT_REFRESH_SECRET`.
+- duraciones configurables con `JWT_EXPIRATION` y `JWT_REFRESH_EXPIRATION`.
+- validación de token en backend mediante `Passport JWT Strategy`.
+- protección de rutas y APIs mediante guards y decorators.
+
+---
+
+# Roles
+
+El sistema utiliza roles para controlar accesos y vistas del dashboard.
+
+Roles iniciales:
+
+- `ADMIN` — gestión completa y supervisión.
+- `SELLER` — gestión de ventas.
+- `COLLECTOR` — cobranzas y hoja de ruta.
+- `MANAGER` — métricas, reportes y supervisión.
+
+El frontend adapta la navegación según el rol del usuario y el backend valida permisos antes de ejecutar acciones.
+
+---
+
+# Multi-Sociedad
+
+La plataforma está diseñada para operar con múltiples sociedades.
+
+- Cada entidad operativa debe incluir `society_id`.
+- La segmentación se aplica en backend.
+- El frontend permite seleccionar sociedad activa dentro de la sesión.
+- Los reportes y transacciones se filtran por sociedad.
+
+---
+
 # Arquitectura de Alto Nivel
 
 ```text

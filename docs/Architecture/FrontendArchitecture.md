@@ -237,6 +237,38 @@ Axios + React Query
 
 ---
 
+# Autenticación y JWT
+
+El frontend trabajará con tokens JWT desde el login hasta las rutas protegidas.
+
+- usa `NEXT_PUBLIC_API_URL` para apuntar al backend.
+- guarda tokens de sesión de forma segura en el state global.
+- renueva sesiones cuando sea necesario.
+- redirige al login al detectar token inválido o expirado.
+
+---
+
+# Roles y Navegación
+
+La navegación se adapta según el rol del usuario.
+
+- `ADMIN` ve dashboards administrativos.
+- `SELLER` ve ventas y clientes.
+- `COLLECTOR` ve cobranzas y rutas.
+- `MANAGER` ve métricas y reportes.
+
+---
+
+# Multi-Sociedad
+
+El frontend permite operar con diferentes sociedades dentro de la misma sesión.
+
+- la sociedad activa se guarda en el estado del usuario.
+- las consultas se filtran por sociedad.
+- la UI muestra contextos empresariales en función de la sociedad seleccionada.
+
+---
+
 # Organización APIs
 
 ```text id="y3h6zn"
