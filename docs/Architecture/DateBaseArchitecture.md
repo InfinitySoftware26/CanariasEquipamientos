@@ -204,6 +204,10 @@ society_id
 
 La segmentación será obligatoria.
 
+- Los datos deberán consultarse siempre con `society_id`.
+- Los reportes y operaciones se aislarán por sociedad.
+- El backend será responsable de validar la sociedad activa.
+
 ---
 
 # Estrategia de Relaciones
