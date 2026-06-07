@@ -11,7 +11,12 @@ interface DashboardLayoutProps {
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
-    <div className="min-h-screen bg-background">
+    <div
+      className="
+    min-h-screen
+    bg-[radial-gradient(circle_at_top,#163868_0%,#07111F_60%)]
+  "
+    >
       {/* Sidebar Desktop */}
 
       <div className="hidden lg:block">

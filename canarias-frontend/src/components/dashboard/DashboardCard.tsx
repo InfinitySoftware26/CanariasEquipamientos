@@ -1,22 +1,42 @@
 interface DashboardCardProps {
   title: string;
-  value: string;
+  description?: string;
+  icon?: React.ReactNode;
+  onClick?: () => void;
 }
 
-export function DashboardCard({ title, value }: DashboardCardProps) {
+export function DashboardCard({
+  title,
+  description,
+  icon,
+  onClick,
+}: DashboardCardProps) {
   return (
-    <div
+    <button
+      onClick={onClick}
       className="
-        rounded-2xl
+        group
+        w-full
+        rounded-3xl
         border
         border-white/10
-        bg-white/5
-        p-5
+        bg-white/[0.04]
+        p-6
+        text-left
+        backdrop-blur-xl
+        transition-all
+        hover:border-[#ffa408]/40
+        hover:bg-white/[0.07]
+        hover:-translate-y-1
       "
     >
-      <p className="text-sm text-white/50">{title}</p>
+      <div className="mb-4 text-[#ffa408]">{icon}</div>
 
-      <h3 className="mt-2 text-3xl font-bold text-white">{value}</h3>
-    </div>
+      <h3 className="text-lg font-semibold text-white">{title}</h3>
+
+      {description && (
+        <p className="mt-2 text-sm text-white/60">{description}</p>
+      )}
+    </button>
   );
 }

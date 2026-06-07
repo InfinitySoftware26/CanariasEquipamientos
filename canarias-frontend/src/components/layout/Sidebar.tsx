@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { navigationByRole } from "@/lib/navigation";
 import { useAuthStore } from "@/store/auth.store";
 import { logoutRequest } from "@/services/auth.service";
+import Image from "next/image";
 
 const roleLabels = {
   super_admin: "Super Administrador",
@@ -41,27 +42,55 @@ export function Sidebar() {
   return (
     <aside
       className="
-        fixed
-        left-0
-        top-0
-        z-40
-        flex
-        h-screen
-        w-72
-        flex-col
-        border-r
-        border-white/10
-        bg-[#081220]
-      "
+    fixed
+    left-0
+    top-0
+    z-40
+    flex
+    h-screen
+    w-72
+    flex-col
+    border-r
+    border-white/10
+
+    bg-gradient-to-b
+    from-[#075087]
+    via-[#0A3F69]
+    to-[#072B4A]
+  "
     >
       {/* LOGO */}
 
       <div className="border-b border-white/10 p-6">
-        <h1 className="text-xl font-bold text-white">Canarias Equipamientos</h1>
+        <div
+          className="
+      mx-auto
+      flex
+      w-fit
+      items-center
+      justify-center
+      rounded-2xl
+      bg-white
+      p-3
+      shadow-lg
+      shadow-black/20
+    "
+        >
+          <Image
+            src="/LogoCanariasWhite.png"
+            alt="Canarias Equipamientos"
+            width={180}
+            height={90}
+            className="h-auto w-40"
+            priority
+          />
+        </div>
 
-        <p className="mt-1 text-sm text-white/50">Sistema Comercial</p>
+        <p className="mt-4 text-center text-sm font-semibold text-white/80">
+          Sistema Comercial
+        </p>
+        <div className="mx-auto mt-4 h-px w-24 bg-gradient-to-r from-transparent via-[#ffa408] to-transparent" />
       </div>
-
       {/* USUARIO */}
 
       <div className="border-b border-white/10 p-6">
@@ -94,8 +123,8 @@ export function Sidebar() {
 
                     ${
                       active
-                        ? "bg-[#F5A300] text-black shadow-md"
-                        : "text-white/70 hover:bg-white/5 hover:text-white"
+                        ? "bg-[#ffa408] text-black font-semibold"
+                        : "text-white/70 hover:bg-white/10 hover:text-white"
                     }
                   `}
                 >

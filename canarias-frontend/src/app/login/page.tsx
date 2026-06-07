@@ -2,10 +2,23 @@ import { LoginForm } from "@/components/auth/Loginform";
 
 export default function LoginPage() {
   return (
-    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#050B14]">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,#0d3b66_0%,transparent_60%)]" />
+    <main
+      className="relative flex min-h-screen items-center justify-center overflow-hidden"
+      style={{
+        background: `
+      radial-gradient(
+        circle at center,
+        #053a66 0%,
+        #075087 45%,
+        #0b6aa8 100%
+      )
+    `,
+      }}
+    >
+      <div className="absolute inset-0 bg-grid opacity-20" />
 
-      <div className="bg-grid absolute inset-0 opacity-30" />
+      {/* glow decorativo corporativo */}
+      <div className="absolute -top-40 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-[#ffa408]/20 blur-[140px]" />
 
       <div className="relative z-10 w-full px-6">
         <LoginForm />

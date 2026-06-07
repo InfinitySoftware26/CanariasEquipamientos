@@ -11,12 +11,14 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
-    <html lang="es" suppressHydrationWarning>
-      <body className="min-h-screen antialiased">{children}</body>
+    <html lang="es">
+      <body className="min-h-screen bg-[#075087] text-white antialiased">
+        {children}
+      </body>
     </html>
   );
 }
