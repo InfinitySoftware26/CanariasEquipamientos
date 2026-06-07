@@ -52,24 +52,44 @@ export function Sidebar() {
     flex-col
     border-r
     border-white/10
-    bg-[#075087]
+
+    bg-gradient-to-b
+    from-[#075087]
+    via-[#0A3F69]
+    to-[#072B4A]
   "
     >
       {/* LOGO */}
 
       <div className="border-b border-white/10 p-6">
-        <Image
-          src="/LogoCanariasBlue.png"
-          alt="Canarias Equipamientos"
-          width={180}
-          height={90}
-          className="mx-auto h-auto w-40"
-          priority
-        />
+        <div
+          className="
+      mx-auto
+      flex
+      w-fit
+      items-center
+      justify-center
+      rounded-2xl
+      bg-white
+      p-3
+      shadow-lg
+      shadow-black/20
+    "
+        >
+          <Image
+            src="/LogoCanariasWhite.png"
+            alt="Canarias Equipamientos"
+            width={180}
+            height={90}
+            className="h-auto w-40"
+            priority
+          />
+        </div>
 
-        <p className="mt-3 text-center font-semibold text-sm text-white/80">
+        <p className="mt-4 text-center text-sm font-semibold text-white/80">
           Sistema Comercial
         </p>
+        <div className="mx-auto mt-4 h-px w-24 bg-gradient-to-r from-transparent via-[#ffa408] to-transparent" />
       </div>
       {/* USUARIO */}
 
@@ -103,8 +123,8 @@ export function Sidebar() {
 
                     ${
                       active
-                        ? "bg-[#ffa408] text-black font-semibold shadow-md"
-                        : "text-black/70 hover:bg-black/5 hover:text-white"
+                        ? "bg-[#ffa408] text-black font-semibold"
+                        : "text-white/70 hover:bg-white/10 hover:text-white"
                     }
                   `}
                 >

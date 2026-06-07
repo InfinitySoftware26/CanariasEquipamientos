@@ -19,7 +19,6 @@ export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
 
   const [loading, setLoading] = useState(false);
-
   const [error, setError] = useState("");
 
   async function handleSubmit(e: React.FormEvent) {
@@ -29,10 +28,7 @@ export function LoginForm() {
       setLoading(true);
       setError("");
 
-      const data = await loginRequest({
-        email,
-        password,
-      });
+      const data = await loginRequest({ email, password });
 
       setAuth({
         user: data.user,
@@ -48,68 +44,36 @@ export function LoginForm() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-md px-2 sm:px-0">
-      {/* LOGO */}
-
-      <div className="mb-6 text-center">
+    <div className="mx-auto w-full max-w-md space-y-6">
+      {/* LOGO (integrado estilo dashboard card) */}
+      <div className="flex flex-col items-center text-center space-y-2">
         <Image
           src="/LogoCanariasBlue.png"
           alt="Canarias Equipamientos"
-          width={280}
+          width={260}
           height={140}
-          className="
-      mx-auto
-      w-[220px]
-      sm:w-[260px]
-      md:w-[300px]
-      h-auto
-    "
+          className="h-auto rounded-lg w-[220px]"
           priority
         />
+
+        <p className="text-center font-semibold mt-3 text-white/70">
+          Sistema de gestión comercial
+        </p>
+        <div className="h-px w-40 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
       </div>
-      <h2
-        className="mt-1 mb-8 font-semibold text-xl text-center text-[#ffffff]/80"
-        style={{
-          textShadow: "0 5px 10px rgba(0, 0, 0, 0.5)",
-        }}
-      >
-        Sistema de Control Comercial
-      </h2>
-      {/* CARD */}
 
-      <div
-        className="
-    rounded-3xl
-    border
-    border-white/10
-    bg-[#0A2E4E]/90
-    p-6
-    backdrop-blur-xl
-  "
-      >
-        <div className="mb-6">
-          <h2
-            className="text-xl font-semibold text-[#ffa408]"
-            style={{
-              textShadow: "0 2px 8px rgba(0, 0, 0, 0.5)",
-            }}
-          >
-            Iniciar sesión
-          </h2>
+      {/* FORM CARD */}
+      <div className="card-base bg-white/5 backdrop-blur-xl p-8">
+        <h2 className="text-xl font-semibold text-[#ffa408]">Iniciar sesión</h2>
 
-          <p className="mt-2 text-left text-white/80">
-            Ingresá con tus credenciales corporativas
-          </p>
-        </div>
+        <p className="mt-2 text-sm text-white/80">
+          Ingresá con tus credenciales corporativas
+        </p>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+          {/* EMAIL */}
           <div>
-            <label
-              className="mb-2 block text-left font-semibold text-[#ffa408]"
-              style={{
-                textShadow: "0 2px 8px rgba(0, 0, 0, 0.5)",
-              }}
-            >
+            <label className="mb-2 block text-sm font-semibold text-white/100">
               Correo electrónico
             </label>
 
@@ -118,83 +82,44 @@ export function LoginForm() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="admin@canarias.com"
-              className="
-                w-full
-                rounded-xl
-                border
-                border-white/10
-                bg-white/[0.03]
-                px-4
-                py-3
-                text-white
-                outline-none
-                transition
-                focus:border-[#ffa408]
-              "
+              className="w-full"
             />
           </div>
 
+          {/* PASSWORD */}
           <div className="relative">
-            <label
-              className="mb-2 block text-left font-semibold text-[#ffa408]"
-              style={{
-                textShadow: "0 2px 8px rgba(0, 0, 0, 0.5)",
-              }}
-            >
+            <label className="mb-2 block text-sm font-semibold text-white/100">
               Contraseña
             </label>
-            <div className="relative">
-              <input
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="
-      w-full
-      rounded-xl
-      border
-      border-white/10
-      bg-white/[0.03]
-      px-4
-      py-3
-      pr-12
-      text-white
-      outline-none
-      transition
-      focus:border-[#ffa408]
-    "
-              />
 
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="
-      absolute
-      right-3
-      top-1/2
-      -translate-y-1/2
-      text-white/40
-      transition
-      hover:text-white/80
-    "
-              >
-                {showPassword ? (
-                  <EyeOff size={18} color="grey" />
-                ) : (
-                  <Eye size={18} color="grey" />
-                )}
-              </button>
-            </div>
+            <input
+              type={showPassword ? "text" : "password"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              className="w-full pr-12"
+            />
 
-            {error && (
-              <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-300">
-                {error}
-              </div>
-            )}
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-10 text-white/40 hover:text-white/80"
+            >
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
           </div>
+
+          {/* ERROR */}
+          {error && (
+            <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-300">
+              {error}
+            </div>
+          )}
+
+          {/* FORGOT */}
           <button
             type="button"
-            className="text-left text-white/80"
+            className="text-sm font-semibold text-white/100 hover:text-white"
             onClick={() =>
               alert("Contacte al administrador para restablecer su contraseña.")
             }
@@ -202,32 +127,19 @@ export function LoginForm() {
             ¿Olvidaste tu contraseña?
           </button>
 
+          {/* SUBMIT */}
           <button
             type="submit"
             disabled={loading}
-            className="
-              w-full
-              rounded-xl
-              bg-[#ffa408]
-              py-2
-              font-semibold
-              text-lg
-              text-black
-              transition
-              hover:opacity-90
-            "
+            className="w-full rounded-xl bg-[#ffa408] py-3 font-semibold text-black transition hover:opacity-90"
           >
             {loading ? "Ingresando..." : "Ingresar"}
           </button>
         </form>
       </div>
 
-      <p
-        className="mt-4 text-center text-[#ffffff]/80"
-        style={{
-          textShadow: "0 5px 10px rgba(0, 0, 0, 0.5)",
-        }}
-      >
+      {/* FOOTER */}
+      <p className="text-center font-semibold mt-3 text-white/60">
         Canarias Equipamientos © 2026
       </p>
     </div>

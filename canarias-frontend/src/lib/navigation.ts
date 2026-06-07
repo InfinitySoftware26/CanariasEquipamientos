@@ -2,14 +2,14 @@ import { StaffRole } from "@/types/auth.types";
 
 export const navigationByRole = {
   [StaffRole.SUPER_ADMIN]: [
-    { label: "Dashboard", href: "/dashboard/super-admin" },
+    { label: "Panel Inicial", href: "/dashboard/super-admin" },
     { label: "Sociedades", href: "/societies" },
     { label: "Staff", href: "/staff" },
     { label: "Configuración", href: "/settings" },
   ],
 
   [StaffRole.MANAGER]: [
-    { label: "Dashboard", href: "/dashboard/manager" },
+    { label: "Panel Inicial", href: "/dashboard/manager" },
     { label: "Clientes", href: "/customers" },
     { label: "Cobranzas", href: "/collections" },
     { label: "Balances", href: "/balances" },
@@ -17,7 +17,7 @@ export const navigationByRole = {
   ],
 
   [StaffRole.ADMIN]: [
-    { label: "Dashboard", href: "/dashboard/admin" },
+    { label: "Panel Inicial", href: "/dashboard/admin" },
     { label: "Clientes", href: "/customers" },
     { label: "Productos", href: "/products" },
     { label: "Proveedores", href: "/suppliers" },
@@ -25,13 +25,27 @@ export const navigationByRole = {
   ],
 
   [StaffRole.SELLER]: [
-    { label: "Dashboard", href: "/dashboard/seller" },
-    { label: "Clientes", href: "/customers" },
-    { label: "Ventas", href: "/sales" },
+    { label: "Panel Inicial", href: "/dashboard/seller" },
+    {
+      label: "Clientes",
+      href: "/customers",
+    },
+    {
+      label: "Ventas",
+      href: "/sales",
+    },
+    {
+      label: "Precarga de Cliente",
+      href: "/customers/preload",
+    },
+    {
+      label: "Verificaciones",
+      href: "/customers/verification",
+    },
   ],
 
   [StaffRole.COLLECTOR]: [
-    { label: "Dashboard", href: "/dashboard/collector" },
+    { label: "Panel Inicial", href: "/dashboard/collector" },
     { label: "Mis Cobros", href: "/collections" },
     { label: "Clientes", href: "/customers" },
     { label: "Agenda", href: "/schedule" },

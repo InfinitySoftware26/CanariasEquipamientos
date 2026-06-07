@@ -35,7 +35,7 @@ export function Header() {
         justify-between
         border-b
         border-white/10
-        bg-[#050B14]/90
+        bg-[#0D1B33]/70
         px-4
         backdrop-blur-xl
         lg:px-8
@@ -83,14 +83,6 @@ export function Header() {
             </SheetContent>
           </Sheet>
         </div>
-
-        <div>
-          <h1 className="text-xs uppercase tracking-wide text-white/40">
-            Bienvenido
-          </h1>
-
-          <p className="font-medium text-white">{user?.name ?? "Usuario"}</p>
-        </div>
       </div>
 
       {/* DERECHA */}
@@ -99,7 +91,7 @@ export function Header() {
         <div className="hidden text-right sm:block">
           <p className="text-sm font-medium text-white">{user?.name}</p>
 
-          <p className="text-xs text-white/50">
+          <p className="text-sm font-semibold text-white/50">
             {user?.role ? roleLabels[user.role] : ""}
           </p>
         </div>
@@ -112,7 +104,7 @@ export function Header() {
             items-center
             justify-center
             rounded-full
-            bg-[#F5A300]
+            bg-[#ffa408]
             text-sm
             font-semibold
             text-black

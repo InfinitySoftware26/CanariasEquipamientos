@@ -7,10 +7,13 @@ export function useAuth() {
   const accessToken = useAuthStore((state) => state.accessToken);
   const hydrated = useAuthStore((state) => state.hydrated);
 
+  const isAuthenticated = Boolean(user && accessToken);
+
   return {
     user,
     accessToken,
     hydrated,
-    isAuthenticated: !!user && !!accessToken,
+    isAuthenticated,
+    isReady: hydrated,
   };
 }
