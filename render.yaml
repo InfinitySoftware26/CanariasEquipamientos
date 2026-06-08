@@ -1,0 +1,67 @@
+services:
+  - type: web
+    name: canarias-backend
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3001
+      - key: DB_HOST
+        fromDatabase:
+          name: canarias-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: canarias-db
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: canarias-db
+          property: database
+      - key: DB_USER
+        fromDatabase:
+          name: canarias-db
+          property: user
+      - key: DB_PASS
+        fromDatabase:
+          name: canarias-db
+          property: password
+      - key: DB_LOGGING
+        value: "false"
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRATION
+        value: 15m
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_EXPIRATION
+        value: 7d
+      - key: FRONTEND_URL
+        value: https://canarias-frontend.onrender.com
+      - key: MAIL_HOST
+        sync: false
+      - key: MAIL_PORT
+        value: "587"
+      - key: MAIL_USER
+        sync: false
+      - key: MAIL_PASS
+        sync: false
+
+  - type: web
+    name: canarias-frontend
+    runtime: docker
+    dockerfilePath: ./canarias-frontend/Dockerfile
+    dockerContext: ./canarias-frontend
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        value: https://canarias-backend.onrender.com/api/v1
+
+databases:
+  - name: canarias-db
+    databaseName: canarias_db
+    user: canarias_user
+    plan: free
