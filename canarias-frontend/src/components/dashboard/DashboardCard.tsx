@@ -2,6 +2,7 @@ interface DashboardCardProps {
   title: string;
   description?: string;
   icon?: React.ReactNode;
+  value?: string | number;
   onClick?: () => void;
 }
 
@@ -9,6 +10,7 @@ export function DashboardCard({
   title,
   description,
   icon,
+  value,
   onClick,
 }: DashboardCardProps) {
   return (
@@ -33,6 +35,12 @@ export function DashboardCard({
       <div className="mb-4 text-[#ffa408]">{icon}</div>
 
       <h3 className="text-lg font-semibold text-white">{title}</h3>
+
+      {value !== undefined && (
+        <p className="mt-2 text-2xl font-bold text-white">
+          {typeof value === "number" ? `$${value.toFixed(2)}` : value}
+        </p>
+      )}
 
       {description && (
         <p className="mt-2 text-sm text-white/60">{description}</p>
