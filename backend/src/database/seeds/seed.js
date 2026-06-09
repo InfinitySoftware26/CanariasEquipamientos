@@ -191,58 +191,58 @@ async function run() {
       societyId,
     });
 
-    // ── 7. ZONA DE PRUEBA ──────────────────────────────────────────────────
+        // ── 7. ZONA DE PRUEBA ──────────────────────────────────────────────────────
     console.log('\n[7/8] Zona de prueba...');
-    let zoneId;
+    let zoneId = null;
+    try {
     const existingZone = await db.query(
-      'SELECT zone_id FROM "ZONES" WHERE society_id = $1 AND name = $2 LIMIT 1',
-      [societyId, 'Zona Seed']
+        'SELECT zone_id FROM "ZONES" WHERE society_id = $1 AND name = $2 LIMIT 1',
+        [societyId, 'Zona Seed']
     );
     if (existingZone.rows.length > 0) {
-      zoneId = existingZone.rows[0].zone_id;
-      console.log('  [skip] Zona ya existe.');
+        zoneId = existingZone.rows[0].zone_id;
+        console.log('  [skip] Zona ya existe.');
     } else {
-      const res = await db.query(
+        const res = await db.query(
         `INSERT INTO "ZONES"
-           (zone_id, society_id, name, description, status, created_at, updated_at)
-         VALUES
-           (uuid_generate_v4(), $1, $2, $3, 'active', NOW(), NOW())
-         RETURNING zone_id`,
+            (zone_id, society_id, name, description, status, created_at, updated_at)
+        VALUES
+            (uuid_generate_v4(), $1, $2, $3, 'active', NOW(), NOW())
+        RETURNING zone_id`,
         [societyId, 'Zona Seed', 'Zona creada por el seed']
-      );
-      zoneId = res.rows[0].zone_id;
-      console.log('  [ok]   Zona creada: ' + zoneId);
+        );
+        zoneId = res.rows[0].zone_id;
+        console.log('  [ok]   Zona creada: ' + zoneId);
+    }
+    } catch (e) {
+    console.log('  [skip] Tabla ZONES no existe aun — se creara cuando se implemente el modulo.');
     }
 
-    // ── 8. CLIENT ──────────────────────────────────────────────────────────
+    // ── 8. CLIENT ──────────────────────────────────────────────────────────────
     console.log('\n[8/8] Cliente de prueba...');
+    try {
     const clientDni   = getEnv('SEED_CLIENT_DNI',   '90000001');
     const clientEmail = getEnv('SEED_CLIENT_EMAIL',  'client@seed.local');
 
     const clientExists = await db.query(
-      'SELECT client_id FROM "CLIENTS" WHERE dni = $1 LIMIT 1', [clientDni]
+        'SELECT client_id FROM "CLIENTS" WHERE dni = $1 LIMIT 1', [clientDni]
     );
     if (clientExists.rows.length > 0) {
-      console.log('  [skip] Cliente ya existe.');
+        console.log('  [skip] Cliente ya existe.');
     } else {
-      await db.query(
+        await db.query(
         `INSERT INTO "CLIENTS"
-           (client_id, dni, name, email, phone, address, zone_id, staff_id,
+            (client_id, dni, name, email, phone, address, zone_id, staff_id,
             society_id, status, created_at, updated_at)
-         VALUES
-           (uuid_generate_v4(), $1, $2, $3, $4, $5, $6, $7, $8, 'active', NOW(), NOW())`,
-        [
-          clientDni,
-          'Cliente Seed',
-          clientEmail,
-          '2990000000',
-          'Direccion Seed 123',
-          zoneId,
-          adminId || managerId || null,
-          societyId,
-        ]
-      );
-      console.log('  [ok]   Cliente creado: ' + clientEmail);
+        VALUES
+            (uuid_generate_v4(), $1, $2, $3, $4, $5, $6, $7, $8, 'active', NOW(), NOW())`,
+        [clientDni, 'Cliente Seed', clientEmail, '2990000000',
+        'Direccion Seed 123', zoneId, adminId || managerId || null, societyId]
+        );
+        console.log('  [ok]   Cliente creado: ' + clientEmail);
+    }
+    } catch (e) {
+    console.log('  [skip] Tabla CLIENTS no existe aun — se creara cuando se implemente el modulo.');
     }
 
     // ── RESUMEN ────────────────────────────────────────────────────────────

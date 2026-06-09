@@ -14,13 +14,28 @@ async function bootstrap() {
   const reflector = app.get(Reflector);
 
   app.use(helmet());
-  const frontendUrl = config.get<string>('FRONTEND_URL') ?? 'http://localhost:3000';
+  const frontendUrl = config.get<string>('FRONTEND_URL') ?? '';
+
   app.enableCors({
-    origin: [frontendUrl, frontendUrl.replace('://', '://www.')],
-    credentials: true,
-    methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-  });
+  origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+    if (!origin) return callback(null, true);
+
+    const allowed = [
+      frontendUrl,
+      'http://localhost:3000',
+      'http://localhost:3001',
+    ].filter(Boolean);
+
+    if (allowed.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('CORS: origen no permitido — ' + origin));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+});
   app.setGlobalPrefix('api/v1');
   app.useGlobalPipes(new ValidationPipe({
     whitelist: true,
