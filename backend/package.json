@@ -6,8 +6,9 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
-    "seed": "ts-node -r tsconfig-paths/register src/database/seeds/seed.ts",
-    "seed:dev": "ts-node -r tsconfig-paths/register src/database/seeds/dev-seed.ts",
+    "seed": "pnpm exec ts-node -r tsconfig-paths/register src/database/seeds/seed.ts",
+    "seed:prod": "node src/database/seeds/seed.js .env.production",
+    "seed:dev":  "node src/database/seeds/seed.js .env",
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\"",
     "start": "nest start",
