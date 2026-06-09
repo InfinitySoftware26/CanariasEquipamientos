@@ -13,6 +13,10 @@ COPY package.json pnpm-lock.yaml ./
 # Instalar dependencias con pnpm
 RUN pnpm install
 
+# ← AGREGAR ESTAS DOS LÍNEAS
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+
 # Copiar el resto del código
 COPY . .
 
@@ -24,7 +28,7 @@ EXPOSE 3000
 
 # Variables de entorno
 ENV PORT=3000
-ENV NODE_ENV=development
+ENV NODE_ENV=production
 
 # Iniciar app
 CMD ["pnpm", "start"]
