@@ -1,4 +1,7 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL!;
+const API_URL =
+  process.env.NODE_ENV === "production"
+    ? "https://canarias-backend.onrender.com/api/v1"
+    : process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api/v1";
 
 export interface LoginPayload {
   email: string;
