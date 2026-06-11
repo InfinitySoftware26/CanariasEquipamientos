@@ -8,19 +8,21 @@ Definir roles, permisos y restricciones operativas del sistema.
 
 # Roles del Sistema
 
-| Rol         | Descripción                                     |
-| ----------- | ----------------------------------------------- |
+| Rol         | Descripción                                                    |
+| ----------- | -------------------------------------------------------------- |
 | SUPER_ADMIN | Acceso global a todas las sociedades y gestión de super admins |
-| ADMIN       | Operación y administración general              |
-| SELLER      | Registro de clientes y ventas                   |
-| COLLECTOR   | Cobranza y entregas                             |
-| MANAGER     | Supervisión y análisis                          |
+| MANAGER     | Supervisión y análisis                                         |
+| ADMIN       | Operación y administración general                             |
+| SELLER      | Registro de clientes y ventas                                  |
+| COLLECTOR   | Cobranza y entregas                                            |
 
 ---
 
 # Jerarquía Operativa
 
 ```text
+SUPER_ADMIN
+   ↓
 MANAGER
    ↓
 ADMIN

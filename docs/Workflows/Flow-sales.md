@@ -1,68 +1,52 @@
-# Canarias System — Flujo de Venta
+# Canarias System — Flow Sales
 
 # Objetivo
 
-Documentar el flujo operativo completo del proceso de venta.
+Documentar el flujo operativo completo del proceso de venta vigente para Sprint 02.
 
-El flujo contempla:
-
-* carga cliente
-* carga venta
-* validación administrativa
-* visita ambiental
-* aprobación
-* preparación entrega
-* generación cobranza
+Este documento representa el proceso comercial validado con Canarias y sirve como referencia funcional para Backend y Frontend.
 
 ---
 
 # Roles Involucrados
 
-| Rol       | Participación          |
-| --------- | ---------------------- |
-| SELLER    | Genera cliente y venta |
-| ADMIN     | Valida operación       |
-| COLLECTOR | Entrega producto       |
-| MANAGER   | Supervisión            |
+| Rol       | Participación                                          |
+| --------- | ------------------------------------------------------ |
+| SELLER    | Registra la solicitud de venta                         |
+| ADMIN     | Valida información, coordina procesos y realiza cierre |
+| COLLECTOR | Realiza visitas y entregas                             |
+| MANAGER   | Supervisión                                            |
 
 ---
 
 # Entidades Involucradas
 
-* customer
+* client
 * sale
-* sale_item
 * product
-* financing_configuration
-* route_sheet
-* route_item
+* zone
+* sale_validation
 * installment
-* delivery
-* validation
 
 ---
 
 # Objetivo Comercial
 
-Registrar una operación financiada que posteriormente será gestionada mediante cobranza semanal o diaria.
+Registrar una operación financiada que posteriormente será gestionada mediante cobranza.
 
 ---
 
-# Flujo Operativo
-
----
-
-# Paso 1 — Alta Cliente
+# Paso 1 — Registro de Solicitud de Venta
 
 ## Responsable
 
 SELLER
 
----
+## Acción
 
-# Acción
+El vendedor completa un único formulario registrando:
 
-El vendedor registra:
+### Datos del Cliente
 
 * datos personales
 * domicilio
@@ -70,110 +54,68 @@ El vendedor registra:
 * zona
 * sociedad
 
----
+### Datos de la Venta
 
-# Resultado
-
-Se genera:
-
-```text id="jlwm76"
-customer
-```
-
----
-
-# Estado Inicial Cliente
-
-```text id="jlwm77"
-PENDING_VALIDATION
-```
-
----
-
-# Paso 2 — Registro Venta
-
-## Responsable
-
-SELLER
-
----
-
-# Acción
-
-El vendedor registra:
-
-* producto vendido
-* precio
-* financiación
+* producto solicitado
+* cantidad de cuotas solicitadas
 * observaciones
-* dirección entrega
+
+## Resultado
+
+Se generan:
+
+* client
+* sale
+
+## Estado Inicial de la Venta
+
+PENDING_ADMIN_VALIDATION
 
 ---
 
-# Resultado
-
-Se genera:
-
-```text id="jlwm78"
-sale
-```
-
----
-
-# Estado Inicial Venta
-
-```text id="jlwm79"
-PENDING_APPROVAL
-```
-
----
-
-# Regla Financiera
-
-La financiación aplicada será:
-
-1. específica producto
-2. o configuración global activa
-
----
-
-# Paso 3 — Validación Administrativa
+# Paso 2 — Validación Administrativa
 
 ## Responsable
 
 ADMIN
 
----
+## Acción
 
-# Acción
+Administración contacta telefónicamente al cliente para validar la información registrada y explicar políticas de la empresa.
 
-Administración revisa:
+Puede:
 
-* datos cliente
-* historial
-* dirección
-* documentación
-* riesgo financiero
+* aprobar
+* rechazar
+* registrar observaciones
 
----
-
-# Resultado
+## Resultado
 
 Se genera:
 
-```text id="jlwm80"
-validation
-```
+sale_validation
+
+## Posibles Estados
+
+APPROVED_ADMIN
+
+REJECTED_ADMIN
 
 ---
 
-# Posibles Resultados
+# Paso 3 — Programación de Visita Ambiental
 
-| Estado   | Resultado         |
-| -------- | ----------------- |
-| APPROVED | Continúa flujo    |
-| REJECTED | Venta rechazada   |
-| OBSERVED | Requiere revisión |
+## Responsable
+
+ADMIN
+
+## Acción
+
+Administración coordina la visita ambiental.
+
+## Estado
+
+PENDING_ENVIRONMENTAL_VISIT
 
 ---
 
@@ -181,201 +123,126 @@ validation
 
 ## Responsable
 
-ADMIN
+COLLECTOR
+
+## Acción
+
+El cobrador visita el domicilio y verifica las condiciones necesarias para la operación.
+
+Puede:
+
+* aprobar
+* rechazar
+* registrar observaciones
+
+## Posibles Estados
+
+ENVIRONMENTAL_APPROVED
+
+ENVIRONMENTAL_REJECTED
 
 ---
 
-# Objetivo
-
-Validar entorno cliente físicamente.
-
----
-
-# Información Validada
-
-* domicilio real
-* referencias
-* condiciones generales
-* capacidad pago estimada
-* documenta DNI
-* documenta servicio
-
----
-
-# Resultado
-
-Actualiza:
-
-```text id="jlwm81"
-validation
-```
-
----
-
-# Paso 5 — Aprobación Final
+# Paso 5 — Programación de Entrega
 
 ## Responsable
 
 ADMIN
 
----
+## Acción
 
-# Resultado
+Administración coordina la fecha de entrega del producto.
 
-La venta pasa a:
+## Estado
 
-```text id="jlwm82"
-APPROVED
-```
+PENDING_DELIVERY
 
 ---
 
-# Consecuencias Operativas
-
-El sistema:
-
-* genera cuotas
-* genera entrega pendiente
-* habilita hoja ruta
-* habilita cobranza futura
-
----
-
-# Paso 6 — Generación Entrega
-
-## Responsable
-
-Sistema + ADMIN
-
----
-
-# Resultado
-
-Se genera:
-
-```text id="jlwm83"
-delivery
-```
-
----
-
-# Estado Inicial Entrega
-
-```text id="jlwm84"
-PENDING
-```
-
----
-
-# Paso 7 — Asignación Hoja Ruta
-
-## Responsable
-
-ADMIN
-
----
-
-# Acción
-
-Administración asigna:
-
-* cobrador
-* sociedad
-* zona
-* fecha entrega
-
----
-
-# Resultado
-
-Se genera:
-
-```text id="jlwm85"
-route_sheet
-```
-
----
-
-# Paso 8 — Entrega Producto
+# Paso 6 — Entrega de Producto
 
 ## Responsable
 
 COLLECTOR
 
----
-
-# Acción
+## Acción
 
 El cobrador:
 
-* entrega producto
-* confirma entrega
-* registra observaciones
+* entrega el producto
+* obtiene firma del contrato
+* solicita fotocopia de DNI
+* solicita comprobante de servicio
 
----
+## Estado
 
-# Resultado
-
-La venta pasa a:
-
-```text id="jlwm86"
 DELIVERED
-```
 
 ---
 
-# Paso 9 — Inicio Cobranza
+# Paso 7 — Cierre Administrativo
+
+## Responsable
+
+ADMIN
+
+## Acción
+
+Administración verifica la documentación recibida.
+
+### Verificaciones
+
+* contrato firmado
+* DNI recibido
+* servicio recibido
+
+## Regla de Negocio
+
+Para cerrar la venta únicamente es obligatorio contar con el contrato firmado.
+
+El DNI y el comprobante de servicio podrán incorporarse posteriormente.
+
+## Estado
+
+CLOSED
+
+---
+
+# Paso 8 — Generación de Cuotas
+
+## Responsable
+
+Sistema
+
+## Acción
+
+Al cerrar la venta el sistema genera automáticamente las cuotas correspondientes.
 
 ## Resultado
 
-Las cuotas pasan a:
+installments
 
-```text id="jlwm87"
-PENDING_COLLECTION
-```
+## Estado Inicial
+
+PENDING
 
 ---
 
 # Casos Especiales
 
----
+## Rechazo Administrativo
 
-# Rechazo Venta
+La venta finaliza en:
 
-La venta podrá:
-
-* cancelarse
-* observarse
-* reenviarse revisión
+REJECTED_ADMIN
 
 ---
 
-# Reasignación Cobrador
+## Rechazo Visita Ambiental
 
-Administración podrá modificar:
+La venta finaliza en:
 
-* cobrador
-* zona
-* hoja ruta
-
----
-
-# Venta Sin Stock
-
-Permitido para:
-
-* Canarias 1
-* Canarias 2
-* Canarias Motos
-
----
-
-# Validaciones Obligatorias
-
-* cliente único DNI
-* producto válido
-* financiación activa
-* sociedad activa
+ENVIRONMENTAL_REJECTED
 
 ---
 
@@ -383,26 +250,15 @@ Permitido para:
 
 Registrar:
 
-* creador venta
-* aprobador
-* cobrador asignado
-* cambios estado
+* vendedor creador
+* administrador validador
+* cobrador interviniente
+* cambios de estado
 * observaciones
-
----
-
-# Escalabilidad Futura
-
-Preparado para:
-
-* firma digital
-* scoring automático
-* IA riesgo financiero
-* tracking entregas
-* aprobación remota
+* fecha de cierre
 
 ---
 
 # Estado Actual
 
-Workflow aprobado para Fase 1.
+Workflow vigente para Sprint 02.
