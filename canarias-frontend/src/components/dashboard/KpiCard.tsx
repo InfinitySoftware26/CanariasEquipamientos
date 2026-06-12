@@ -43,7 +43,7 @@ export function KpiCard({
       <h3 className={`mt-2 text-3xl font-bold ${trendColor}`}>{value}</h3>
 
       {/* DECORATIVE GLOW */}
-      <div className="absolute -top-10 -right-10 h-24 w-24 rounded-full bg-[#ffa408]/10 blur-2xl" />
+      <div className="absolute -top-10 -right-5 h-24 w-24 rounded-full bg-[#ffa408]/10 blur-2xl" />
     </div>
   );
 }

@@ -35,8 +35,8 @@ export const navigationByRole = {
       href: "/sales",
     },
     {
-      label: "Precarga de Cliente",
-      href: "/customers/preload",
+      label: "Precarga de Cliente y Venta",
+      href: "/sales/preload",
     },
     {
       label: "Verificaciones",
