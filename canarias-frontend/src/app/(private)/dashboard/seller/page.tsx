@@ -6,11 +6,12 @@ import { DashboardCard } from "@/components/dashboard/DashboardCard";
 import { KpiCard } from "@/components/dashboard/KpiCard";
 import { useAuthStore } from "@/store/auth.store";
 import { useSellerKpis } from "@/hooks/useSellerKpis";
+import { useRouter } from "next/dist/client/components/navigation";
 
 export default function SellerDashboard() {
   const user = useAuthStore((state) => state.user);
   const { data } = useSellerKpis();
-
+  const router = useRouter();
   return (
     <div className="space-y-8">
       {/* HERO */}
@@ -33,7 +34,7 @@ export default function SellerDashboard() {
       <section>
         <h2 className="mb-4 text-xl font-semibold text-white">Resumen</h2>
 
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
           <KpiCard title="Ventas del día" value={data?.salesToday ?? 0} />
 
           <KpiCard
@@ -63,15 +64,10 @@ export default function SellerDashboard() {
 
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           <DashboardCard
-            title="Crear cliente"
-            description="Precarga de cliente"
-            icon={<UserPlus size={22} />}
-          />
-
-          <DashboardCard
-            title="Crear venta"
-            description="Registrar operación"
+            title="Precarga de cliente y venta"
+            description="Precarga de cliente y venta"
             icon={<DollarSign size={22} />}
+            onClick={() => router.push("/sales/preload")}
           />
 
           <DashboardCard
