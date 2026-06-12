@@ -74,13 +74,30 @@ modules/
 ├── dashboard/
 ├── clients/
 ├── sales/
+├── sale-validation/
+├── products/
+├── zones/
+├── staff/
 ├── collections/
 ├── routes/
-├── products/
 ├── stock/
 ├── cash/
 └── reports/
 ```
+---
+
+# Clasificacion de Módulos
+
+Actualmente en desarrollo:
+
+auth
+clients
+sales
+sale-validation
+products
+zones
+staff
+Installments
 
 ---
 
@@ -250,13 +267,63 @@ El frontend trabajará con tokens JWT desde el login hasta las rutas protegidas.
 
 # Roles y Navegación
 
-La navegación se adapta según el rol del usuario.
+La navegación se adapta según:
 
-- `ADMIN` ve dashboards administrativos.
-- `SELLER` ve ventas y clientes.
-- `COLLECTOR` ve cobranzas y rutas.
-- `MANAGER` ve métricas y reportes.
+- rol del usuario
+- permisos asignados
+- sociedad activa
 
+
+## SUPER_ADMIN
+
+Ve:
+
+- administración global
+- sociedades
+- usuarios
+- permisos
+- configuraciones generales
+- reportes globales
+
+
+## MANAGER
+
+Ve:
+
+- métricas globales
+- operaciones de sus sociedades asignadas
+- reportes
+- supervisión de usuarios
+
+
+## ADMIN
+
+Ve:
+
+- clientes
+- ventas
+- validaciones
+- documentación
+- operaciones administrativas
+
+
+## SELLER
+
+Ve:
+
+- clientes propios
+- carga de ventas
+- porcentaje de ganancia
+
+
+## COLLECTOR
+
+Ve:
+
+- visitas asignadas
+- entregas
+- cobranzas
+- hoja de ruta
 ---
 
 # Multi-Sociedad
@@ -266,6 +333,53 @@ El frontend permite operar con diferentes sociedades dentro de la misma sesión.
 - la sociedad activa se guarda en el estado del usuario.
 - las consultas se filtran por sociedad.
 - la UI muestra contextos empresariales en función de la sociedad seleccionada.
+
+---
+
+# Selector de Sociedad
+
+El frontend deberá incorporar un selector de sociedad cuando el usuario tenga acceso a múltiples sociedades.
+
+---
+
+# Comportamiento
+
+Flujo:
+
+Login
+↓
+Carga información del usuario
+↓
+Obtiene sociedades disponibles
+↓
+Usuario selecciona sociedad activa
+↓
+Frontend actualiza contexto global
+↓
+Las consultas utilizan la sociedad seleccionada
+
+
+---
+
+# Usuarios con Selector
+
+`SUPER_ADMIN`:
+Visualiza todas las sociedades.
+
+`MANAGER`:
+Visualiza únicamente las sociedades asignadas.
+Otros roles:
+Operan sobre la sociedad asignada automáticamente.
+
+---
+
+# Estado Global
+
+El contexto deberá almacenar:
+
+- activeSocietyId
+- activeSocietyName
+- availableSocieties
 
 ---
 
@@ -320,8 +434,29 @@ Cada rol tendrá dashboard independiente.
 
 ---
 
+# Dashboard SUPER_ADMIN
+
+* administración global del sistema
+* gestión de sociedades
+* gestión de usuarios
+* creación de roles
+* configuración general
+* selección de sociedad activa
+* reportes consolidados
+
+---
+
+# Dashboard MANAGER
+
+* métricas globales
+* balances
+* reportes financieros
+
+---
+
 # Dashboard ADMIN
 
+* Clients
 * KPIs
 * cobranzas
 * ventas
@@ -331,6 +466,7 @@ Cada rol tendrá dashboard independiente.
 
 # Dashboard SELLER
 
+* cargar nueva venta
 * ventas personales
 * comisiones
 * objetivos
@@ -342,14 +478,6 @@ Cada rol tendrá dashboard independiente.
 * hoja ruta
 * cobranzas pendientes
 * cierre diario
-
----
-
-# Dashboard MANAGER
-
-* métricas globales
-* balances
-* reportes financieros
 
 ---
 

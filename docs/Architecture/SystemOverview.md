@@ -111,10 +111,11 @@ El sistema utiliza roles para controlar accesos y vistas del dashboard.
 
 Roles iniciales:
 
+- `SUPER_ADMIN` — gestión completa y alcance total al sistema.
+- `MANAGER` — métricas, reportes y supervisión.
 - `ADMIN` — gestión completa y supervisión.
 - `SELLER` — gestión de ventas.
 - `COLLECTOR` — cobranzas y hoja de ruta.
-- `MANAGER` — métricas, reportes y supervisión.
 
 El frontend adapta la navegación según el rol del usuario y el backend valida permisos antes de ejecutar acciones.
 
@@ -283,14 +284,13 @@ La evolución hacia microservicios dependerá de:
 El sistema estará dividido en módulos independientes:
 
 * auth
-* users
+* staff
 * clients
+* zones
 * sales
-* collections
-* routes
+* sale_validations
 * products
-* stock
-* reports
+
 
 ---
 
@@ -435,17 +435,21 @@ routes/
 # Flujo Operativo General
 
 ```text
-Venta
+Venta registrada por vendedor
    ↓
-Aprobación
+Validacion administrativa
    ↓
-Entrega
+Visita Ambiental
    ↓
-Cobranza
+Aprobacion / Rechazo
    ↓
-Cierre Diario
+Coordinacion de Entrega
    ↓
-Rendición
+Entrega + documentacion
+   ↓
+Cierre Administrativo
+   ↓
+Inicio cobranza
 ```
 
 ---
@@ -454,10 +458,11 @@ Rendición
 
 | Rol       | Descripción              |
 | --------- | ------------------------ |
+|SUPER_ADMIN| Supervisión total        |
+| MANAGER   | Supervisión financiera   |
 | ADMIN     | Administración operativa |
 | SELLER    | Ventas                   |
 | COLLECTOR | Cobranza                 |
-| MANAGER   | Supervisión financiera   |
 
 ---
 
@@ -511,6 +516,65 @@ La arquitectura permitirá incorporar:
 
 ---
 
-# Estado Actual
+# Fase Actual del Proyecto
 
-Fase inicial de construcción arquitectónica y setup base del sistema.
+## Fase 2 — Operación Comercial Base
+
+La fase actual está enfocada en construir la base operativa del circuito comercial de Canarias.
+
+El objetivo es permitir registrar y validar una operación de venta completa desde el ingreso inicial del cliente hasta la aprobación administrativa.
+
+---
+
+# Alcance Fase 2
+
+Módulos incluidos:
+
+- Gestión de Clientes
+- Gestión Comercial (ventas y productos)
+- Validación administrativa de ventas
+- Gestión Territorial (zonas)
+- Gestión de Personal y asignaciones
+- Gestión Multi-Sociedad
+
+---
+
+# Flujo Comercial Actual
+
+El sistema contempla el siguiente proceso:
+
+1. El vendedor registra una solicitud de venta.
+
+2. Durante la carga se registran datos del cliente y producto solicitado.
+
+3. Administración valida la información ingresada.
+
+4. Se coordina visita ambiental.
+
+5. El resultado de la validación determina aprobación o rechazo.
+
+6. Administración coordina la entrega.
+
+7. El proceso queda preparado para futuras etapas de cobranza y generacion de cuotas.
+
+---
+
+# Objetivo Técnico de la Fase
+
+Construir una base modular y escalable que permita incorporar posteriormente:
+
+- hojas de ruta
+- entregas
+- cuotas
+- cobranzas
+- reportes
+- automatizaciones
+
+---
+
+# Estado de la Fase
+
+Arquitectura base definida.
+
+Módulos iniciales en desarrollo.
+

@@ -35,19 +35,24 @@ con autorización basada en:
 
 # Flujo General
 
-```text id="m7v4zn"
+```text
 Usuario login
       ↓
 Validación credenciales
       ↓
 Generación JWT
       ↓
-Frontend almacena token
+Frontend almacena sesión
       ↓
-Requests autenticados
+Carga sociedades disponibles
+      ↓
+Usuario selecciona sociedad activa
+      ↓
+Contexto de sociedad establecido
+      ↓
+Requests autenticados con sociedad activa
       ↓
 Guards validan acceso
-```
 
 ---
 
@@ -77,9 +82,13 @@ El token deberá incluir:
 ```json id="n5g7tb"
 {
   "sub": "staff_id",
-  "role": "ADMIN",
+  "role": "MANAGER",
   "email": "email",
-  "society_id": "uuid"
+  "societies": [
+    "society_uuid_1",
+    "society_uuid_2"
+  ],
+  "active_society": "society_uuid"
 }
 ```
 
@@ -161,6 +170,45 @@ El backend deberá validar:
 * sociedad usuario
 * permisos operativos
 * acceso contextual
+
+---
+
+# Selección de Sociedad Activa
+
+El sistema permitirá seleccionar una sociedad activa según el alcance del usuario.
+
+---
+
+## SUPER_ADMIN
+
+Puede acceder a todas las sociedades.
+
+Debe seleccionar la sociedad sobre la cual desea operar.
+
+---
+
+## MANAGER
+
+Puede acceder únicamente a las sociedades asignadas mediante staff_societies.
+
+Si posee múltiples sociedades, deberá seleccionar la sociedad activa.
+
+---
+
+## Otros Roles
+
+La sociedad será determinada automáticamente según la asignación del usuario.
+
+---
+
+# Validación de Contexto
+
+Backend deberá validar:
+
+- usuario autenticado
+- sociedad activa
+- relación usuario-sociedad
+- permisos dentro del contexto seleccionado
 
 ---
 

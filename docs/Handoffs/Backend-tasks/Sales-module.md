@@ -35,14 +35,12 @@ Cada venta:
 # Entidades Involucradas
 
 * sale
-* customer
 * product
 * installment
 * financing_configuration
 * society
 * staff
-* delivery
-* collection
+* zone
 
 ---
 
