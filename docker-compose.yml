@@ -20,7 +20,9 @@ services:
       - backend_node_modules:/app/node_modules
 
   frontend:
-    build: ./canarias-frontend
+    build:
+      context: ./canarias-frontend
+      dockerfile: Dockerfile.dev
     container_name: frontend_service
     ports:
       - "3000:3000"
@@ -30,8 +32,8 @@ services:
       CHOKIDAR_USEPOLLING: "true"
       WATCHPACK_POLLING: "true"
     volumes:
+      - frontend_node_modules:/app/node_modules
       - ./canarias-frontend:/app
-      - /app/node_modules
     command: pnpm exec next dev --webpack
 
   db:
@@ -48,3 +50,4 @@ services:
 volumes:
   db_data:
   backend_node_modules:
+  frontend_node_modules:
