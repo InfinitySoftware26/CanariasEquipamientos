@@ -1,5 +1,4 @@
 export interface PreloadFormData {
-  // Cliente → POST /clients/preload
   name: string;
   surname: string;
   documentNumber: string;
