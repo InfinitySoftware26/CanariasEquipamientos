@@ -7,6 +7,7 @@ import { JwtService } from "@nestjs/jwt";
 import { ConfigService } from "@nestjs/config";
 import * as bcrypt from "bcrypt";
 import { StaffService } from "../../staff/services/staff.service";
+import { SocietiesService } from "../../societies/services/societies.service";
 import { JwtPayload } from "../interfaces/jwt-payload.interface";
 
 export interface LoginResult {
@@ -18,6 +19,7 @@ export interface LoginResult {
     email: string;
     role: string;
     societyId: string;
+    societies: { societyId: string; societyName: string; status: string }[];
   };
 }
 
@@ -30,6 +32,7 @@ export interface RefreshResult {
 export class AuthService {
   constructor(
     private readonly staffService: StaffService,
+    private readonly societiesService: SocietiesService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService
   ) {}
@@ -53,7 +56,10 @@ export class AuthService {
   }
 
   async login(payload: JwtPayload): Promise<LoginResult> {
-    const staff = await this.staffService.findById(payload.sub);
+    const [staff, societies] = await Promise.all([
+      this.staffService.findById(payload.sub),
+      this.societiesService.getSocietiesForStaff(payload.sub),
+    ]);
 
     return {
       accessToken: this.generateAccessToken(payload),
@@ -64,6 +70,7 @@ export class AuthService {
         email: staff.email,
         role: staff.role,
         societyId: staff.primarySocietyId,
+        societies,
       },
     };
   }

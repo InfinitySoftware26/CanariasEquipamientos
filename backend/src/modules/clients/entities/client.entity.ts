@@ -41,6 +41,9 @@ export class Client {
   @Column({ type: 'text', nullable: true })
   observations?: string;
 
+  @Column({ name: 'zone_id', nullable: true })
+  zoneId?: string;
+
   @Column({ name: 'society_id', nullable: true })
   societyId?: string;
 

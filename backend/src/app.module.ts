@@ -10,6 +10,7 @@ import { StaffModule } from "./modules/staff/staff.module";
 import { ClientsModule } from "./modules/clients/clients.module";
 import { ZonesModule } from "./modules/zones/zones.module";
 import { ProductsModule } from "./modules/products/products.module";
+import { FinancingConfigModule } from "./modules/financing-config/financing-config.module";
 import { SuppliersModule } from "./modules/suppliers/suppliers.module";
 import { SalesModule } from "./modules/sales/sales.module";
 import { InstallmentsModule } from "./modules/installments/installments.module";
@@ -36,6 +37,7 @@ import { HealthModule } from "@modules/health/health.module";
     ClientsModule,
     ZonesModule,
     ProductsModule,
+    FinancingConfigModule,
     SuppliersModule,
     SalesModule,
     InstallmentsModule,
