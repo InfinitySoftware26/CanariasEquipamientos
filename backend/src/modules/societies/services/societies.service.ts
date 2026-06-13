@@ -60,4 +60,8 @@ export class SocietiesService {
     await this.findById(societyId);
     return this.staffSocietiesRepo.findBySocietyWithStaff(societyId);
   }
+
+  getSocietiesForStaff(staffId: string): Promise<{ societyId: string; societyName: string; status: string }[]> {
+    return this.staffSocietiesRepo.findByStaff(staffId);
+  }
 }

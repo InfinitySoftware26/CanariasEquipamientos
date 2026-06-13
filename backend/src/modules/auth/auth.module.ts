@@ -8,10 +8,11 @@ import { AuthService } from './services/auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { LocalStrategy } from './strategies/local.strategy';
 import { StaffModule } from '../staff/staff.module';
+import { SocietiesModule } from '../societies/societies.module';
 
 @Module({
   imports: [
-    StaffModule, PassportModule,
+    StaffModule, SocietiesModule, PassportModule,
     JwtModule.registerAsync({ imports: [ConfigModule], inject: [ConfigService], useFactory: getJwtConfig }),
   ],
   controllers: [AuthController],
