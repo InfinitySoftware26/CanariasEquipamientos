@@ -26,7 +26,9 @@ import { SocietyResponseDto } from "../dto/society-response.dto";
 import { JwtAuthGuard } from "../../../common/guards/jwt-auth.guard";
 import { RolesGuard } from "../../../common/guards/roles.guard";
 import { Roles } from "../../../common/decorators/roles.decorator";
+import { CurrentUser } from "../../../common/decorators/current-user.decorator";
 import { StaffRole } from "../../../common/enums/staff-role.enum";
+import { JwtPayload } from "../../../common/interfaces/jwt-payload.interface";
 
 @ApiTags("societies")
 @ApiBearerAuth("access-token")
@@ -90,14 +92,20 @@ export class SocietiesController {
   }
 
   @Post(":id/staff")
-  @Roles(StaffRole.MANAGER)
+  @Roles(StaffRole.SUPER_ADMIN, StaffRole.MANAGER)
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: "Asignar staff a una sociedad (solo gerente)" })
+  @ApiOperation({ summary: "Asignar staff a una sociedad — solo a la propia sociedad (MANAGER) o cualquiera (SUPER_ADMIN)" })
   @ApiParam({ name: "id", description: "UUID de la sociedad" })
   assignStaff(
     @Param("id", ParseUUIDPipe) id: string,
-    @Body() dto: AssignStaffDto
+    @Body() dto: AssignStaffDto,
+    @CurrentUser() user: JwtPayload,
   ) {
-    return this.societiesService.assignStaff(id, dto);
+    return this.societiesService.assignStaff(
+      id,
+      dto,
+      user.societyId,
+      user.role === StaffRole.SUPER_ADMIN,
+    );
   }
 }

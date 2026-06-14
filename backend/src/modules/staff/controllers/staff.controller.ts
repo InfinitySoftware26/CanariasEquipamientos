@@ -6,10 +6,12 @@ import {
   Delete,
   Body,
   Param,
+  Query,
   UseGuards,
   HttpCode,
   HttpStatus,
   ParseUUIDPipe,
+  NotFoundException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -54,6 +56,24 @@ export class StaffController {
   @ApiResponse({ status: 200, type: [StaffResponseDto] })
   findAll(@CurrentUser() user: JwtPayload) {
     return this.staffService.findAll(user.societyId);
+  }
+
+  // ── GET /staff/lookup ──────────────────────────────────────────────────────
+  @Get('lookup')
+  @Roles(StaffRole.SUPER_ADMIN, StaffRole.MANAGER, StaffRole.ADMIN)
+  @ApiOperation({
+    summary: 'Buscar empleado por email o DNI para autocompletado de formularios',
+    description: 'Pasa ?email=... o ?dni=... Devuelve los datos del empleado si existe, o 404.',
+  })
+  @ApiResponse({ status: 200, type: StaffResponseDto })
+  @ApiResponse({ status: 404, description: 'Empleado no encontrado' })
+  async lookup(
+    @Query('email') email?: string,
+    @Query('dni') dni?: string,
+  ) {
+    const staff = await this.staffService.lookup(email, dni);
+    if (!staff) throw new NotFoundException('Empleado no encontrado');
+    return staff;
   }
 
   // ── GET /staff/:id ─────────────────────────────────────────────────────────

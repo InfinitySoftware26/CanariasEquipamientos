@@ -68,6 +68,12 @@ export class StaffService {
     return this.staffRepo.findByEmailWithPassword(email);
   }
 
+  lookup(email?: string, dni?: string): Promise<Staff | null> {
+    if (!email && !dni) return Promise.resolve(null);
+    if (email) return this.staffRepo.findByEmail(email);
+    return this.staffRepo.findByDni(dni!);
+  }
+
   // ─── COMMANDS ─────────────────────────────────────────────────────────────
 
   /**
@@ -83,13 +89,20 @@ export class StaffService {
 
     const passwordHash = await bcrypt.hash(dto.password, SALT_ROUNDS);
 
+    // SUPER_ADMIN puede asignar a cualquier sociedad; los demás roles solo
+    // pueden crear staff en su propia sociedad (ignoramos dto.societyId)
+    const primarySocietyId =
+      currentUser.role === StaffRole.SUPER_ADMIN
+        ? dto.societyId
+        : currentUser.societyId;
+
     return this.staffRepo.create({
       name: dto.name,
       dni: dto.dni,
       email: dto.email,
       passwordHash,
       role: dto.role as unknown as StaffRole,
-      primarySocietyId: dto.societyId,
+      primarySocietyId,
       isActive: true,
     });
   }
