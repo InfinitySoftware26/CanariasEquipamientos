@@ -34,7 +34,7 @@ export class StaffSocietiesRepository implements IStaffSocietiesRepository {
       .addSelect('s.name', 'societyName')
       .addSelect('ss.status', 'status')
       .from('STAFF_SOCIETIES', 'ss')
-      .innerJoin('SOCIETIES', 's', 's.society_id = ss.society_id')
+      .innerJoin('SOCIETYS', 's', 's.society_id = ss.society_id')
       .where('ss.staff_id = :staffId', { staffId })
       .andWhere('ss.status = :status', { status: 'active' })
       .orderBy('s.name', 'ASC')
