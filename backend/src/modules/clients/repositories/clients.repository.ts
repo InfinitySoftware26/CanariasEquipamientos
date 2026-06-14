@@ -25,6 +25,14 @@ export class ClientsRepository implements IClientsRepository {
     return this.repo.findOne({ where: { clientId: id } });
   }
 
+  findByDocumentNumber(documentNumber: string): Promise<Client | null> {
+    return this.repo.findOne({ where: { documentNumber } });
+  }
+
+  findByEmail(email: string): Promise<Client | null> {
+    return this.repo.findOne({ where: { email } });
+  }
+
   findAllBySociety(societyId: string): Promise<Client[]> {
     return this.repo.find({
       where: { societyId },

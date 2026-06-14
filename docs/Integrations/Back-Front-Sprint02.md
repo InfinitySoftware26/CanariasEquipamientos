@@ -1,51 +1,117 @@
 # Integración Backend → Frontend — Sprint 02
 
 Base URL: `https://canarias-backend.onrender.com/api/v1`  
-Todos los endpoints requieren `Authorization: Bearer <accessToken>` excepto `/auth/login` y `/auth/refresh`.
+Todos los endpoints requieren `Authorization: Bearer <accessToken>` excepto `/auth/login`, `/auth/refresh` y `/auth/select-society` (este último sí requiere el token inicial del login).
 
 ---
 
 ## AUTH
 
+### Flujo de autenticación completo
+
+```
+Usuario ingresa email + contraseña
+        │
+        ▼
+POST /auth/login
+  ├── 401 → "Credenciales inválidas" (mostrar error en formulario)
+  └── 200 → { accessToken, user: { societies: [...], societyId: null } }
+              │
+              ├── societies.length === 0
+              │     └── Mostrar: "No estás registrado en ninguna sociedad"
+              │
+              └── societies.length >= 1
+                    └── Mostrar selector de sociedad (dropdown / cards)
+                              │
+                              ▼ (usuario elige)
+                    POST /auth/select-society { societyId }
+                      ├── 403 → "No tenés acceso a esta sociedad"
+                      └── 200 → { accessToken (con societyId), societyId }
+                                    │
+                                    ▼
+                          Reemplazar accessToken en estado global
+                          Redirigir al dashboard
+                          (todos los requests siguientes filtran por sociedad)
+```
+
+---
+
 ### POST /auth/login
-Autentica al usuario y devuelve el token más las sociedades a las que pertenece.
+Autentica con email y contraseña. Devuelve un token inicial (sin sociedad seleccionada) y la lista de sociedades del usuario.
 
 **Body**
 ```json
 { "email": "admin@empresa.com", "password": "secreto123" }
 ```
 
-**Respuesta**
+**Respuesta 200**
 ```json
 {
   "accessToken": "eyJ...",
-  "refreshToken": "eyJ...",
   "user": {
     "staffId": "uuid",
     "name": "Juan Pérez",
     "email": "admin@empresa.com",
-    "role": "admin",
-    "societyId": "uuid-sociedad-primaria",
+    "role": "administrativo",
+    "societyId": null,
     "societies": [
-      { "societyId": "uuid", "societyName": "Canarias SA", "status": "active" }
+      { "societyId": "uuid-1", "societyName": "Canarias Norte", "status": "active" },
+      { "societyId": "uuid-2", "societyName": "Canarias Sur",   "status": "active" }
     ]
   }
 }
 ```
 
-> `societies` contiene todas las sociedades activas del usuario. El frontend puede permitir al usuario elegir con cuál operar y guardar el `societyId` seleccionado en el estado global.
+> **Importante:** `societyId` es `null` hasta que el usuario seleccione una sociedad con `/auth/select-society`. El `accessToken` devuelto aquí **no puede usarse** para consultar datos de negocio — solo sirve para llamar a `/auth/select-society`.  
+> Si `societies` está vacío, el usuario no tiene acceso a ninguna sociedad y debe mostrarse un mensaje de error.
 
-### POST /auth/refresh
-Renueva el accessToken usando el refreshToken.
+**Respuesta 401**
+```json
+{ "statusCode": 401, "message": "Credenciales invalidas" }
+```
+
+---
+
+### POST /auth/select-society
+Valida que el usuario pertenezca a la sociedad solicitada y emite un nuevo JWT con el `societyId` embebido. A partir de este token, todos los endpoints de negocio filtran datos por esa sociedad.
+
+**Requiere:** `Authorization: Bearer <accessToken>` (el del login)
 
 **Body**
 ```json
-{ "refreshToken": "eyJ..." }
+{ "societyId": "uuid-sociedad" }
 ```
 
-**Respuesta**
+**Respuesta 200**
 ```json
-{ "accessToken": "eyJ...", "refreshToken": "eyJ..." }
+{
+  "accessToken": "eyJ...",
+  "societyId": "uuid-sociedad"
+}
+```
+
+> El frontend debe **reemplazar** el `accessToken` guardado en el estado global con este nuevo token. También actualiza la cookie del `refresh_token` (HttpOnly) con el `societyId` seleccionado, de modo que los refrescos automáticos preserven la sociedad elegida.
+
+**Respuesta 400** — usuario sin sociedades vinculadas:
+```json
+{ "statusCode": 400, "message": "No estás registrado en ninguna sociedad" }
+```
+
+**Respuesta 403** — la sociedad no pertenece al usuario:
+```json
+{ "statusCode": 403, "message": "No tenés acceso a esta sociedad" }
+```
+
+---
+
+### POST /auth/refresh
+Renueva el accessToken usando el refreshToken almacenado en la cookie HttpOnly. Preserva el `societyId` ya seleccionado.
+
+**Requiere:** cookie `refresh_token` (se envía automáticamente por el browser).
+
+**Respuesta 200**
+```json
+{ "accessToken": "eyJ..." }
 ```
 
 ---
@@ -496,15 +562,43 @@ Asigna un empleado a una sociedad. Roles: SUPER_ADMIN, MANAGER.
 
 ## NOTAS PARA EL FRONTEND
 
+**Flujo de autenticación y selección de sociedad:**
+
+```
+1. POST /auth/login
+   → guardar accessToken inicial en memoria (no en localStorage)
+   → si societies.length === 0: mostrar "Sin acceso" y bloquear navegación
+   → si societies.length >= 1: redirigir a pantalla de selección de sociedad
+
+2. Usuario elige sociedad → POST /auth/select-society { societyId }
+   → reemplazar accessToken con el nuevo
+   → guardar societyId y societyName en estado global (para mostrar en UI)
+   → redirigir al dashboard
+
+3. Todos los requests siguientes usan el nuevo accessToken
+   → el backend ya filtra por la sociedad embebida en el JWT
+
+4. Al expirar el token → POST /auth/refresh
+   → el nuevo accessToken conserva el societyId seleccionado
+
+5. Logout → POST /auth/logout + limpiar estado global
+```
+
+> El `societyId` del token post-selección es el que el backend usa para aislar los datos. El frontend **no necesita** enviar el societyId en los requests — ya viene en el JWT.
+
+---
+
 **Enums útiles:**
 
 ```
-paymentFrequency: "weekly" | "monthly"
+paymentFrequency:  "weekly" | "monthly"
 installmentsCount: 3 | 6 | 9
-saleStatus: "pending_admin_validation" | "rejected_admin" | "pending_environmental_visit" | "environmental_rejected" | "pending_delivery" | "delivered" | "closed"
+saleStatus:        "pending_admin_validation" | "rejected_admin" | "pending_environmental_visit"
+                   | "environmental_rejected" | "pending_delivery" | "delivered" | "closed"
 installmentStatus: "pending" | "paid" | "overdue" | "partial" | "defaulted"
-productStatus: "active" | "inactive"
-staffRole: "super_admin" | "manager" | "admin" | "seller" | "collector"
+productStatus:     "active" | "inactive"
+staffRole:         "super_admin" | "gerente" | "administrativo" | "vendedor" | "cobrador"
+societyStatus:     "active" | "inactive"
 ```
 
 **Flujo de creación de venta (formulario):**
@@ -517,10 +611,10 @@ staffRole: "super_admin" | "manager" | "admin" | "seller" | "collector"
 
 El backend calcula el total, aplica la tasa y genera las cuotas automáticamente.
 
-**Cálculo de cuota (para preview en frontend):**
+**Cálculo de cuota (para preview en frontend antes de confirmar):**
 ```
-totalAmount = suma(unitPrice × quantity)
-rate = según cuotas (obtener de GET /financing-config)
-totalConInterés = totalAmount × (1 + rate)
-montoXCuota = totalConInterés / cantidadCuotas
+totalAmount      = suma(unitPrice × quantity)
+rate             = según cuotas (obtener de GET /financing-config)
+totalConInterés  = totalAmount × (1 + rate)
+montoXCuota      = totalConInterés / cantidadCuotas
 ```

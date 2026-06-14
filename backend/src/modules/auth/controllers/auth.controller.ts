@@ -6,6 +6,7 @@ import {
   HttpStatus,
   Req,
   Res,
+  Body,
   UnauthorizedException,
 } from "@nestjs/common";
 import { AuthGuard } from "@nestjs/passport";
@@ -13,6 +14,7 @@ import { ApiTags, ApiOperation, ApiBody } from "@nestjs/swagger";
 import { Request, Response } from "express";
 import { AuthService } from "../services/auth.service";
 import { LoginDto } from "../dto/login.dto";
+import { SelectSocietyDto } from "../dto/select-society.dto";
 import { Public } from "../../../common/decorators/public.decorator";
 import { CurrentUser } from "../../../common/decorators/current-user.decorator";
 import { JwtPayload } from "../interfaces/jwt-payload.interface";
@@ -71,6 +73,25 @@ export class AuthController {
     res.cookie(REFRESH_COOKIE, refreshToken, cookieOptions(this.isProduction));
 
     return { accessToken };
+  }
+
+  @Post("select-society")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: "Seleccionar sociedad — emite nuevo JWT con societyId elegido",
+  })
+  @ApiBody({ type: SelectSocietyDto })
+  async selectSociety(
+    @CurrentUser() currentUser: JwtPayload,
+    @Body() dto: SelectSocietyDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const { accessToken, refreshToken, societyId } =
+      await this.authService.selectSociety(currentUser, dto.societyId);
+
+    res.cookie(REFRESH_COOKIE, refreshToken, cookieOptions(this.isProduction));
+
+    return { accessToken, societyId };
   }
 
   @Post("logout")

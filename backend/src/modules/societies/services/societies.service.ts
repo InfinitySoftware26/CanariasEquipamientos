@@ -1,6 +1,6 @@
 import {
   Injectable, Inject, NotFoundException,
-  ConflictException, BadRequestException, Logger,
+  ConflictException, BadRequestException, ForbiddenException, Logger,
 } from '@nestjs/common';
 import { ISocietiesRepository, SOCIETIES_REPOSITORY } from '../interfaces/societies-repository.interface';
 import { IStaffSocietiesRepository, STAFF_SOCIETIES_REPOSITORY } from '../interfaces/staff-societies-repository.interface';
@@ -49,8 +49,17 @@ export class SocietiesService {
     await this.societiesRepo.softDelete(id);
   }
 
-  async assignStaff(societyId: string, dto: AssignStaffDto): Promise<void> {
+  linkStaffToSociety(staffId: string, societyId: string): Promise<void> {
+    return this.staffSocietiesRepo.upsert(staffId, societyId, StaffSocietyStatus.ACTIVE);
+  }
+
+  async assignStaff(societyId: string, dto: AssignStaffDto, currentUserSocietyId?: string, isSuperAdmin = false): Promise<void> {
     await this.findById(societyId);
+
+    if (!isSuperAdmin && currentUserSocietyId !== societyId) {
+      throw new ForbiddenException('Solo podés asignar staff a tu propia sociedad');
+    }
+
     await this.staffSocietiesRepo.upsert(
       dto.staffId,
       societyId,

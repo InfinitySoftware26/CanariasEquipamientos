@@ -2,6 +2,7 @@ import {
   Injectable,
   UnauthorizedException,
   ForbiddenException,
+  BadRequestException,
 } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { ConfigService } from "@nestjs/config";
@@ -18,9 +19,15 @@ export interface LoginResult {
     name: string;
     email: string;
     role: string;
-    societyId: string;
+    societyId: string | null;
     societies: { societyId: string; societyName: string; status: string }[];
   };
+}
+
+export interface SelectSocietyResult {
+  accessToken: string;
+  refreshToken: string;
+  societyId: string;
 }
 
 export interface RefreshResult {
@@ -72,6 +79,32 @@ export class AuthService {
         societyId: staff.primarySocietyId,
         societies,
       },
+    };
+  }
+
+  async selectSociety(currentUser: JwtPayload, societyId: string): Promise<SelectSocietyResult> {
+    const societies = await this.societiesService.getSocietiesForStaff(currentUser.sub);
+
+    if (societies.length === 0) {
+      throw new BadRequestException('No estás registrado en ninguna sociedad');
+    }
+
+    const linked = societies.find(s => s.societyId === societyId);
+    if (!linked) {
+      throw new ForbiddenException('No tenés acceso a esta sociedad');
+    }
+
+    const newPayload: JwtPayload = {
+      sub:      currentUser.sub,
+      email:    currentUser.email,
+      role:     currentUser.role,
+      societyId,
+    };
+
+    return {
+      accessToken:  this.generateAccessToken(newPayload),
+      refreshToken: this.generateRefreshToken(newPayload),
+      societyId,
     };
   }
 

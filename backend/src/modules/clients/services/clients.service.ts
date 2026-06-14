@@ -150,6 +150,22 @@ export class ClientsService {
     return updated;
   }
 
+  async lookup(
+    currentSocietyId: string,
+    documentNumber?: string,
+    email?: string,
+  ): Promise<(Client & { alreadyInCurrentSociety: boolean }) | null> {
+    if (!documentNumber && !email) return null;
+
+    const found = documentNumber
+      ? await this.clientsRepo.findByDocumentNumber(documentNumber)
+      : await this.clientsRepo.findByEmail(email!);
+
+    if (!found) return null;
+
+    return { ...found, alreadyInCurrentSociety: found.societyId === currentSocietyId };
+  }
+
   findById(id: string): Promise<Client | null> {
     return this.clientsRepo.findById(id);
   }
