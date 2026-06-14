@@ -1,6 +1,6 @@
 import {
   Injectable, Inject, NotFoundException,
-  ConflictException, BadRequestException,
+  ConflictException, BadRequestException, Logger,
 } from '@nestjs/common';
 import { ISocietiesRepository, SOCIETIES_REPOSITORY } from '../interfaces/societies-repository.interface';
 import { IStaffSocietiesRepository, STAFF_SOCIETIES_REPOSITORY } from '../interfaces/staff-societies-repository.interface';
@@ -12,6 +12,8 @@ import { StaffSocietyStatus } from '../entities/staff-society.entity';
 
 @Injectable()
 export class SocietiesService {
+  private readonly logger = new Logger(SocietiesService.name);
+
   constructor(
     @Inject(SOCIETIES_REPOSITORY)
     private readonly societiesRepo: ISocietiesRepository,
@@ -61,7 +63,12 @@ export class SocietiesService {
     return this.staffSocietiesRepo.findBySocietyWithStaff(societyId);
   }
 
-  getSocietiesForStaff(staffId: string): Promise<{ societyId: string; societyName: string; status: string }[]> {
-    return this.staffSocietiesRepo.findByStaff(staffId);
+  async getSocietiesForStaff(staffId: string): Promise<{ societyId: string; societyName: string; status: string }[]> {
+    try {
+      return await this.staffSocietiesRepo.findByStaff(staffId);
+    } catch (err) {
+      this.logger.error('getSocietiesForStaff failed for staffId=' + staffId, err instanceof Error ? err.stack : String(err));
+      return [];
+    }
   }
 }
