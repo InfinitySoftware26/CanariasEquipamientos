@@ -21,7 +21,7 @@ export class StaffSocietiesRepository implements IStaffSocietiesRepository {
       .addSelect('ss.status', 'status')
       .addSelect('ss.assigned_at', 'assignedAt')
       .from('STAFF_SOCIETIES', 'ss')
-      .innerJoin('STAFF', 's', 's.staff_id = ss.staff_id')
+      .innerJoin('STAFF', 's', 's.staff_id::text = ss.staff_id')
       .where('ss.society_id = :societyId', { societyId })
       .orderBy('s.name', 'ASC')
       .getRawMany();
@@ -34,7 +34,7 @@ export class StaffSocietiesRepository implements IStaffSocietiesRepository {
       .addSelect('s.name', 'societyName')
       .addSelect('ss.status', 'status')
       .from('STAFF_SOCIETIES', 'ss')
-      .innerJoin('SOCIETYS', 's', 's.society_id = ss.society_id')
+      .innerJoin('SOCIETYS', 's', 's.society_id::text = ss.society_id')
       .where('ss.staff_id = :staffId', { staffId })
       .andWhere('ss.status = :status', { status: 'active' })
       .orderBy('s.name', 'ASC')
