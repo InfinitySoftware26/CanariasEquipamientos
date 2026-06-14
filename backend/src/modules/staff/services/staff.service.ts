@@ -17,8 +17,8 @@ import { UpdateStaffDto } from "../dto/update-staff.dto";
 import { ChangePasswordDto } from "../dto/change-password.dto";
 import { Staff } from "../entities/staff.entity";
 import { StaffRole } from "../../../common/enums/staff-role.enum";
-import { AssignableRole } from "../../../common/enums/assignable-role.enum";
 import { JwtPayload } from "../../../common/interfaces/jwt-payload.interface";
+import { SocietiesService } from "../../societies/services/societies.service";
 
 const SALT_ROUNDS = 12;
 
@@ -44,7 +44,8 @@ const CREATION_PERMISSIONS: Readonly<Record<string, StaffRole[]>> = {
 export class StaffService {
   constructor(
     @Inject(STAFF_REPOSITORY)
-    private readonly staffRepo: IStaffRepository
+    private readonly staffRepo: IStaffRepository,
+    private readonly societiesService: SocietiesService,
   ) {}
 
   // ─── QUERIES ──────────────────────────────────────────────────────────────
@@ -68,10 +69,23 @@ export class StaffService {
     return this.staffRepo.findByEmailWithPassword(email);
   }
 
-  lookup(email?: string, dni?: string): Promise<Staff | null> {
-    if (!email && !dni) return Promise.resolve(null);
-    if (email) return this.staffRepo.findByEmail(email);
-    return this.staffRepo.findByDni(dni!);
+  async lookup(
+    currentSocietyId: string,
+    email?: string,
+    dni?: string,
+  ): Promise<(Staff & { alreadyInCurrentSociety: boolean }) | null> {
+    if (!email && !dni) return null;
+
+    const found = email
+      ? await this.staffRepo.findByEmail(email)
+      : await this.staffRepo.findByDni(dni!);
+
+    if (!found) return null;
+
+    const societies = await this.societiesService.getSocietiesForStaff(found.staffId);
+    const alreadyInCurrentSociety = societies.some(s => s.societyId === currentSocietyId);
+
+    return { ...found, alreadyInCurrentSociety };
   }
 
   // ─── COMMANDS ─────────────────────────────────────────────────────────────
@@ -96,7 +110,7 @@ export class StaffService {
         ? dto.societyId
         : currentUser.societyId;
 
-    return this.staffRepo.create({
+    const staff = await this.staffRepo.create({
       name: dto.name,
       dni: dto.dni,
       email: dto.email,
@@ -105,6 +119,12 @@ export class StaffService {
       primarySocietyId,
       isActive: true,
     });
+
+    if (primarySocietyId) {
+      await this.societiesService.linkStaffToSociety(staff.staffId, primarySocietyId);
+    }
+
+    return staff;
   }
 
   /**

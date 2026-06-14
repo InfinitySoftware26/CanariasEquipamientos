@@ -49,6 +49,10 @@ export class SocietiesService {
     await this.societiesRepo.softDelete(id);
   }
 
+  linkStaffToSociety(staffId: string, societyId: string): Promise<void> {
+    return this.staffSocietiesRepo.upsert(staffId, societyId, StaffSocietyStatus.ACTIVE);
+  }
+
   async assignStaff(societyId: string, dto: AssignStaffDto, currentUserSocietyId?: string, isSuperAdmin = false): Promise<void> {
     await this.findById(societyId);
 

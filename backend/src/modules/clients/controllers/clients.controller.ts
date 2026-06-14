@@ -9,6 +9,7 @@ import {
   Patch,
   Query,
   ParseIntPipe,
+  NotFoundException,
 } from "@nestjs/common";
 import { ApiTags, ApiOperation } from "@nestjs/swagger";
 import { ClientsService } from "../services/clients.service";
@@ -43,6 +44,22 @@ export class ClientsController {
       name: user.email,
       societyId: user.societyId,
     });
+  }
+
+  @Get("lookup")
+  @Roles(StaffRole.SELLER, StaffRole.ADMIN, StaffRole.MANAGER, StaffRole.SUPER_ADMIN)
+  @ApiOperation({
+    summary: "Buscar cliente por DNI o email para autocompletado de formularios",
+    description: "Pasa ?documentNumber=... o ?email=... Devuelve datos + alreadyInCurrentSociety.",
+  })
+  async lookup(
+    @CurrentUser() user: JwtPayload,
+    @Query("documentNumber") documentNumber?: string,
+    @Query("email") email?: string,
+  ) {
+    const client = await this.clientsService.lookup(user.societyId, documentNumber, email);
+    if (!client) throw new NotFoundException("Cliente no encontrado");
+    return client;
   }
 
   @Get(":id")

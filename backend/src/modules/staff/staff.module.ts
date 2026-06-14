@@ -5,9 +5,10 @@ import { StaffController } from "./controllers/staff.controller";
 import { StaffService } from "./services/staff.service";
 import { StaffRepository } from "./repositories/staff.repository";
 import { STAFF_REPOSITORY } from "./interfaces/staff-repository.interface";
+import { SocietiesModule } from "../societies/societies.module";
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Staff])],
+  imports: [TypeOrmModule.forFeature([Staff]), SocietiesModule],
   controllers: [StaffController],
   providers: [
     StaffService,

@@ -68,10 +68,11 @@ export class StaffController {
   @ApiResponse({ status: 200, type: StaffResponseDto })
   @ApiResponse({ status: 404, description: 'Empleado no encontrado' })
   async lookup(
+    @CurrentUser() user: JwtPayload,
     @Query('email') email?: string,
     @Query('dni') dni?: string,
   ) {
-    const staff = await this.staffService.lookup(email, dni);
+    const staff = await this.staffService.lookup(user.societyId, email, dni);
     if (!staff) throw new NotFoundException('Empleado no encontrado');
     return staff;
   }
