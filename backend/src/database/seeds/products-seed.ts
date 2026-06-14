@@ -33,13 +33,16 @@ async function run(): Promise<void> {
     throw new Error('Variable SEED_SOCIETY_ID requerida. Ejemplo: SEED_SOCIETY_ID=<uuid>');
   }
 
+  const isProduction = process.env.NODE_ENV === 'production';
+
   const ds = new DataSource({
     type:        'postgres',
-    host:        process.env.DB_HOST     ?? 'localhost',
-    port:        parseInt(process.env.DB_PORT ?? '5432', 10),
-    database:    process.env.DB_NAME     ?? 'canarias_dev',
-    username:    process.env.DB_USER     ?? 'postgres',
-    password:    process.env.DB_PASS     ?? '',
+    host:        (process.env.DB_HOST ?? 'localhost').trim(),
+    port:        parseInt((process.env.DB_PORT ?? '5432').trim(), 10),
+    database:    (process.env.DB_NAME ?? 'canarias_dev').trim(),
+    username:    (process.env.DB_USER ?? 'postgres').trim(),
+    password:    (process.env.DB_PASS ?? '').trim(),
+    ssl:         isProduction ? { rejectUnauthorized: false } : false,
     synchronize: false,
     logging:     false,
   });
