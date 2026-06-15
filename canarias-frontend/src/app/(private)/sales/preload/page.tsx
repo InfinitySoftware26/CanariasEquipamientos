@@ -4,7 +4,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, User, MapPin, Phone, Package } from "lucide-react";
 import { PreloadFormData } from "@/types/preloadForm.types";
-import { createPreloadClient, createSale } from "@/services/auth.service";
+import { createPreloadClient, searchClientByDocument } from "@/services/client.service";
+import { createSale } from "@/services/sales.service";
+import { ClientResponse } from "@/types/clientResponse.type";
 
 const initialForm: PreloadFormData = {
   name: "",
@@ -14,6 +16,7 @@ const initialForm: PreloadFormData = {
   locality: "",
   phone: "",
   product: "",
+  paymentType: "",
   installments: "",
   installmentValue: "",
   ref1Phone: "",
@@ -72,21 +75,85 @@ export default function PreloadPage() {
   const [form, setForm] = useState<PreloadFormData>(initialForm);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [searchingClient, setSearchingClient] = useState(false);
+  const [clientFound, setClientFound] = useState(false);
+
+  const [existingClient, setExistingClient] = useState<ClientResponse | null>(
+    null,
+  );
 
   // ✅ handleChange definido
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   }
 
+  async function handleSearchClient() {
+    if (!form.documentNumber) {
+      setError("Ingresá un DNI");
+      return;
+    }
+
+    try {
+      setSearchingClient(true);
+
+      const client = await searchClientByDocument(form.documentNumber);
+
+      if (!client) {
+        setClientFound(false);
+        setExistingClient(null);
+
+        setError("Cliente no encontrado. Puede cargarse normalmente.");
+
+        return;
+      }
+
+      setClientFound(true);
+      setExistingClient(client);
+
+      setForm((prev) => ({
+        ...prev,
+        name: client.name,
+        surname: client.surname,
+        address: client.address,
+        phone: client.phone,
+      }));
+
+      setError(null);
+    } catch {
+      setError("Error buscando cliente");
+    } finally {
+      setSearchingClient(false);
+    }
+  }
   async function handleSubmit() {
+    if (
+      !form.name ||
+      !form.surname ||
+      !form.documentNumber ||
+      !form.phone ||
+      !form.address
+    ) {
+      setError("Completá todos los datos del cliente");
+      return;
+    }
+
+    if (!form.product) {
+      setError("Ingresá el producto");
+      return;
+    }
+
+    if (!form.installments || !form.installmentValue) {
+      setError("Ingresá cuotas y valor de cuota");
+      return;
+    }
     setError(null);
     setLoading(true);
 
     try {
       const observations = [
         `Localidad: ${form.locality}`,
-        `Ref1: ${form.ref1Phone} | ${form.ref1Relationship} | ${form.ref1Address}`,
-        `Ref2: ${form.ref2Phone} | ${form.ref2Relationship} | ${form.ref2Address}`,
+        `Referencia 1: ${form.ref1Phone} - ${form.ref1Relationship} - ${form.ref1Address}`,
+        `Referencia 2: ${form.ref2Phone} - ${form.ref2Relationship} - ${form.ref2Address}`,
       ].join(" | ");
 
       const client = await createPreloadClient({
@@ -98,33 +165,52 @@ export default function PreloadPage() {
         observations,
       });
 
+      console.log("Cliente creado", client);
+
+      if (!client?.clientId) {
+        throw new Error("ID del cliente no encontrado");
+      }
+
+      const installments = Number(form.installments);
+      const installmentValue = Number(form.installmentValue);
+
+      const totalAmount = installments * installmentValue;
+
+      if (!totalAmount || totalAmount <= 0) {
+        throw new Error("El monto total debe ser mayor a cero");
+      }
+
       await createSale({
         clientId: client.clientId,
-        paymentType: "installments",
-        totalAmount:
-          parseFloat(form.installmentValue) * parseInt(form.installments) || 0,
+
+        paymentType: "mixed",
+
+        totalAmount,
+
         saleDate: new Date().toISOString(),
-        observation: `Producto: ${form.product} | Cuotas: ${form.installments} x $${form.installmentValue}`,
+
+        observation: [
+          `Producto: ${form.product}`,
+          `Cantidad de cuotas: ${form.installments}`,
+          `Valor cuota: ${form.installmentValue}`,
+        ].join(" | "),
+
         products: [],
       });
 
-      router.push("/seller");
-    } catch (err: any) {
-      setError(
-        err?.message ??
-          "Error al guardar. Revisá los datos e intentá de nuevo.",
-      );
+      router.push("/dashboard/seller");
+    } catch (error: unknown) {
+      setError((error as Error)?.message ?? "No se pudo guardar la precarga");
     } finally {
       setLoading(false);
     }
   }
-
   return (
     <div className="space-y-6">
       {/* HEADER */}
       <section className="rounded-3xl border border-white/10 bg-gradient-to-r from-[#10254A] via-[#16315F] to-[#21457A] p-8">
         <button
-          onClick={() => router.back()}
+          onClick={() => router.push("/dashboard/seller")}
           className="mb-4 flex items-center gap-2 text-sm text-white/50 hover:text-white transition-colors"
         >
           <ArrowLeft size={16} /> Volver
@@ -149,6 +235,7 @@ export default function PreloadPage() {
                 onChange={handleChange}
                 placeholder="Ej: Juan"
                 className={inputClass}
+                disabled={clientFound}
               />
             </Field>
             <Field label="Apellido" required>
@@ -158,16 +245,28 @@ export default function PreloadPage() {
                 onChange={handleChange}
                 placeholder="Ej: Pérez"
                 className={inputClass}
+                disabled={clientFound}
               />
             </Field>
             <Field label="DNI" required>
-              <input
-                name="documentNumber"
-                value={form.documentNumber}
-                onChange={handleChange}
-                placeholder="Ej: 30123456"
-                className={inputClass}
-              />
+              <div className="flex gap-2">
+                <input
+                  name="documentNumber"
+                  value={form.documentNumber}
+                  onChange={handleChange}
+                  placeholder="Ej: 30123456"
+                  className={inputClass}
+                />
+
+                <button
+                  type="button"
+                  onClick={handleSearchClient}
+                  disabled={searchingClient}
+                  className="rounded-xl bg-[#F5A300] px-4 font-semibold text-[#0D1B2A]"
+                >
+                  {searchingClient ? "..." : "Buscar"}
+                </button>
+              </div>
             </Field>
             <Field label="Contacto / Teléfono" required>
               <input
@@ -176,6 +275,7 @@ export default function PreloadPage() {
                 onChange={handleChange}
                 placeholder="Ej: 2804000000"
                 className={inputClass}
+                disabled={clientFound}
               />
             </Field>
           </div>
@@ -192,6 +292,7 @@ export default function PreloadPage() {
                 onChange={handleChange}
                 placeholder="Calle y número"
                 className={inputClass}
+                disabled={clientFound}
               />
             </Field>
             <Field label="Localidad" required>
@@ -205,11 +306,27 @@ export default function PreloadPage() {
             </Field>
           </div>
         </section>
+        {clientFound && (
+          <div className="mt-4 rounded-2xl border border-green-500/30 bg-green-500/10 p-4 text-green-400">
+            Cliente encontrado en el sistema. Solo se registrará la venta.
+          </div>
+        )}
 
         {/* PRODUCTO */}
         <section className="rounded-3xl border border-white/10 bg-white/[0.04] p-6 backdrop-blur-xl">
           <SectionTitle icon={<Package size={18} />} label="Producto" />
           <div className="grid gap-4 sm:grid-cols-3">
+            <div className="mt-4 rounded-xl bg-[#10254A]/40 p-4">
+              <p className="text-sm text-white/60">Total estimado</p>
+
+              <p className="text-2xl font-bold text-[#F5A300]">
+                $
+                {(
+                  Number(form.installments || 0) *
+                  Number(form.installmentValue || 0)
+                ).toLocaleString("es-AR")}
+              </p>
+            </div>
             <Field label="Producto" required>
               <input
                 name="product"

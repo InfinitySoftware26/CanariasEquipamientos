@@ -20,6 +20,7 @@ import { ClosuresModule } from "./modules/closures/closures.module";
 import { CashboxModule } from "./modules/cashbox/cashbox.module";
 import { NotificationsModule } from "./modules/notifications/notifications.module";
 import { HealthModule } from "@modules/health/health.module";
+import { JwtAuthGuard } from "@common/guards";
 
 @Module({
   imports: [
@@ -48,6 +49,9 @@ import { HealthModule } from "@modules/health/health.module";
     NotificationsModule,
     HealthModule,
   ],
-  providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
+  providers: [
+    { provide: APP_GUARD, useClass: JwtAuthGuard },
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+  ],
 })
 export class AppModule {}
