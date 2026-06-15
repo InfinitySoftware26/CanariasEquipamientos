@@ -12,6 +12,7 @@
     "seed:societies":     "pnpm exec ts-node -r tsconfig-paths/register src/database/seeds/societies-seed.ts",
     "seed:products":      "pnpm exec ts-node -r tsconfig-paths/register src/database/seeds/products-seed.ts",
     "seed:reset-password": "pnpm exec ts-node -r tsconfig-paths/register src/database/seeds/reset-password.ts",
+    "seed:assign-staff-society": "pnpm exec ts-node -r tsconfig-paths/register src/database/seeds/assign-staff-society.ts",
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\"",
     "start": "nest start",
