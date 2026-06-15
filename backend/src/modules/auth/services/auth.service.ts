@@ -41,12 +41,12 @@ export class AuthService {
     private readonly staffService: StaffService,
     private readonly societiesService: SocietiesService,
     private readonly jwtService: JwtService,
-    private readonly configService: ConfigService
+    private readonly configService: ConfigService,
   ) {}
 
   async validateCredentials(
     email: string,
-    password: string
+    password: string,
   ): Promise<JwtPayload> {
     const staff = await this.staffService.findByEmailWithPassword(email);
     if (!staff) throw new UnauthorizedException("Credenciales invalidas");
@@ -82,27 +82,32 @@ export class AuthService {
     };
   }
 
-  async selectSociety(currentUser: JwtPayload, societyId: string): Promise<SelectSocietyResult> {
-    const societies = await this.societiesService.getSocietiesForStaff(currentUser.sub);
+  async selectSociety(
+    currentUser: JwtPayload,
+    societyId: string,
+  ): Promise<SelectSocietyResult> {
+    const societies = await this.societiesService.getSocietiesForStaff(
+      currentUser.sub,
+    );
 
     if (societies.length === 0) {
-      throw new BadRequestException('No estás registrado en ninguna sociedad');
+      throw new BadRequestException("No estás registrado en ninguna sociedad");
     }
 
-    const linked = societies.find(s => s.societyId === societyId);
+    const linked = societies.find((s) => s.societyId === societyId);
     if (!linked) {
-      throw new ForbiddenException('No tenés acceso a esta sociedad');
+      throw new ForbiddenException("No tenés acceso a esta sociedad");
     }
 
     const newPayload: JwtPayload = {
-      sub:      currentUser.sub,
-      email:    currentUser.email,
-      role:     currentUser.role,
+      sub: currentUser.sub,
+      email: currentUser.email,
+      role: currentUser.role,
       societyId,
     };
 
     return {
-      accessToken:  this.generateAccessToken(newPayload),
+      accessToken: this.generateAccessToken(newPayload),
       refreshToken: this.generateRefreshToken(newPayload),
       societyId,
     };
@@ -144,7 +149,7 @@ export class AuthService {
         role: payload.role,
         societyId: payload.societyId,
       },
-      { expiresIn: this.configService.get<string>("JWT_EXPIRATION") ?? "15m" }
+      { expiresIn: this.configService.get<string>("JWT_EXPIRATION") ?? "15m" },
     );
   }
 
@@ -160,7 +165,7 @@ export class AuthService {
         secret: this.configService.get<string>("JWT_REFRESH_SECRET"),
         expiresIn:
           this.configService.get<string>("JWT_REFRESH_EXPIRATION") ?? "7d",
-      }
+      },
     );
   }
 }

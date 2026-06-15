@@ -1,22 +1,9 @@
+import { LoginPayload } from "@/types/auth.types";
+
 const API_URL =
   process.env.NODE_ENV === "production"
     ? "https://canarias-backend.onrender.com/api/v1"
     : (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api/v1");
-
-export interface LoginPayload {
-  email: string;
-  password: string;
-}
-
-export interface CreateClientPayload {
-  name?: string;
-  surname?: string;
-  documentNumber?: string;
-  phone?: string;
-  email?: string;
-  address?: string;
-  observations?: string;
-}
 
 export async function loginRequest(data: LoginPayload) {
   const response = await fetch(`${API_URL}/auth/login`, {
@@ -67,48 +54,31 @@ export async function getProfile() {
   return response.json();
 }
 
-export async function createPreloadClient(data: CreateClientPayload) {
-  const res = await fetch(`${API_URL}/clients/preload`, {
+export async function selectSocietyRequest(
+  societyId: string,
+  accessToken: string,
+) {
+  const response = await fetch(`${API_URL}/auth/select-society`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     credentials: "include",
-    body: JSON.stringify(data),
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({ societyId }),
   });
+  if (!response.ok) {
+    const errorText = await response.text();
 
-  if (!res.ok) throw new Error("Error creando cliente");
+    console.error("select-society error:", {
+      status: response.status,
+      errorText,
+    });
 
-  return res.json();
-}
+    throw new Error(errorText);
+  }
 
-export async function getSellerDashboard() {
-  const res = await fetch(`${API_URL}/dashboard/seller`, {
-    credentials: "include",
-  });
+  const json = await response.json();
 
-  if (!res.ok) throw new Error("Error dashboard");
-
-  return res.json();
-}
-
-export async function createSale(data: any) {
-  const res = await fetch(`${API_URL}/sales`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-    body: JSON.stringify(data),
-  });
-
-  if (!res.ok) throw new Error("Error creando venta");
-
-  return res.json();
-}
-
-export async function getSellerKpis(societyId: string) {
-  const res = await fetch(`${API_URL}/sales/dashboard?societyId=${societyId}`, {
-    credentials: "include",
-  });
-
-  if (!res.ok) throw new Error("Error KPIs");
-
-  return res.json();
+  return json.data ?? json;
 }

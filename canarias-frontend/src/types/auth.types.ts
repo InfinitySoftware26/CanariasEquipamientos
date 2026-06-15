@@ -11,5 +11,17 @@ export interface User {
   name: string;
   email: string;
   role: StaffRole;
+  societyId: string | null;
+  societies: Society[];
+}
+
+export interface LoginPayload {
+  email: string;
+  password: string;
+}
+
+export interface Society {
   societyId: string;
+  societyName: string;
+  status: string;
 }

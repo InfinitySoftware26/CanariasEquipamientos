@@ -18,6 +18,7 @@ import { SelectSocietyDto } from "../dto/select-society.dto";
 import { Public } from "../../../common/decorators/public.decorator";
 import { CurrentUser } from "../../../common/decorators/current-user.decorator";
 import { JwtPayload } from "../interfaces/jwt-payload.interface";
+import { GuardsConsumer } from "@nestjs/core/guards";
 
 const REFRESH_COOKIE = "refresh_token";
 
@@ -47,10 +48,10 @@ export class AuthController {
   @ApiBody({ type: LoginDto })
   async login(
     @Req() req: Request & { user: JwtPayload },
-    @Res({ passthrough: true }) res: Response
+    @Res({ passthrough: true }) res: Response,
   ) {
     const { accessToken, refreshToken, user } = await this.authService.login(
-      req.user
+      req.user,
     );
 
     res.cookie(REFRESH_COOKIE, refreshToken, cookieOptions(this.isProduction));
@@ -75,6 +76,7 @@ export class AuthController {
     return { accessToken };
   }
 
+  @UseGuards(AuthGuard("jwt"))
   @Post("select-society")
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -99,7 +101,7 @@ export class AuthController {
   @ApiOperation({ summary: "Cerrar sesion — limpia el refresh token" })
   logout(
     @CurrentUser() _user: JwtPayload,
-    @Res({ passthrough: true }) res: Response
+    @Res({ passthrough: true }) res: Response,
   ): void {
     this.authService.logout();
     res.clearCookie(REFRESH_COOKIE, { path: "/" });
