@@ -1,4 +1,7 @@
+export type PaymentFrequency = "weekly" | "monthly";
+
 export interface PreloadFormData {
+  // Cliente
   name: string;
   surname: string;
   documentNumber: string;
@@ -8,12 +11,18 @@ export interface PreloadFormData {
 
   phone: string;
 
-  product: string;
-  pymentType: string;
-  installments: string;
+  // Venta
+  productId: string;
 
-  installmentValue: string;
+  quantity: number;
 
+  installmentsCount: 3 | 6 | 9;
+
+  paymentFrequency: PaymentFrequency;
+
+  firstDueDate: string;
+
+  // Referencias
   ref1Phone: string;
   ref1Relationship: string;
   ref1Address: string;

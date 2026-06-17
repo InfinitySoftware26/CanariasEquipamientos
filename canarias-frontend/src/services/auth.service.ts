@@ -22,17 +22,23 @@ export async function loginRequest(data: LoginPayload) {
   return json.data;
 }
 
-export async function logoutRequest() {
+export async function logoutRequest(accessToken: string) {
   await fetch(`${API_URL}/auth/logout`, {
     method: "POST",
     credentials: "include",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
   });
 }
 
-export async function refreshTokenRequest() {
+export async function refreshTokenRequest(accessToken: string) {
   const response = await fetch(`${API_URL}/auth/refresh`, {
     method: "POST",
     credentials: "include",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
   });
 
   if (!response.ok) {
@@ -42,9 +48,12 @@ export async function refreshTokenRequest() {
   return response.json();
 }
 
-export async function getProfile() {
+export async function getProfile(accessToken: string) {
   const response = await fetch(`${API_URL}/staff/me`, {
     credentials: "include",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
   });
 
   if (!response.ok) {

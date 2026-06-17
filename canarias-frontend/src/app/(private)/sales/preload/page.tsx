@@ -1,10 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, User, MapPin, Phone, Package } from "lucide-react";
 import { PreloadFormData } from "@/types/preloadForm.types";
-import { createPreloadClient, searchClientByDocument } from "@/services/client.service";
+import { getProducts } from "@/services/product.service";
+import {
+  createPreloadClient,
+  searchClientByDocument,
+} from "@/services/client.service";
 import { createSale } from "@/services/sales.service";
 import { ClientResponse } from "@/types/clientResponse.type";
 
@@ -12,16 +16,26 @@ const initialForm: PreloadFormData = {
   name: "",
   surname: "",
   documentNumber: "",
+
   address: "",
   locality: "",
+
   phone: "",
-  product: "",
-  paymentType: "",
-  installments: "",
-  installmentValue: "",
+
+  productId: "",
+
+  quantity: 1,
+
+  installmentsCount: 3,
+
+  paymentFrequency: "monthly",
+
+  firstDueDate: "",
+
   ref1Phone: "",
   ref1Relationship: "",
   ref1Address: "",
+
   ref2Phone: "",
   ref2Relationship: "",
   ref2Address: "",
@@ -77,11 +91,46 @@ export default function PreloadPage() {
   const [error, setError] = useState<string | null>(null);
   const [searchingClient, setSearchingClient] = useState(false);
   const [clientFound, setClientFound] = useState(false);
+  const [products, setProducts] = useState<
+    {
+      productId: string;
+      name: string;
+      brand?: string;
+      model?: string;
+    }[]
+  >([]);
 
   const [existingClient, setExistingClient] = useState<ClientResponse | null>(
     null,
   );
 
+  useEffect(() => {
+    async function loadProducts() {
+      try {
+        const data = await getProducts();
+
+        setProducts(
+          data.map(
+            (p: {
+              productId: string;
+              name: string;
+              brand?: string;
+              model?: string;
+            }) => ({
+              productId: p.productId,
+              name: p.name,
+              brand: p.brand,
+              model: p.model,
+            }),
+          ),
+        );
+      } catch {
+        setError("No se pudieron cargar los productos");
+      }
+    }
+
+    loadProducts();
+  }, []);
   // ✅ handleChange definido
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -137,13 +186,13 @@ export default function PreloadPage() {
       return;
     }
 
-    if (!form.product) {
-      setError("Ingresá el producto");
+    if (!form.productId) {
+      setError("Seleccioná un producto");
       return;
     }
 
-    if (!form.installments || !form.installmentValue) {
-      setError("Ingresá cuotas y valor de cuota");
+    if (!form.firstDueDate) {
+      setError("Ingresá la fecha del primer vencimiento");
       return;
     }
     setError(null);
@@ -171,31 +220,25 @@ export default function PreloadPage() {
         throw new Error("ID del cliente no encontrado");
       }
 
-      const installments = Number(form.installments);
-      const installmentValue = Number(form.installmentValue);
-
-      const totalAmount = installments * installmentValue;
-
-      if (!totalAmount || totalAmount <= 0) {
-        throw new Error("El monto total debe ser mayor a cero");
-      }
-
       await createSale({
         clientId: client.clientId,
 
-        paymentType: "mixed",
-
-        totalAmount,
-
         saleDate: new Date().toISOString(),
 
-        observation: [
-          `Producto: ${form.product}`,
-          `Cantidad de cuotas: ${form.installments}`,
-          `Valor cuota: ${form.installmentValue}`,
-        ].join(" | "),
+        installmentsCount: form.installmentsCount,
 
-        products: [],
+        paymentFrequency: form.paymentFrequency,
+
+        firstDueDate: form.firstDueDate,
+
+        observation: observations,
+
+        products: [
+          {
+            productId: form.productId,
+            quantity: form.quantity,
+          },
+        ],
       });
 
       router.push("/dashboard/seller");
@@ -311,46 +354,88 @@ export default function PreloadPage() {
             Cliente encontrado en el sistema. Solo se registrará la venta.
           </div>
         )}
-
         {/* PRODUCTO */}
         <section className="rounded-3xl border border-white/10 bg-white/[0.04] p-6 backdrop-blur-xl">
           <SectionTitle icon={<Package size={18} />} label="Producto" />
-          <div className="grid gap-4 sm:grid-cols-3">
-            <div className="mt-4 rounded-xl bg-[#10254A]/40 p-4">
-              <p className="text-sm text-white/60">Total estimado</p>
 
-              <p className="text-2xl font-bold text-[#F5A300]">
-                $
-                {(
-                  Number(form.installments || 0) *
-                  Number(form.installmentValue || 0)
-                ).toLocaleString("es-AR")}
-              </p>
-            </div>
+          <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Producto" required>
+              <select
+                value={form.productId}
+                onChange={(e) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    productId: e.target.value,
+                  }))
+                }
+                className={inputClass}
+              >
+                <option value="">Seleccionar producto</option>
+
+                {products.map((product) => (
+                  <option key={product.productId} value={product.productId}>
+                    {product.name}
+                    {product.brand ? ` - ${product.brand}` : ""}
+                    {product.model ? ` ${product.model}` : ""}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Cantidad" required>
               <input
-                name="product"
-                value={form.product}
-                onChange={handleChange}
-                placeholder="Nombre del producto"
+                type="number"
+                min={1}
+                name="quantity"
+                value={form.quantity}
+                onChange={(e) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    quantity: Number(e.target.value),
+                  }))
+                }
                 className={inputClass}
               />
             </Field>
+
             <Field label="Cantidad de cuotas" required>
-              <input
-                name="installments"
-                value={form.installments}
-                onChange={handleChange}
-                placeholder="Ej: 12"
+              <select
+                value={form.installmentsCount}
+                onChange={(e) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    installmentsCount: Number(e.target.value) as 3 | 6 | 9,
+                  }))
+                }
                 className={inputClass}
-              />
+              >
+                <option value={3}>3 cuotas</option>
+                <option value={6}>6 cuotas</option>
+                <option value={9}>9 cuotas</option>
+              </select>
             </Field>
-            <Field label="Valor de cuota" required>
+
+            <Field label="Frecuencia de pago" required>
+              <select
+                value={form.paymentFrequency}
+                onChange={(e) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    paymentFrequency: e.target.value as "weekly" | "monthly",
+                  }))
+                }
+                className={inputClass}
+              >
+                <option value="monthly">Mensual</option>
+                <option value="weekly">Semanal</option>
+              </select>
+            </Field>
+
+            <Field label="Primer vencimiento" required>
               <input
-                name="installmentValue"
-                value={form.installmentValue}
+                type="date"
+                name="firstDueDate"
+                value={form.firstDueDate}
                 onChange={handleChange}
-                placeholder="Ej: 15000"
                 className={inputClass}
               />
             </Field>

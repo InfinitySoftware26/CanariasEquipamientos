@@ -1,4 +1,4 @@
-export interface SellerDashboardKpis {
+export interface DashboardKpis {
   salesToday: number;
   dailyCommission: number;
   monthlyCommission: number;
