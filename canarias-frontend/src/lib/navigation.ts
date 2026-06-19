@@ -25,22 +25,25 @@ export const navigationByRole = {
   ],
 
   [StaffRole.SELLER]: [
-    { label: "Panel Inicial", href: "/dashboard/seller" },
+    {
+      label: "Panel Inicial",
+      href: "/dashboard/seller",
+    },
     {
       label: "Clientes",
       href: "/customers",
     },
     {
-      label: "Ventas",
-      href: "/sales",
-    },
-    {
-      label: "Precarga de Cliente y Venta",
+      label: "Nueva Venta",
       href: "/sales/preload",
     },
     {
-      label: "Verificaciones",
-      href: "/customers/verification",
+      label: "Mis Ventas",
+      href: "/sales",
+    },
+    {
+      label: "Seguimiento",
+      href: "/sales/tracking",
     },
   ],
 

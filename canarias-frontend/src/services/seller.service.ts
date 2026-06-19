@@ -1,10 +1,7 @@
-const API_URL =
-  process.env.NODE_ENV === "production"
-    ? "https://canarias-backend.onrender.com/api/v1"
-    : (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api/v1");
+import { apiFetch } from "./apiFetch.service";
 
 export async function getSellerDashboard() {
-  const res = await fetch(`${API_URL}/dashboard/seller`, {
+  const res = await apiFetch("/dashboard/seller", {
     credentials: "include",
     cache: "no-store",
   });

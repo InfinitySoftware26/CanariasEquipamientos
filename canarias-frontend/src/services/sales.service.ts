@@ -1,29 +1,43 @@
+import { useAuthStore } from "@/store/auth.store";
 import { CreateSalePayload } from "@/types/createSale.type";
-const API_URL =
-  process.env.NODE_ENV === "production"
-    ? "https://canarias-backend.onrender.com/api/v1"
-    : (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api/v1");
+import { apiFetch } from "./apiFetch.service";
 
 export async function createSale(data: CreateSalePayload) {
-  const res = await fetch(`${API_URL}/sales`, {
+  const res = await apiFetch("/sales", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+    },
     credentials: "include",
     body: JSON.stringify(data),
   });
 
-  if (!res.ok) throw new Error("Error creando venta");
+  if (!res.ok) {
+    const error = await res.json();
+    console.error("SALE ERROR:", error);
+    throw new Error(JSON.stringify(error));
+  }
 
   return res.json();
 }
 
-export async function getSellerKpis(societyId: string) {
-  const res = await fetch(`${API_URL}/sales/dashboard?societyId=${societyId}`, {
+export async function getMySales() {
+  const token = useAuthStore.getState().accessToken;
+
+  const res = await apiFetch("/sales/my", {
     credentials: "include",
-    cache: "no-store",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
   });
 
-  if (!res.ok) throw new Error("Error al obtener identificacion de Sociedad");
+  console.log("STATUS:", res.status);
+
+  if (!res.ok) {
+    const error = await res.text();
+    console.log("ERROR:", error);
+    throw new Error(`Error ${res.status}`);
+  }
 
   return res.json();
 }

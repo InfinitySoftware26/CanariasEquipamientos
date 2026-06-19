@@ -1,16 +1,16 @@
 "use client";
 
-import { UserPlus, DollarSign, Search, ClipboardCheck } from "lucide-react";
+import { DollarSign, Search, ClipboardCheck } from "lucide-react";
 
 import { DashboardCard } from "@/components/dashboard/DashboardCard";
 import { KpiCard } from "@/components/dashboard/KpiCard";
 import { useAuthStore } from "@/store/auth.store";
-import { useSellerKpis } from "@/hooks/useSellerKpis";
+import { useSellerDashboard } from "@/hooks/useDashboardKpis";
 import { useRouter } from "next/dist/client/components/navigation";
 
 export default function SellerDashboard() {
   const user = useAuthStore((state) => state.user);
-  const { data } = useSellerKpis();
+  const { data } = useSellerDashboard();
   const router = useRouter();
   return (
     <div className="space-y-8">
@@ -32,30 +32,24 @@ export default function SellerDashboard() {
 
       {/* KPI */}
       <section>
-        <h2 className="mb-4 text-xl font-semibold text-white">Resumen</h2>
-
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-          <KpiCard title="Ventas del día" value={data?.salesToday ?? 0} />
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
+          <KpiCard title="Mis ventas" value={data.totalSales} />
 
           <KpiCard
-            title="Comisión diaria"
-            value={`$${data?.dailyCommission ?? 0}`}
+            title="Pendientes validación"
+            value={data.pendingAdminValidation}
           />
 
           <KpiCard
-            title="Comisión mensual"
-            value={`$${data?.monthlyCommission ?? 0}`}
+            title="Pendientes visita"
+            value={data.pendingEnvironmentalVisit}
           />
 
-          <KpiCard
-            title="Clientes pendientes"
-            value={data?.pendingClients ?? 0}
-          />
+          <KpiCard title="Pendientes entrega" value={data.pendingDelivery} />
 
-          <KpiCard title="Ventas aprobadas" value={data?.approvedSales ?? 0} />
+          <KpiCard title="Ventas cerradas" value={data.closedSales} />
         </div>
       </section>
-
       {/* ACCIONES */}
       <section>
         <h2 className="mb-4 text-xl font-semibold text-white">
@@ -64,21 +58,21 @@ export default function SellerDashboard() {
 
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           <DashboardCard
-            title="Precarga de cliente y venta"
-            description="Precarga de cliente y venta"
+            title="Nueva Venta"
+            description="Precarga de venta"
             icon={<DollarSign size={22} />}
             onClick={() => router.push("/sales/preload")}
           />
 
           <DashboardCard
-            title="Consultar clientes"
-            description="Buscar información"
+            title="Mis Clientes"
+            description="Gestión de clientes"
             icon={<Search size={22} />}
           />
 
           <DashboardCard
-            title="Verificaciones"
-            description="Pendientes"
+            title="Seguimiento comercial"
+            description="Revisión de estado de ventas"
             icon={<ClipboardCheck size={22} />}
           />
         </div>
