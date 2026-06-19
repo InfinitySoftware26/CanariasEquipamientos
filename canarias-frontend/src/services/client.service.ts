@@ -1,25 +1,37 @@
+import { useAuthStore } from "@/store/auth.store";
 import { CreateClientPayload } from "@/types/cretateClient.type";
-
-const API_URL =
-  process.env.NODE_ENV === "production"
-    ? "https://canarias-backend.onrender.com/api/v1"
-    : (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api/v1");
+import { apiFetch } from "./apiFetch.service";
+import { normalizeClientResponse } from "@/utils/client/normalizeClient";
 
 export async function createPreloadClient(data: CreateClientPayload) {
-  const res = await fetch(`${API_URL}/clients/preload`, {
+  const token = useAuthStore.getState().accessToken;
+
+  const res = await apiFetch("/clients/preload", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
     body: JSON.stringify(data),
   });
 
-  if (!res.ok) throw new Error("Error creando cliente");
+  if (!res.ok) {
+    const error = await res.text();
+    throw new Error(error || "Error creando cliente");
+  }
 
-  return res.json();
+  const dataRes = await res.json();
+
+  return normalizeClientResponse(dataRes);
 }
 
 export async function getClientById(id: string) {
-  const res = await fetch(`${API_URL}/clients/${id}`, {
+  const token = useAuthStore.getState().accessToken;
+
+  const res = await apiFetch(`/clients/${id}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
     credentials: "include",
   });
 
@@ -33,15 +45,23 @@ export async function getClientById(id: string) {
 // services/client.service.ts
 
 export async function searchClientByDocument(documentNumber: string) {
-  const res = await fetch(
-    `${API_URL}/clients/search?documentNumber=${documentNumber}`,
+  const token = useAuthStore.getState().accessToken;
+
+  const res = await apiFetch(
+    `/clients/lookup?documentNumber=${documentNumber}`,
     {
-      credentials: "include",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
     },
   );
 
-  if (!res.ok) {
+  if (res.status === 404) {
     return null;
+  }
+
+  if (!res.ok) {
+    throw new Error("Error buscando cliente");
   }
 
   return res.json();

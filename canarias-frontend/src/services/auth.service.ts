@@ -1,12 +1,8 @@
 import { LoginPayload } from "@/types/auth.types";
-
-const API_URL =
-  process.env.NODE_ENV === "production"
-    ? "https://canarias-backend.onrender.com/api/v1"
-    : (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api/v1");
+import { apiFetch } from "./apiFetch.service";
 
 export async function loginRequest(data: LoginPayload) {
-  const response = await fetch(`${API_URL}/auth/login`, {
+  const response = await apiFetch("/auth/login", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -18,12 +14,13 @@ export async function loginRequest(data: LoginPayload) {
   if (!response.ok) {
     throw new Error("Credenciales inválidas");
   }
+
   const json = await response.json();
   return json.data;
 }
 
 export async function logoutRequest(accessToken: string) {
-  await fetch(`${API_URL}/auth/logout`, {
+  await apiFetch("/auth/logout", {
     method: "POST",
     credentials: "include",
     headers: {
@@ -33,7 +30,7 @@ export async function logoutRequest(accessToken: string) {
 }
 
 export async function refreshTokenRequest(accessToken: string) {
-  const response = await fetch(`${API_URL}/auth/refresh`, {
+  const response = await apiFetch("/auth/refresh", {
     method: "POST",
     credentials: "include",
     headers: {
@@ -49,7 +46,7 @@ export async function refreshTokenRequest(accessToken: string) {
 }
 
 export async function getProfile(accessToken: string) {
-  const response = await fetch(`${API_URL}/staff/me`, {
+  const response = await apiFetch("/staff/me", {
     credentials: "include",
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -67,7 +64,7 @@ export async function selectSocietyRequest(
   societyId: string,
   accessToken: string,
 ) {
-  const response = await fetch(`${API_URL}/auth/select-society`, {
+  const response = await apiFetch("/auth/select-society", {
     method: "POST",
     credentials: "include",
     headers: {

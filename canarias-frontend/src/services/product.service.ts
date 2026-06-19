@@ -1,19 +1,14 @@
-const API_URL =
-  process.env.NODE_ENV === "production"
-    ? "https://canarias-backend.onrender.com/api/v1"
-    : (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api/v1");
+import { useAuthStore } from "@/store/auth.store";
+import { apiFetch } from "./apiFetch.service";
 
 export async function getProducts() {
-  const token = localStorage.getItem("token");
-  localStorage.getItem("access-token");
-  localStorage.getItem("token");
-  localStorage.getItem("accessToken");
-
+  const token = useAuthStore.getState().accessToken;
+  console.log("TOKEN PRODUCTOS:", token);
   if (!token) {
     throw new Error("No hay token de autenticación");
   }
 
-  const res = await fetch(`${API_URL}/products`, {
+  const res = await apiFetch("/products", {
     headers: {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
@@ -25,5 +20,7 @@ export async function getProducts() {
     throw new Error(`Error obteniendo productos: ${text}`);
   }
 
-  return res.json();
+  const json = await res.json();
+
+  return json.data ?? [];
 }

@@ -30,12 +30,20 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
       router.replace("/select-society");
     }
   }, [hydrated, isAuthenticated, selectedSocietyId, pathname, router]);
-
+  console.log("PROTECTED ROUTE");
+  console.log({
+    hydrated,
+    isAuthenticated,
+    selectedSocietyId,
+    pathname,
+  });
   if (!hydrated) {
+    console.log("RETURN HYDRATED FALSE");
     return null;
   }
 
   if (!isAuthenticated) {
+    console.log("RETURN AUTH FALSE");
     return null;
   }
 

@@ -35,7 +35,7 @@ export class ClientsController {
     StaffRole.SELLER,
     StaffRole.ADMIN,
     StaffRole.MANAGER,
-    StaffRole.SUPER_ADMIN
+    StaffRole.SUPER_ADMIN,
   )
   @ApiOperation({ summary: "Precargar datos del cliente (vendedor o admin)" })
   preload(@Body() dto: CreateClientDto, @CurrentUser() user: JwtPayload) {
@@ -47,17 +47,29 @@ export class ClientsController {
   }
 
   @Get("lookup")
-  @Roles(StaffRole.SELLER, StaffRole.ADMIN, StaffRole.MANAGER, StaffRole.SUPER_ADMIN)
+  @Roles(
+    StaffRole.SELLER,
+    StaffRole.ADMIN,
+    StaffRole.MANAGER,
+    StaffRole.SUPER_ADMIN,
+  )
   @ApiOperation({
-    summary: "Buscar cliente por DNI o email para autocompletado de formularios",
-    description: "Pasa ?documentNumber=... o ?email=... Devuelve datos + alreadyInCurrentSociety.",
+    summary:
+      "Buscar cliente por DNI o email para autocompletado de formularios",
+    description:
+      "Pasa ?documentNumber=... o ?email=... Devuelve datos + alreadyInCurrentSociety.",
   })
   async lookup(
     @CurrentUser() user: JwtPayload,
     @Query("documentNumber") documentNumber?: string,
     @Query("email") email?: string,
   ) {
-    const client = await this.clientsService.lookup(user.societyId, documentNumber, email);
+    console.log("ENTRO A LOOKUP");
+    const client = await this.clientsService.lookup(
+      user.societyId,
+      documentNumber,
+      email,
+    );
     if (!client) throw new NotFoundException("Cliente no encontrado");
     return client;
   }
@@ -67,7 +79,7 @@ export class ClientsController {
     StaffRole.SELLER,
     StaffRole.ADMIN,
     StaffRole.MANAGER,
-    StaffRole.SUPER_ADMIN
+    StaffRole.SUPER_ADMIN,
   )
   getOne(@Param("id") id: string) {
     return this.clientsService.findById(id);
@@ -78,7 +90,7 @@ export class ClientsController {
   update(
     @Param("id") id: string,
     @Body() dto: UpdateClientDto,
-    @CurrentUser() user: JwtPayload
+    @CurrentUser() user: JwtPayload,
   ) {
     return this.clientsService.update(id, dto, {
       staffId: user.sub,
@@ -103,7 +115,7 @@ export class ClientsController {
     @Query("perPage", new ParseIntPipe({ optional: true })) perPage?: number,
     @Query("name") name?: string,
     @Query("societyId") societyId?: string,
-    @CurrentUser() user?: JwtPayload
+    @CurrentUser() user?: JwtPayload,
   ) {
     return this.clientsService.list(
       { page, perPage, name, societyId },
@@ -112,7 +124,7 @@ export class ClientsController {
         name: user!.email,
         role: user!.role,
         societyId: user!.societyId,
-      }
+      },
     );
   }
 
@@ -121,13 +133,13 @@ export class ClientsController {
     StaffRole.SELLER,
     StaffRole.ADMIN,
     StaffRole.MANAGER,
-    StaffRole.SUPER_ADMIN
+    StaffRole.SUPER_ADMIN,
   )
   @ApiOperation({ summary: "Solicitar verificacion de precarga de cliente" })
   requestVerification(
     @Param("id") id: string,
     @Body() dto: RequestVerificationDto,
-    @CurrentUser() user: JwtPayload
+    @CurrentUser() user: JwtPayload,
   ) {
     return this.clientsService.requestVerification(id, dto.note, {
       staffId: user.sub,

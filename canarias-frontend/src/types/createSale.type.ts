@@ -5,7 +5,7 @@ export interface CreateSalePayload {
 
   saleDate: string;
 
-  installmentsCount: 3 | 6 | 9;
+  installmentsCount: number;
 
   paymentFrequency: PaymentFrequency;
 
@@ -16,5 +16,6 @@ export interface CreateSalePayload {
   products: {
     productId: string;
     quantity: number;
+    unitPrice: number;
   }[];
 }

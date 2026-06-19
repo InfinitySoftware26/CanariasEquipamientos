@@ -16,7 +16,7 @@ export interface PreloadFormData {
 
   quantity: number;
 
-  installmentsCount: 3 | 6 | 9;
+  installmentsCount: number;
 
   paymentFrequency: PaymentFrequency;
 

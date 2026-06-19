@@ -58,21 +58,21 @@ export default function SellerDashboard() {
 
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           <DashboardCard
-            title="Precarga de cliente y venta"
-            description="Precarga de cliente y venta"
+            title="Nueva Venta"
+            description="Precarga de venta"
             icon={<DollarSign size={22} />}
             onClick={() => router.push("/sales/preload")}
           />
 
           <DashboardCard
-            title="Consultar clientes"
-            description="Buscar información"
+            title="Mis Clientes"
+            description="Gestión de clientes"
             icon={<Search size={22} />}
           />
 
           <DashboardCard
-            title="Verificaciones"
-            description="Pendientes"
+            title="Seguimiento comercial"
+            description="Revisión de estado de ventas"
             icon={<ClipboardCheck size={22} />}
           />
         </div>

@@ -1,13 +1,9 @@
 import { useAuthStore } from "@/store/auth.store";
 import { CreateSalePayload } from "@/types/createSale.type";
-
-const API_URL =
-  process.env.NODE_ENV === "production"
-    ? "https://canarias-backend.onrender.com/api/v1"
-    : (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api/v1");
+import { apiFetch } from "./apiFetch.service";
 
 export async function createSale(data: CreateSalePayload) {
-  const res = await fetch(`${API_URL}/sales`, {
+  const res = await apiFetch("/sales", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -17,7 +13,9 @@ export async function createSale(data: CreateSalePayload) {
   });
 
   if (!res.ok) {
-    throw new Error("Error creando venta");
+    const error = await res.json();
+    console.error("SALE ERROR:", error);
+    throw new Error(JSON.stringify(error));
   }
 
   return res.json();
@@ -26,7 +24,7 @@ export async function createSale(data: CreateSalePayload) {
 export async function getMySales() {
   const token = useAuthStore.getState().accessToken;
 
-  const res = await fetch(`${API_URL}/sales/my`, {
+  const res = await apiFetch("/sales/my", {
     credentials: "include",
     headers: {
       Authorization: `Bearer ${token}`,
