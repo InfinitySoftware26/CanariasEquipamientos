@@ -22,6 +22,7 @@ export function Sidebar() {
 
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
+  const accessToken = useAuthStore((state) => state.accessToken);
 
   if (!user) return null;
 
@@ -29,7 +30,9 @@ export function Sidebar() {
 
   const handleLogout = async () => {
     try {
-      await logoutRequest();
+      if (accessToken) {
+        await logoutRequest(accessToken);
+      }
     } catch (error) {
       console.error(error);
     }
