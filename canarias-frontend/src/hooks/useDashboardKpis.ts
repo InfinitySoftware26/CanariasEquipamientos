@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { getMySales } from "@/services/sales.service";
 import { Sale } from "@/types/sale.type";
+import { useAuthStore } from "@/store/auth.store";
 
 export function useSellerDashboard() {
+  const hydrated = useAuthStore((state) => state.hydrated);
   const [data, setData] = useState({
     totalSales: 0,
     pendingAdminValidation: 0,
@@ -13,9 +15,13 @@ export function useSellerDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!hydrated) return;
+
     async function load() {
       try {
-        const response = await getMySales();
+        const response = (await getMySales()) as {
+          data: Sale[];
+        };
 
         const sales: Sale[] = Array.isArray(response)
           ? response
@@ -23,19 +29,15 @@ export function useSellerDashboard() {
 
         setData({
           totalSales: sales.length,
-
           pendingAdminValidation: sales.filter(
             (sale) => sale.status === "PENDING_ADMIN_VALIDATION",
           ).length,
-
           pendingEnvironmentalVisit: sales.filter(
             (sale) => sale.status === "PENDING_ENVIRONMENTAL_VISIT",
           ).length,
-
           pendingDelivery: sales.filter(
             (sale) => sale.status === "PENDING_DELIVERY",
           ).length,
-
           closedSales: sales.filter((sale) => sale.status === "CLOSED").length,
         });
       } catch (error) {
@@ -46,7 +48,6 @@ export function useSellerDashboard() {
     }
 
     load();
-  }, []);
-
+  }, [hydrated]);
   return { data, loading };
 }

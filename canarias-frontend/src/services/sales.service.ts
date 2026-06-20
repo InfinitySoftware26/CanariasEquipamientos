@@ -23,6 +23,9 @@ export async function createSale(data: CreateSalePayload) {
 
 export async function getMySales() {
   const token = useAuthStore.getState().accessToken;
+   if (!token) {
+    throw new Error("NO_TOKEN");
+  }
 
   const res = await apiFetch("/sales/my", {
     credentials: "include",
