@@ -4,6 +4,11 @@ import { useState } from "react";
 import { Sale } from "@/types/sales/sale.type";
 import { adminValidateSale } from "@/services/sales.service";
 
+const ADMIN_VALIDATION_STATUS = "PENDING_ADMIN_VALIDATION" as const;
+
+// 🔧 normalizador único y reutilizable
+const normalizeStatus = (status?: string) => status?.trim().toUpperCase();
+
 export function AdminSalePanel({
   sale,
   onRefresh,
@@ -14,7 +19,9 @@ export function AdminSalePanel({
   const [obs, setObs] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const canValidate = sale.status === "PENDING_ADMIN_VALIDATION";
+  const saleStatus = normalizeStatus(sale?.status);
+
+  const canValidate = saleStatus === ADMIN_VALIDATION_STATUS;
 
   const handle = async (status: "approved" | "rejected") => {
     if (!canValidate || loading) return;
@@ -29,8 +36,7 @@ export function AdminSalePanel({
 
       await adminValidateSale(sale.saleId, status, obs);
 
-      await Promise.resolve(onRefresh());
-
+      await onRefresh();
       setObs("");
     } catch (error) {
       console.error("Error validando venta:", error);
@@ -39,36 +45,51 @@ export function AdminSalePanel({
       setLoading(false);
     }
   };
-
-  if (!canValidate) {
-    return (
-      <div className="rounded-2xl border border-gray-600/30 bg-gray-800/20 p-5 text-gray-400">
-        Esta venta no está en estado de validación administrativa.
-      </div>
-    );
-  }
+  console.log("RAW STATUS:", sale.status);
+  console.log("NORMALIZED:", saleStatus);
+  console.log("EXPECTED:", ADMIN_VALIDATION_STATUS);
 
   return (
-    <div className="rounded-2xl border border-yellow-500/20 bg-yellow-500/5 p-5">
+    <div
+      className={`rounded-2xl border p-5 ${
+        canValidate
+          ? "border-yellow-500/20 bg-yellow-500/5"
+          : "border-gray-600/30 bg-gray-800/20"
+      }`}
+    >
       <h3 className="mb-2 text-lg font-semibold text-white">
         Validación administrativa
       </h3>
 
-      <p className="mb-4 text-sm text-gray-400">
-        Esta venta está esperando aprobación para continuar al siguiente estado.
-      </p>
+      {/* Estado visible siempre */}
+      {!canValidate && (
+        <p className="mb-3 text-sm text-gray-400">
+          Esta venta no está en estado de validación.
+          <br />
+          <span className="text-xs opacity-70">
+            Status actual: {saleStatus ?? "undefined"}
+          </span>
+        </p>
+      )}
+
+      {canValidate && (
+        <p className="mb-4 text-sm text-gray-400">
+          Esta venta está esperando aprobación para continuar al siguiente
+          estado.
+        </p>
+      )}
 
       <textarea
         value={obs}
         onChange={(e) => setObs(e.target.value)}
         placeholder="Observaciones (obligatorio si rechaza)"
-        disabled={loading}
+        disabled={!canValidate || loading}
         className="min-h-[100px] w-full rounded-xl border border-white/10 bg-[#0D1B2A] p-3 text-white disabled:opacity-50"
       />
 
       <div className="mt-4 flex gap-3">
         <button
-          disabled={loading}
+          disabled={!canValidate || loading}
           onClick={() => handle("approved")}
           className="rounded-xl bg-green-600 px-4 py-2 text-white hover:bg-green-700 disabled:opacity-50"
         >
@@ -76,7 +97,7 @@ export function AdminSalePanel({
         </button>
 
         <button
-          disabled={loading}
+          disabled={!canValidate || loading}
           onClick={() => handle("rejected")}
           className="rounded-xl bg-red-600 px-4 py-2 text-white hover:bg-red-700 disabled:opacity-50"
         >

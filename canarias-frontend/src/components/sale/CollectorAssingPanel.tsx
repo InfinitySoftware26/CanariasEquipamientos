@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { Sale } from "@/types/sales/sale.type";
 import { Collector } from "@/types/collector/collector.type";
@@ -15,6 +16,8 @@ export function CollectorAssignPanel({
   sale: Sale;
   onRefresh: () => void;
 }) {
+  const router = useRouter();
+
   const [collectors, setCollectors] = useState<Collector[]>([]);
   const [selected, setSelected] = useState(sale.assignedCollectorId ?? "");
 
@@ -23,18 +26,16 @@ export function CollectorAssignPanel({
   const loadCollectors = async () => {
     try {
       const data = await getCollectors();
-
-      console.log("COLLECTORS:", data);
-
       setCollectors(data);
     } catch (error) {
-      console.error(error);
+      console.error("Error cargando cobradores:", error);
     }
   };
 
   useEffect(() => {
     loadCollectors();
   }, []);
+
   const handleAssign = async () => {
     if (!selected) {
       alert("Debe seleccionar un cobrador");
@@ -48,9 +49,12 @@ export function CollectorAssignPanel({
 
       alert("Cobrador asignado");
 
-      onRefresh();
+      await onRefresh();
+
+      // 🔥 REDIRECCIÓN DESPUÉS DE ASIGNAR
+      router.push("/sales");
     } catch (error) {
-      console.error(error);
+      console.error("Error asignando cobrador:", error);
       alert("Error asignando cobrador");
     } finally {
       setLoading(false);
@@ -84,7 +88,7 @@ export function CollectorAssignPanel({
       <button
         onClick={handleAssign}
         disabled={loading}
-        className="mt-4 rounded-xl bg-[#F5A300] px-4 py-2 font-semibold text-[#0D1B2A]"
+        className="mt-4 rounded-xl bg-[#F5A300] px-4 py-2 font-semibold text-[#0D1B2A] disabled:opacity-50"
       >
         {loading ? "Asignando..." : "Asignar cobrador"}
       </button>

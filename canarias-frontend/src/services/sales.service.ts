@@ -132,7 +132,9 @@ export async function adminValidateSale(
     const error = await res.json();
     throw new Error(error.message || "Error validando venta");
   }
-  return res.json();
+  const text = await res.text();
+
+  return text ? JSON.parse(text) : null;
 }
 
 export async function assignCollector(saleId: string, collectorId: string) {
