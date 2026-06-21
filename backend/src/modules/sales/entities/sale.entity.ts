@@ -1,9 +1,12 @@
 import {
   Entity, PrimaryGeneratedColumn, Column,
   CreateDateColumn, UpdateDateColumn,
+  ManyToOne, OneToMany, JoinColumn,
 } from 'typeorm';
 import { SaleStatus } from '../../../common/enums/sale-status.enum';
 import { PaymentFrequency } from '../../../common/enums/payment-frequency.enum';
+import { Client } from '../../clients/entities/client.entity';
+import { SaleProduct } from './sale-product.entity';
 
 @Entity('SALES')
 export class Sale {
@@ -12,6 +15,13 @@ export class Sale {
 
   @Column({ name: 'client_id' })
   clientId!: string;
+
+  @ManyToOne(() => Client)
+  @JoinColumn({ name: 'client_id' })
+  client!: Client;
+
+  @OneToMany(() => SaleProduct, sp => sp.sale)
+  products!: SaleProduct[];
 
   @Column({ name: 'staff_id' })
   staffId!: string;
