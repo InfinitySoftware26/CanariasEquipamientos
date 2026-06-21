@@ -20,7 +20,7 @@ export default function LoginPage() {
       {/* glow decorativo corporativo */}
       <div className="absolute -top-40 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-[#ffa408]/20 blur-[140px]" />
 
-      <div className="relative z-10 w-full px-6">
+      <div className="relative z-10 mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
         <LoginForm />
       </div>
     </main>

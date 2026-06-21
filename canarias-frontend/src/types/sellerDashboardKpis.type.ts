@@ -5,3 +5,15 @@ export interface DashboardKpis {
   pendingClients: number;
   approvedSales: number;
 }
+
+export interface DashboardCardProps {
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+  onClick: () => void;
+
+  secondaryAction?: {
+    label: string;
+    onClick: () => void;
+  };
+}

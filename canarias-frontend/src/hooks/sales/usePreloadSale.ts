@@ -22,7 +22,7 @@ const initialForm: PreloadFormData = {
   phone: "",
   productId: "",
   quantity: 1,
-  installmentsCount: 3,
+  installmentsCount: 3 | 6 | 9,
   paymentFrequency: "monthly",
   firstDueDate: "",
   ref1Phone: "",
