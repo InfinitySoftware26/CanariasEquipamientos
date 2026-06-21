@@ -1,6 +1,9 @@
 import {
   Entity, PrimaryGeneratedColumn, Column, CreateDateColumn,
+  ManyToOne, JoinColumn,
 } from 'typeorm';
+import { Product } from '../../products/entities/product.entity';
+import { Sale } from './sale.entity';
 
 @Entity('SALE_PRODUCTS')
 export class SaleProduct {
@@ -10,8 +13,16 @@ export class SaleProduct {
   @Column({ name: 'sale_id' })
   saleId!: string;
 
+  @ManyToOne(() => Sale, sale => sale.products)
+  @JoinColumn({ name: 'sale_id' })
+  sale!: Sale;
+
   @Column({ name: 'product_id' })
   productId!: string;
+
+  @ManyToOne(() => Product)
+  @JoinColumn({ name: 'product_id' })
+  product!: Product;
 
   @Column({ type: 'integer' })
   quantity!: number;
