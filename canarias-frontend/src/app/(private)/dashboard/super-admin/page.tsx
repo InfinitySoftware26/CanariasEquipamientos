@@ -6,10 +6,33 @@ export default function SuperAdminDashboard() {
       <h1 className="mb-6 text-3xl font-bold">Dashboard Global</h1>
 
       <div className="grid gap-4 md:grid-cols-4">
-        <DashboardCard title="Sociedades" value="0" />
-        <DashboardCard title="Usuarios" value="0" />
-        <DashboardCard title="Ventas" value="$0" />
-        <DashboardCard title="Cobranza" value="$0" />
+        <DashboardCard
+          title="Cobros Hoy"
+          description="0"
+          icon={<span>💰</span>}
+          onClick={() => {}}
+        />
+
+        <DashboardCard
+          title="Pendientes"
+          description="0"
+          icon={<span>📌</span>}
+          onClick={() => {}}
+        />
+
+        <DashboardCard
+          title="Clientes"
+          description="0"
+          icon={<span>👥</span>}
+          onClick={() => {}}
+        />
+
+        <DashboardCard
+          title="Visitas"
+          description="0"
+          icon={<span>🚚</span>}
+          onClick={() => {}}
+        />
       </div>
     </div>
   );
