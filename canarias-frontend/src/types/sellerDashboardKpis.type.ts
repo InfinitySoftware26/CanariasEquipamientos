@@ -6,11 +6,16 @@ export interface DashboardKpis {
   approvedSales: number;
 }
 
+import { ReactNode } from "react";
+
 export interface DashboardCardProps {
   title: string;
-  description: string;
-  icon: React.ReactNode;
-  onClick: () => void;
+  value: string | number;
+
+  description?: string;
+  icon?: ReactNode;
+
+  onClick?: () => void;
 
   secondaryAction?: {
     label: string;

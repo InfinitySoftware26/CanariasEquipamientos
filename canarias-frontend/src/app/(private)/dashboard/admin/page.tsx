@@ -99,27 +99,15 @@ export default function AdminDashboard() {
         </h2>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
-          <KpiCard
-            title="Pend. Validación"
-            value={loading ? "..." : stats.adminValidation}
-          />
+          <KpiCard title="Pend. Validación" value={stats.adminValidation} />
 
-          <KpiCard
-            title="Pend. Visita"
-            value={loading ? "..." : stats.envVisit}
-          />
+          <KpiCard title="Pend. Visita" value={stats.envVisit} />
 
-          <KpiCard
-            title="Pend. Entrega"
-            value={loading ? "..." : stats.delivery}
-          />
+          <KpiCard title="Pend. Entrega" value={stats.delivery} />
 
-          <KpiCard title="Cerradas" value={loading ? "..." : stats.closed} />
+          <KpiCard title="Cerradas" value={stats.closed} />
 
-          <KpiCard
-            title="Rechazadas"
-            value={loading ? "..." : stats.rejected}
-          />
+          <KpiCard title="Rechazadas" value={stats.rejected} />
         </div>
       </section>
 
@@ -140,7 +128,7 @@ export default function AdminDashboard() {
         {stats.envVisit > 0 && (
           <div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-4">
             <p className="text-sm text-red-300">
-              ⚠ Hay {stats.envVisit} entregas pendientes de coordinación.
+              ⚠ Hay {stats.envVisit} visitas pendientes de coordinación.
             </p>
           </div>
         )}

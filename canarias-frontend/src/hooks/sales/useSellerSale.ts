@@ -74,7 +74,6 @@ export function useSellerSales() {
           if (sale.status === "PENDING_ENVIRONMENTAL_VISIT") acc.envVisit++;
           if (sale.status === "PENDING_DELIVERY") acc.delivery++;
         }
-
         if (sale.status === "CLOSED") acc.closed++;
 
         return acc;
