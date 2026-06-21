@@ -1,6 +1,14 @@
+"use client";
+
 import { Package } from "lucide-react";
 import { StepTitle } from "./StepTitle";
 import { StepSaleProps } from "@/types/preload-sale/preload.type";
+import { useState } from "react";
+
+type Option<T> = {
+  label: string;
+  value: T;
+};
 
 export function StepSale({
   form,
@@ -9,30 +17,129 @@ export function StepSale({
   handleSubmit,
   loading,
 }: StepSaleProps) {
+  const [openProduct, setOpenProduct] = useState(false);
+  const [openInstallments, setOpenInstallments] = useState(false);
+  const [openFrequency, setOpenFrequency] = useState(false);
+
+  const selectedProduct = products.find((p) => p.productId === form.productId);
+
+  // ---------------- CUOTAS ----------------
+  const installmentOptions: Option<number>[] = [
+    { label: "3 cuotas", value: 3 },
+    { label: "6 cuotas", value: 6 },
+    { label: "9 cuotas", value: 9 },
+  ];
+
+  const selectedInstallment = installmentOptions.find(
+    (o) => o.value === form.installmentsCount,
+  );
+
+  // ---------------- FRECUENCIA ----------------
+  const frequencyOptions: Option<"weekly" | "monthly">[] = [
+    { label: "Mensual", value: "monthly" },
+    { label: "Semanal", value: "weekly" },
+  ];
+
+  const selectedFrequency = frequencyOptions.find(
+    (o) => o.value === form.paymentFrequency,
+  );
+
   return (
     <section className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
       <StepTitle icon={<Package size={18} />} label="Venta" />
 
       <div className="space-y-3">
-        <select
-          className="input"
-          value={form.productId}
-          onChange={(e) =>
-            setForm({
-              ...form,
-              productId: e.target.value,
-            })
-          }
-        >
-          <option value="">Producto</option>
+        {/* ---------------- PRODUCTO ---------------- */}
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => setOpenProduct(!openProduct)}
+            className="w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-white text-left transition hover:border-[#F5A300]/60 focus:border-[#F5A300] focus:outline-none"
+          >
+            {selectedProduct?.name ?? "Seleccionar producto"}
+          </button>
 
-          {products.map((p) => (
-            <option key={p.productId} value={p.productId}>
-              {p.name}
-            </option>
-          ))}
-        </select>
+          {openProduct && (
+            <div className="absolute z-10 mt-2 max-h-52 w-full overflow-auto rounded-xl border border-white/10 bg-[#0D1B2A]">
+              {products.map((p) => (
+                <div
+                  key={p.productId}
+                  onClick={() => {
+                    setForm({ ...form, productId: p.productId });
+                    setOpenProduct(false);
+                  }}
+                  className="cursor-pointer px-3 py-2 hover:bg-white/10"
+                >
+                  {p.name}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
+        {/* ---------------- CUOTAS ---------------- */}
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => setOpenInstallments(!openInstallments)}
+            className="w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-white text-left transition hover:border-[#F5A300]/60 focus:border-[#F5A300] focus:outline-none"
+          >
+            {selectedInstallment?.label ?? "Cantidad de cuotas"}
+          </button>
+
+          {openInstallments && (
+            <div className="absolute z-10 mt-2 w-full overflow-hidden rounded-xl border border-white/10 bg-[#0D1B2A]">
+              {installmentOptions.map((opt) => (
+                <div
+                  key={opt.value}
+                  onClick={() => {
+                    setForm({
+                      ...form,
+                      installmentsCount: opt.value,
+                    });
+                    setOpenInstallments(false);
+                  }}
+                  className="cursor-pointer px-3 py-2 hover:bg-white/10"
+                >
+                  {opt.label}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* ---------------- FRECUENCIA ---------------- */}
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => setOpenFrequency(!openFrequency)}
+            className="w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-white text-left transition hover:border-[#F5A300]/60 focus:border-[#F5A300] focus:outline-none"
+          >
+            {selectedFrequency?.label ?? "Frecuencia de pago"}
+          </button>
+
+          {openFrequency && (
+            <div className="absolute z-10 mt-2 w-full overflow-hidden rounded-xl border border-white/10 bg-[#0D1B2A]">
+              {frequencyOptions.map((opt) => (
+                <div
+                  key={opt.value}
+                  onClick={() => {
+                    setForm({
+                      ...form,
+                      paymentFrequency: opt.value,
+                    });
+                    setOpenFrequency(false);
+                  }}
+                  className="cursor-pointer px-3 py-2 hover:bg-white/10"
+                >
+                  {opt.label}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* ---------------- CANTIDAD ---------------- */}
         <input
           type="number"
           className="input"
@@ -45,6 +152,7 @@ export function StepSale({
           }
         />
 
+        {/* ---------------- FECHA ---------------- */}
         <input
           type="date"
           className="input"
@@ -57,6 +165,7 @@ export function StepSale({
           }
         />
 
+        {/* ---------------- SUBMIT ---------------- */}
         <button
           onClick={handleSubmit}
           disabled={loading}

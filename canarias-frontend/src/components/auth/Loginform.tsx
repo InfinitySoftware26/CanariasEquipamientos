@@ -55,7 +55,7 @@ export function LoginForm() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-md space-y-6">
+    <div className="mx-auto w-full max-w-xl space-y-6">
       <div className="flex flex-col items-center text-center space-y-2">
         <Image
           src="/LogoCanariasBlue.png"

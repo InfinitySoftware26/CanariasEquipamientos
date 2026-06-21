@@ -1,105 +1,83 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect } from "react";
 
-const filters = [
-  { label: "Todas", value: "ALL" },
-  { label: "Validación", value: "PENDING_ADMIN_VALIDATION" },
-  { label: "Visita", value: "PENDING_ENVIRONMENTAL_VISIT" },
-  { label: "Entrega", value: "PENDING_DELIVERY" },
-  { label: "Cerradas", value: "CLOSED" },
-];
+import { SaleCard } from "@/components/sale/SaleCard";
+import { SalesFilters } from "@/components/sale/SaleFilter";
+import { SalesStats } from "@/components/sale/SalesStats";
+
+import { useSales } from "@/hooks/sales/useSale";
+import { useSalesView } from "@/hooks/sales/useSalesView";
+import { useSalesPagination } from "@/hooks/sales/useSalePagination";
+
+import { Sale } from "@/types/sales/sale.type";
 
 export default function SalesPage() {
-  const [selectedFilter, setSelectedFilter] = useState("ALL");
+  const { sales, loading, error } = useSales();
+
+  const { filter, setFilter, filteredSales, stats, filters } =
+    useSalesView(sales);
+
+  const { paginated, page, setPage, totalPages } =
+    useSalesPagination(filteredSales);
+
+  // reset page cuando cambia filtro
+  useEffect(() => {
+    setPage(1);
+  }, [filter, setPage]);
 
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-6 px-4 py-6">
+    <div className="space-y-10">
       {/* HEADER */}
       <section>
-        <h1 className="text-2xl font-bold text-white">Ventas</h1>
-
-        <p className="mt-1 text-sm text-slate-400">
-          Gestión y seguimiento comercial.
-        </p>
+        <h1 className="text-3xl font-bold text-white">Ventas</h1>
+        <p className="mt-2 text-white/60">Gestión y seguimiento comercial.</p>
       </section>
 
-      {/* KPIS */}
-      <section className="overflow-x-auto">
-        <div className="flex gap-3 pb-2">
-          <div className="min-w-[140px] rounded-2xl border border-white/10 bg-slate-900 p-4">
-            <p className="text-xs text-slate-400">Total</p>
-            <p className="mt-2 text-2xl font-bold text-white">0</p>
-          </div>
+      {/* FILTERS */}
+      <SalesFilters filters={filters} current={filter} onChange={setFilter} />
 
-          <div className="min-w-[140px] rounded-2xl border border-white/10 bg-slate-900 p-4">
-            <p className="text-xs text-slate-400">Pendientes</p>
-            <p className="mt-2 text-2xl font-bold text-amber-400">0</p>
-          </div>
+      {/* STATS */}
+      <SalesStats stats={stats} />
 
-          <div className="min-w-[140px] rounded-2xl border border-white/10 bg-slate-900 p-4">
-            <p className="text-xs text-slate-400">Cerradas</p>
-            <p className="mt-2 text-2xl font-bold text-emerald-400">0</p>
-          </div>
-        </div>
-      </section>
-
-      {/* FILTROS */}
-      <section className="overflow-x-auto">
-        <div className="flex gap-2 pb-2">
-          {filters.map((filter) => (
-            <button
-              key={filter.value}
-              onClick={() => setSelectedFilter(filter.value)}
-              className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition ${
-                selectedFilter === filter.value
-                  ? "bg-[#F5A300] text-black"
-                  : "border border-white/10 bg-slate-900 text-slate-300"
-              }`}
-            >
-              {filter.label}
-            </button>
-          ))}
-        </div>
-      </section>
-
-      {/* LISTADO MOBILE FIRST */}
+      {/* LIST */}
       <section className="space-y-4">
-        {/* Empty State temporal */}
-        <div className="rounded-2xl border border-dashed border-white/10 p-8 text-center">
-          <p className="text-slate-400">No hay ventas para mostrar.</p>
-        </div>
+        {loading && <p className="text-white/60">Cargando ventas...</p>}
 
-        {/*
-        Card ejemplo cuando conectemos API
+        {error && <p className="text-red-400">{error}</p>}
 
-        <div className="rounded-2xl border border-white/10 bg-slate-900 p-4">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="font-semibold text-white">
-                Juan Pérez
-              </p>
+        {!loading &&
+          paginated.map((sale: Sale) => (
+            <SaleCard key={sale.saleId} sale={sale} />
+          ))}
 
-              <p className="text-sm text-slate-400">
-                20/06/2026
-              </p>
-            </div>
-
-            <StatusBadge status="PENDING_ADMIN_VALIDATION" />
-          </div>
-
-          <div className="mt-4">
-            <p className="text-sm text-slate-400">
-              Importe
-            </p>
-
-            <p className="text-lg font-semibold text-white">
-              $150.000
-            </p>
-          </div>
-        </div>
-        */}
+        {!loading && paginated.length === 0 && (
+          <p className="text-white/50">No hay ventas.</p>
+        )}
       </section>
+
+      {/* PAGINATION */}
+      {totalPages > 1 && (
+        <div className="flex justify-center gap-2 pt-2">
+          {Array.from({ length: totalPages }).map((_, i) => {
+            const pageNumber = i + 1;
+
+            return (
+              <button
+                key={pageNumber}
+                onClick={() => setPage(pageNumber)}
+                className={`h-10 w-10 rounded-xl border border-white/10 transition ${
+                  page === pageNumber
+                    ? "bg-[#F5A300] text-black"
+                    : "bg-slate-900 text-white hover:bg-slate-800"
+                }`}
+              >
+                {pageNumber}
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
