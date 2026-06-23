@@ -10,7 +10,7 @@ export class ClientHistory {
   @PrimaryGeneratedColumn("uuid", { name: "id" })
   id!: string;
 
-  @Column({ name: "client_id" })
+  @Column({ name: "client_id", type: "uuid" })
   clientId!: string;
 
   @Column({ type: "jsonb" })
