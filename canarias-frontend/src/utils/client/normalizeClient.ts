@@ -1,7 +1,13 @@
-export function normalizeClientResponse(client: any) {
-  const raw = client?.client ?? client?.data ?? client?.found ?? client;
+import { ClientApiResponse, ClientResponse } from "@/types/clientResponse.type";
 
-  const clientId = raw?.clientId ?? raw?.client_id ?? raw?.id;
+export function normalizeClientResponse(
+  client: ClientApiResponse,
+): ClientResponse {
+  const raw = typeof client === "object" && client !== null ? client : {};
+
+  const source = raw.client ?? raw.data ?? raw;
+
+  const clientId = source.clientId ?? source.client_id ?? source.id;
 
   if (!clientId) {
     console.error("RESPUESTA INVALIDA CLIENTE:", client);
@@ -10,11 +16,11 @@ export function normalizeClientResponse(client: any) {
 
   return {
     clientId,
-    name: raw?.name ?? "",
-    surname: raw?.surname ?? "",
-    documentNumber: raw?.documentNumber ?? "",
-    address: raw?.address ?? "",
-    phone: raw?.phone ?? "",
-    observations: raw?.observations,
+    name: source.name ?? "",
+    surname: source.surname ?? "",
+    documentNumber: source.documentNumber ?? "",
+    address: source.address ?? "",
+    phone: source.phone ?? "",
+    observations: source.observations,
   };
 }

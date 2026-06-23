@@ -28,4 +28,5 @@ export interface ClientApiResponse {
 
   client?: ClientApiResponse;
   data?: ClientApiResponse;
+  found?: ClientApiResponse;
 }
