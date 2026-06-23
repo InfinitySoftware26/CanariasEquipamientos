@@ -1,10 +1,16 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
-import { Exclude } from 'class-transformer';
-import { StaffRole } from '../../../common/enums/staff-role.enum';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from "typeorm";
+import { Exclude } from "class-transformer";
+import { StaffRole } from "../../../common/enums/staff-role.enum";
 
-@Entity('STAFF')
+@Entity("STAFF")
 export class Staff {
-  @PrimaryGeneratedColumn('uuid', { name: 'staff_id' })
+  @PrimaryGeneratedColumn("uuid", { name: "staff_id" })
   staffId!: string;
 
   @Column()
@@ -16,25 +22,25 @@ export class Staff {
   @Column({ unique: true })
   email!: string;
 
-  @Column({ name: 'password_hash' })
+  @Column({ name: "password_hash" })
   @Exclude()
   passwordHash!: string;
 
-  @Column({ type: 'enum', enum: StaffRole })
+  @Column({ type: "enum", enum: StaffRole })
   role!: StaffRole;
 
-  @Column({ name: 'society_id', nullable: true })
+  @Column({ name: "society_id", type: "uuid", nullable: true })
   primarySocietyId!: string;
 
   @Column({ nullable: true })
   phone!: string;
 
-  @Column({ name: 'is_active', default: true })
+  @Column({ name: "is_active", default: true })
   isActive!: boolean;
 
-  @CreateDateColumn({ name: 'created_at' })
+  @CreateDateColumn({ name: "created_at" })
   createdAt!: Date;
 
-  @UpdateDateColumn({ name: 'updated_at' })
+  @UpdateDateColumn({ name: "updated_at" })
   updatedAt!: Date;
 }
