@@ -17,8 +17,10 @@ function Info({ label, value }: { label: string; value: React.ReactNode }) {
 
 const statusLabelMap: Record<string, string> = {
   PENDING_ADMIN_VALIDATION: "Pendiente de Validación",
+  REJECTED_ADMIN: "Rechaza por administracion",
   PENDING_ENVIRONMENTAL_VISIT: "Pendiente de Visita",
   PENDING_DELIVERY: "Listo para Entrega",
+  ENVIRONMENTAL_REJECTED: "Visita ambiental rechazada",
   CLOSED: "Cerrada",
 };
 
@@ -27,6 +29,9 @@ const statusColorMap: Record<string, string> = {
   PENDING_ENVIRONMENTAL_VISIT:
     "text-orange-300 border-orange-500/30 bg-orange-500/10",
   PENDING_DELIVERY: "text-amber-300 border-amber-500/30 bg-amber-500/10",
+  ENVIRONMENTAL_REJECTED:
+    "text-red-300 border-emerald-500/30 bg-emerald-500/10",
+  REJECTED_ADMIN: "text-red-300 border-emerald-500/30 bg-emerald-500/10",
   CLOSED: "text-emerald-300 border-emerald-500/30 bg-emerald-500/10",
 };
 
