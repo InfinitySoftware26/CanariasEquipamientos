@@ -1,27 +1,30 @@
 import {
-  Entity, PrimaryGeneratedColumn, Column, CreateDateColumn,
-} from 'typeorm';
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+} from "typeorm";
 
-@Entity('SALE_HISTORY')
+@Entity("SALE_HISTORY")
 export class SaleHistory {
-  @PrimaryGeneratedColumn('uuid', { name: 'id' })
+  @PrimaryGeneratedColumn("uuid", { name: "id" })
   id!: string;
 
-  @Column({ name: 'sale_id' })
+  @Column({ name: "sale_id", type: "uuid" })
   saleId!: string;
 
   @Column()
   action!: string;
 
-  @Column({ type: 'jsonb' })
+  @Column({ type: "jsonb" })
   snapshot!: any;
 
-  @Column({ name: 'performed_by' })
+  @Column({ name: "performed_by" })
   performedBy!: string;
 
-  @Column({ name: 'performed_by_name' })
+  @Column({ name: "performed_by_name" })
   performedByName!: string;
 
-  @CreateDateColumn({ name: 'performed_at' })
+  @CreateDateColumn({ name: "performed_at" })
   performedAt!: Date;
 }
