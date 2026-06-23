@@ -53,13 +53,13 @@ export class Client {
   @Column({ name: "society_id", type: "uuid", nullable: true })
   societyId?: string;
 
-  @Column({ name: "created_by", nullable: true })
+  @Column({ name: "created_by", type: "uuid", nullable: true })
   createdBy?: string;
 
-  @Column({ name: "updated_by", nullable: true })
+  @Column({ name: "updated_by", type: "uuid", nullable: true })
   updatedBy?: string;
 
-  @Column({ name: "verification_requested_by", nullable: true })
+  @Column({ name: "verification_requested_by", type: "uuid", nullable: true })
   verificationRequestedBy?: string;
 
   @Column({ name: "verification_requested_by_name", nullable: true })

@@ -19,7 +19,7 @@ export class SaleHistory {
   @Column({ type: "jsonb" })
   snapshot!: any;
 
-  @Column({ name: "performed_by" })
+  @Column({ name: "performed_by", type: "uuid" })
   performedBy!: string;
 
   @Column({ name: "performed_by_name" })

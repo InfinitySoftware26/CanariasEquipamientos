@@ -10,13 +10,13 @@ export class Installment {
   @PrimaryGeneratedColumn('uuid', { name: 'installment_id' })
   installmentId!: string;
 
-  @Column({ name: 'sale_id' })
+  @Column({ name: 'sale_id', type: 'uuid' })
   saleId!: string;
 
-  @Column({ name: 'client_id' })
+  @Column({ name: 'client_id', type: 'uuid' })
   clientId!: string;
 
-  @Column({ name: 'society_id' })
+  @Column({ name: 'society_id', type: 'uuid' })
   societyId!: string;
 
   @Column({ name: 'installment_number', type: 'integer' })

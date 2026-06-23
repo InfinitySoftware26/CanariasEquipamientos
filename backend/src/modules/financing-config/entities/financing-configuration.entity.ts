@@ -8,7 +8,7 @@ export class FinancingConfiguration {
   @PrimaryGeneratedColumn('uuid', { name: 'financing_config_id' })
   financingConfigId!: string;
 
-  @Column({ name: 'society_id' })
+  @Column({ name: 'society_id', type: 'uuid' })
   societyId!: string;
 
   @Column({ name: 'installments_3_rate', type: 'decimal', precision: 5, scale: 4, default: 0.15 })
