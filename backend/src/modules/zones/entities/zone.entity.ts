@@ -13,7 +13,7 @@ export class Zone {
   @PrimaryGeneratedColumn('uuid', { name: 'zone_id' })
   zoneId!: string;
 
-  @Column({ name: 'society_id' })
+  @Column({ name: 'society_id', type: 'uuid' })
   societyId!: string;
 
   @Column()

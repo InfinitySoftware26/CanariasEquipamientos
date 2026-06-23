@@ -12,10 +12,10 @@ export class StaffZone {
   @PrimaryGeneratedColumn('uuid', { name: 'staff_zone_id' })
   staffZoneId!: string;
 
-  @Column({ name: 'staff_id' })
+  @Column({ name: 'staff_id', type: 'uuid' })
   staffId!: string;
 
-  @Column({ name: 'zone_id' })
+  @Column({ name: 'zone_id', type: 'uuid' })
   zoneId!: string;
 
   @Column({ type: 'enum', enum: StaffZoneStatus, default: StaffZoneStatus.ACTIVE })
