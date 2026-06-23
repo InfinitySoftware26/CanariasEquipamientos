@@ -14,7 +14,6 @@ export default function CollectorSalesPage() {
 
   const { filter, setFilter, filteredSales, stats, filters } =
     useSalesView(sales);
-
   const { paginated, page, setPage, totalPages } =
     useSalesPagination(filteredSales);
 
