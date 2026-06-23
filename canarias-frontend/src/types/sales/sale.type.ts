@@ -14,6 +14,7 @@ export interface Sale {
   totalAmount: number;
   installmentAmount: number;
   installmentsCount: number;
+  observation: string;
 
   paymentFrequency: string;
 
