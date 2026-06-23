@@ -26,7 +26,10 @@ export async function createSale(data: CreateSalePayload) {
 export async function getMySales() {
   const token = useAuthStore.getState().accessToken;
 
+  console.log("🧠 TOKEN EXISTS?", !!token);
+
   if (!token) {
+    console.warn("❌ NO TOKEN - abortando request");
     throw new Error("NO_TOKEN");
   }
 
@@ -36,15 +39,18 @@ export async function getMySales() {
     },
   });
 
-  if (!res.ok) {
-    throw new Error(`Error obteniendo ventas (${res.status})`);
-  }
+  console.log("📡 /sales/my STATUS:", res.status);
+  console.log("📡 /sales/my OK?:", res.ok);
 
   const json = await res.json();
 
-  console.log("SALES RESPONSE:", json);
+  console.log("📦 /sales/my RESPONSE RAW:", json);
 
-  // soporta ambas respuestas
+  if (!res.ok) {
+    console.error("💥 BACKEND ERROR DETAIL:", json);
+    throw new Error(`Error obteniendo ventas (${res.status})`);
+  }
+
   return Array.isArray(json) ? json : (json.data ?? []);
 }
 
