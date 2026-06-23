@@ -29,24 +29,24 @@ export function useSalesStats() {
 
         for (const sale of sales) {
           switch (sale.status) {
-            case "PENDING_ADMIN_VALIDATION":
+            case "pending_admin_validation":
               next.pendingValidation++;
               break;
 
-            case "PENDING_ENVIRONMENTAL_VISIT":
+            case "pending_environmental_visit":
               next.pendingVisit++;
               break;
 
-            case "PENDING_DELIVERY":
+            case "pending_delivery":
               next.pendingDelivery++;
               break;
 
-            case "CLOSED":
+            case "closed":
               next.closed++;
               break;
 
-            case "REJECTED_ADMIN":
-            case "ENVIRONMENTAL_REJECTED":
+            case "rejected_admin":
+            case "environmental_rejected":
               next.rejected++;
               break;
           }

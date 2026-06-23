@@ -1,15 +1,16 @@
 "use client";
 
-import { SalesFilters } from "@/components/sale/SaleFilter";
-import { SalesList } from "@/components/sale/SalesListas";
-import { SalesStats } from "@/components/sale/SalesStats";
-import { useSalesPagination } from "@/hooks/sales/useSalePagination";
-import { useSalesView } from "@/hooks/sales/useSalesView";
-import { useSellerSales } from "@/hooks/seller/useSellerSale";
 import { useEffect } from "react";
 
-export default function MySalesPage() {
-  const { sales, loading, error } = useSellerSales();
+import { SalesFilters } from "@/components/sale/SaleFilter";
+import { SalesList } from "@/components/sale/SalesListas";
+
+import { useSalesPagination } from "@/hooks/sales/useSalePagination";
+import { useSalesView } from "@/hooks/sales/useSalesView";
+import { useCollectorSales } from "@/hooks/collector/useCollectorSale";
+
+export default function CollectorSalesPage() {
+  const { sales, loading, error } = useCollectorSales();
 
   const { filter, setFilter, filteredSales, stats, filters } =
     useSalesView(sales);
@@ -17,12 +18,12 @@ export default function MySalesPage() {
   const { paginated, page, setPage, totalPages } =
     useSalesPagination(filteredSales);
 
-  useEffect(() => setPage(1), [filter, setPage]);
+  useEffect(() => {
+    setPage(1);
+  }, [filter, setPage]);
 
   return (
     <div className="space-y-10">
-      <SalesStats stats={stats} />
-
       <SalesFilters filters={filters} current={filter} onChange={setFilter} />
 
       <SalesList

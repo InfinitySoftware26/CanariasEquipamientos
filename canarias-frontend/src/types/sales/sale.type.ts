@@ -2,31 +2,45 @@ export interface Sale {
   saleId: string;
 
   clientId: string;
+  client?: {
+    clientId: string;
+    name: string;
+    surname: string;
+  };
+
+  staffId: string;
+  societyId: string;
 
   totalAmount: number;
-
+  installmentAmount: number;
   installmentsCount: number;
 
+  paymentFrequency: string;
+
+  firstDueDate: string;
   saleDate: string;
-
-  createdAt: string;
-  assignedCollectorId: string | null;
-
+  hasDiscount?: boolean;
+  createdAt?: number;
   status:
-    | "PENDING_ADMIN_VALIDATION"
-    | "PENDING_ENVIRONMENTAL_VISIT"
-    | "PENDING_DELIVERY"
-    | "DELIVERED"
-    | "CLOSED"
-    | "REJECTED_ADMIN"
-    | "ENVIRONMENTAL_REJECTED";
+    | "pending_admin_validation"
+    | "pending_environmental_visit"
+    | "pending_delivery"
+    | "delivered"
+    | "closed"
+    | "rejected_admin"
+    | "environmental_rejected";
 
   // ← preparados para cuando el back los empiece a devolver
-  clientName?: string;
+  products?: {
+    saleProductId: string;
+    productId: string;
+    product?: {
+      productId: string;
+      name: string;
+    };
+  }[];
 
-  product?: string;
-
-  hasDiscount?: boolean;
+  assignedCollectorId?: string | null;
 }
 
 export type Pipeline = {
@@ -35,4 +49,19 @@ export type Pipeline = {
   delivery: number;
   closed: number;
   rejected: number;
+};
+
+export type SaleStatus =
+  | "PENDING_ADMIN_VALIDATION"
+  | "PENDING_ENVIRONMENTAL_VISIT"
+  | "PENDING_DELIVERY"
+  | "DELIVERED"
+  | "CLOSED"
+  | "REJECTED_ADMIN"
+  | "ENVIRONMENTAL_REJECTED";
+
+export type SalesResponse = {
+  data: Sale[];
+  statusCode: number;
+  timestamp: string;
 };

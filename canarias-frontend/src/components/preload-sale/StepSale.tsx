@@ -24,6 +24,7 @@ export function StepSale({
   const selectedProduct = products.find((p) => p.productId === form.productId);
 
   // ---------------- CUOTAS ----------------
+
   const installmentOptions: Option<number>[] = [
     { label: "3 cuotas", value: 3 },
     { label: "6 cuotas", value: 6 },

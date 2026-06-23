@@ -39,7 +39,6 @@ export default function SalesPage() {
 
       {/* STATS */}
       <SalesStats stats={stats} />
-
       {/* LIST */}
       <section className="space-y-4">
         {loading && <p className="text-white/60">Cargando ventas...</p>}
@@ -60,6 +59,8 @@ export default function SalesPage() {
       {totalPages > 1 && (
         <div className="flex justify-center gap-2 pt-2">
           {Array.from({ length: totalPages }).map((_, i) => {
+            console.log("FILTER:", filter);
+            console.log("FILTERED:", filteredSales.length);
             const pageNumber = i + 1;
 
             return (

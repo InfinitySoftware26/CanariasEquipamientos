@@ -60,7 +60,7 @@ export function useSellerSales() {
       return sales.filter((s) => PENDING_STATUSES.includes(s.status));
     }
 
-    return sales.filter((s) => s.status === "CLOSED");
+    return sales.filter((s) => s.status === "closed");
   }, [sales, filter]);
 
   // ---------------- STATS ----------------
@@ -70,11 +70,11 @@ export function useSellerSales() {
         acc.total++;
 
         if (PENDING_STATUSES.includes(sale.status)) {
-          if (sale.status === "PENDING_ADMIN_VALIDATION") acc.adminValidation++;
-          if (sale.status === "PENDING_ENVIRONMENTAL_VISIT") acc.envVisit++;
-          if (sale.status === "PENDING_DELIVERY") acc.delivery++;
+          if (sale.status === "pending_admin_validation") acc.adminValidation++;
+          if (sale.status === "pending_environmental_visit") acc.envVisit++;
+          if (sale.status === "pending_delivery") acc.delivery++;
         }
-        if (sale.status === "CLOSED") acc.closed++;
+        if (sale.status === "closed") acc.closed++;
 
         return acc;
       },
