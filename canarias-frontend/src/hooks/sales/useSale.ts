@@ -17,8 +17,6 @@ export function useSales() {
   const [error, setError] = useState<string | null>(null);
 
   const loadSales = useCallback(async () => {
-    let isMounted = true;
-
     try {
       setLoading(true);
       setError(null);
@@ -29,34 +27,18 @@ export function useSales() {
         throw new Error("Respuesta inválida de ventas");
       }
 
-      if (isMounted) {
-        setSales(data.map(normalizeSale));
-      }
+      setSales(data.map(normalizeSale));
     } catch (err) {
       console.error(err);
-
-      if (isMounted) {
-        setError("No se pudieron cargar las ventas");
-      }
+      setError("No se pudieron cargar las ventas");
     } finally {
-      if (isMounted) {
-        setLoading(false);
-      }
+      setLoading(false);
     }
-
-    return () => {
-      isMounted = false;
-    };
   }, []);
 
   useEffect(() => {
-    loadSales();
+    void loadSales();
   }, [loadSales]);
 
-  return {
-    sales,
-    loading,
-    error,
-    refresh: loadSales,
-  };
+  return { sales, loading, error, refresh: loadSales };
 }
