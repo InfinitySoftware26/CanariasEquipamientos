@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useSales } from "../sales/useSale";
 import { Sale } from "@/types/sales/sale.type";
-import { normalizeSaleStatus } from "@/utils/sales/normalizeSaleStatus";
+import { normalizeSaleStatus } from "@/types/sales/saleStatus.mapper";
 
 export function useAdminDashboard() {
   const { sales } = useSales();
