@@ -3,49 +3,84 @@ import { useMemo, useState } from "react";
 
 type FilterType = "ALL" | "PENDING" | "CLOSED";
 
+const normalizeStatus = (status?: string) =>
+  (status ?? "").toLowerCase().trim().replace(/-/g, "_");
+
 const PENDING_STATUSES = [
-  "PENDING_ADMIN_VALIDATION",
-  "PENDING_ENVIRONMENTAL_VISIT",
-  "PENDING_DELIVERY",
+  "pending_admin_validation",
+  "pending_environmental_visit",
+  "pending_delivery",
 ];
 
-export function useSalesView(sales: Sale[]) {
+// 🔥 MAP QUERY PARAM → STATUS INTERNO
+const QUERY_STATUS_MAP: Record<string, string> = {
+  PENDING_ADMIN_VALIDATION: "pending_admin_validation",
+  PENDING_ENVIRONMENTAL_VISIT: "pending_environmental_visit",
+  PENDING_DELIVERY: "pending_delivery",
+  CLOSED: "closed",
+};
+
+export function useSalesView(sales: Sale[], statusFromQuery?: string) {
   const [filter, setFilter] = useState<FilterType>("ALL");
 
-  const filteredSales = useMemo(() => {
-    if (filter === "ALL") return sales;
+  // 🔥 traducimos query param a status interno real
+  const queryStatus = statusFromQuery
+    ? QUERY_STATUS_MAP[statusFromQuery]
+    : null;
 
-    if (filter === "PENDING") {
-      return sales.filter((s) => PENDING_STATUSES.includes(s.status));
+  // 🔥 normalizamos sales UNA sola vez
+  const normalizedSales = useMemo(() => {
+    return (sales ?? []).map((s) => ({
+      ...s,
+      status: normalizeStatus(s.status) as Sale["status"],
+    }));
+  }, [sales]);
+
+  // 🔥 filtrado único (UI + URL)
+  const filteredSales = useMemo(() => {
+    const activeFilter = queryStatus ?? filter;
+
+    if (activeFilter === "ALL") return normalizedSales;
+
+    if (activeFilter === "PENDING") {
+      return normalizedSales.filter((s) => PENDING_STATUSES.includes(s.status));
     }
 
-    return sales.filter((s) => s.status === "CLOSED");
-  }, [sales, filter]);
+    if (activeFilter === "CLOSED") {
+      return normalizedSales.filter((s) => s.status === "closed");
+    }
 
-  const stats = useMemo(
-    () => ({
-      total: sales.length,
-      adminValidation: sales.filter(
-        (s) => s.status === "PENDING_ADMIN_VALIDATION",
+    // 🔥 si viene status directo desde query (ej pending_delivery)
+    return normalizedSales.filter((s) => s.status === activeFilter);
+  }, [normalizedSales, filter, queryStatus]);
+
+  // 🔥 stats consistentes
+  const stats = useMemo(() => {
+    return {
+      total: normalizedSales.length,
+      adminValidation: normalizedSales.filter(
+        (s) => s.status === "pending_admin_validation",
       ).length,
-      envVisit: sales.filter((s) => s.status === "PENDING_ENVIRONMENTAL_VISIT")
+      envVisit: normalizedSales.filter(
+        (s) => s.status === "pending_environmental_visit",
+      ).length,
+      delivery: normalizedSales.filter((s) => s.status === "pending_delivery")
         .length,
-      delivery: sales.filter((s) => s.status === "PENDING_DELIVERY").length,
-      closed: sales.filter((s) => s.status === "CLOSED").length,
-    }),
-    [sales],
-  );
+      closed: normalizedSales.filter((s) => s.status === "closed").length,
+    };
+  }, [normalizedSales]);
 
+  // 🔥 filtros UI
   const filters: { label: string; value: FilterType }[] = useMemo(
     () => [
-      { label: `Todas (${stats.total})`, value: "ALL" as FilterType },
+      { label: `Todas (${stats.total})`, value: "ALL" },
       {
         label: `Pendientes (${
           stats.adminValidation + stats.envVisit + stats.delivery
         })`,
-        value: "PENDING" as FilterType,
+        value: "PENDING",
       },
-      { label: `Cerradas (${stats.closed})`, value: "CLOSED" as FilterType },
+      { label: `Cerradas (${stats.closed})`, value: "CLOSED" },
     ],
     [stats],
   );

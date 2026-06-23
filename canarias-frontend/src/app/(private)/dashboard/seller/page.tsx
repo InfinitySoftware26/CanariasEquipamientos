@@ -1,11 +1,11 @@
 "use client";
 
-import { DollarSign, Search, ClipboardCheck } from "lucide-react";
+import { DollarSign, Search } from "lucide-react";
 
 import { DashboardCard } from "@/components/dashboard/DashboardCard";
 import { KpiCard } from "@/components/dashboard/KpiCard";
 import { useAuthStore } from "@/store/auth.store";
-import { useSellerDashboard } from "@/hooks/sales/useSellerDashboard";
+import { useSellerDashboard } from "@/hooks/seller/useSellerDashboard";
 import { useRouter } from "next/navigation";
 
 export default function SellerDashboard() {
@@ -83,13 +83,6 @@ export default function SellerDashboard() {
             description="Gestión de clientes"
             icon={<Search size={22} />}
             onClick={() => router.push("/clients")}
-          />
-
-          <DashboardCard
-            title="Seguimiento comercial"
-            description="Ver estado de ventas"
-            icon={<ClipboardCheck size={22} />}
-            onClick={() => router.push("/sales/my")}
           />
         </div>
       </section>

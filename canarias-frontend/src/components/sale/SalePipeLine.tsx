@@ -2,42 +2,38 @@
 
 import { Sale } from "@/types/sales/sale.type";
 
-const steps: Extract<
-  Sale["status"],
-  | "PENDING_ADMIN_VALIDATION"
-  | "PENDING_ENVIRONMENTAL_VISIT"
-  | "PENDING_DELIVERY"
-  | "DELIVERED"
-  | "CLOSED"
->[] = [
-  "PENDING_ADMIN_VALIDATION",
-  "PENDING_ENVIRONMENTAL_VISIT",
-  "PENDING_DELIVERY",
-  "DELIVERED",
-  "CLOSED",
+const steps: Sale["status"][] = [
+  "pending_admin_validation",
+  "pending_environmental_visit",
+  "pending_delivery",
+  "delivered",
+  "closed",
 ];
 
-const labels: Record<(typeof steps)[number], string> = {
-  PENDING_ADMIN_VALIDATION: "Validación admin",
-  PENDING_ENVIRONMENTAL_VISIT: "Visita técnica",
-  PENDING_DELIVERY: "Entrega",
-  DELIVERED: "Entregado",
-  CLOSED: "Cerrado",
+const labels: Record<Sale["status"], string> = {
+  pending_admin_validation: "Validación admin",
+  pending_environmental_visit: "Visita técnica",
+  pending_delivery: "Entrega",
+  delivered: "Entregado",
+  closed: "Cerrado",
+  rejected_admin: "Rechazado admin",
+  environmental_rejected: "Rechazado técnico",
 };
 
-const colors: Record<(typeof steps)[number], string> = {
-  PENDING_ADMIN_VALIDATION: "bg-yellow-500",
-  PENDING_ENVIRONMENTAL_VISIT: "bg-blue-500",
-  PENDING_DELIVERY: "bg-purple-500",
-  DELIVERED: "bg-green-500",
-  CLOSED: "bg-gray-600",
+const colors: Record<Sale["status"], string> = {
+  pending_admin_validation: "bg-yellow-500",
+  pending_environmental_visit: "bg-blue-500",
+  pending_delivery: "bg-purple-500",
+  delivered: "bg-green-500",
+  closed: "bg-gray-600",
+  rejected_admin: "bg-red-500",
+  environmental_rejected: "bg-red-600",
 };
-
 export function SalePipeline({ status }: { status: Sale["status"] }) {
   const currentIndex = steps.indexOf(status as (typeof steps)[number]);
 
   const isRejected =
-    status === "REJECTED_ADMIN" || status === "ENVIRONMENTAL_REJECTED";
+    status === "rejected_admin" || status === "environmental_rejected";
 
   return (
     <div className="rounded-2xl border border-white/10 bg-white/5 p-4 space-y-3">

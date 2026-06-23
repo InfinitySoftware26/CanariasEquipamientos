@@ -16,9 +16,9 @@ function Info({ label, value }: { label: string; value: React.ReactNode }) {
 }
 
 const statusLabelMap: Record<string, string> = {
-  PENDING_ADMIN_VALIDATION: "Validación",
-  PENDING_ENVIRONMENTAL_VISIT: "Visita",
-  PENDING_DELIVERY: "Entrega",
+  PENDING_ADMIN_VALIDATION: "Pendiente de Validación",
+  PENDING_ENVIRONMENTAL_VISIT: "Pendiente de Visita",
+  PENDING_DELIVERY: "Listo para Entrega",
   CLOSED: "Cerrada",
 };
 
@@ -33,10 +33,18 @@ const statusColorMap: Record<string, string> = {
 export function SaleCard({ sale }: { sale: Sale }) {
   const router = useRouter();
 
-  const badge = getSaleStatusLabel(sale.status);
+  /**
+   * 🔥 FIX CLAVE:
+   * Normalizamos SIEMPRE el status para evitar crudos o inconsistencias
+   */
+  const status = (sale.status ?? "").toUpperCase();
 
-  const color = statusColorMap[sale.status];
-  const label = statusLabelMap[sale.status] ?? sale.status;
+  const badge = getSaleStatusLabel(status);
+
+  const color =
+    statusColorMap[status] ?? "text-white border-white/20 bg-white/5";
+
+  const label = statusLabelMap[status] ?? status;
 
   return (
     <article
@@ -46,17 +54,30 @@ export function SaleCard({ sale }: { sale: Sale }) {
       <div className="flex justify-between gap-6">
         <div className="space-y-5">
           <div>
-            <p className="text-xs text-white/40">
-              Venta #{sale.saleId.slice(0, 8)}
-            </p>
+            <Info label="Venta" value={`#${sale.saleId.slice(0, 8)}`} />
 
-            <h3 className="text-xl font-semibold text-white">
-              Cliente #{sale.clientName ?? sale.clientId}
-            </h3>
+            <Info
+              label="Cliente"
+              value={
+                sale.client
+                  ? `${sale.client.name} ${sale.client.surname}`
+                  : sale.clientId
+              }
+            />
+
+            <Info
+              label="Producto"
+              value={
+                sale.products?.length
+                  ? sale.products
+                      .map((p) => p.product?.name ?? p.productId)
+                      .join(", ")
+                  : "-"
+              }
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <Info label="Producto" value={sale.product ?? "-"} />
             <Info label="Cuotas" value={sale.installmentsCount} />
             <Info label="Descuento" value={sale.hasDiscount ? "Sí" : "No"} />
             <Info

@@ -174,6 +174,7 @@ export function usePreloadSale() {
       const selectedProduct = products.find(
         (p) => p.productId === form.productId,
       );
+      console.log(selectedProduct);
 
       if (!selectedProduct) {
         throw new Error("Producto no válido");

@@ -1,14 +1,14 @@
-"use client";
-
 import { useMemo } from "react";
-
+import { useSales } from "../sales/useSale";
 import { Sale } from "@/types/sales/sale.type";
-import { useSales } from "./useSale";
+import { normalizeSaleStatus } from "@/utils/sales/normalizeSaleStatus";
 
 export function useAdminDashboard() {
   const { sales } = useSales();
 
   return useMemo(() => {
+    const list = sales ?? [];
+
     const stats = {
       pendingValidation: 0,
       pendingVisit: 0,
@@ -17,8 +17,10 @@ export function useAdminDashboard() {
       rejected: 0,
     };
 
-    sales.forEach((sale: Sale) => {
-      switch (sale.status) {
+    list.forEach((sale: Sale) => {
+      const status = normalizeSaleStatus(sale.status);
+
+      switch (status) {
         case "PENDING_ADMIN_VALIDATION":
           stats.pendingValidation++;
           break;

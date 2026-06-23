@@ -41,24 +41,24 @@ export default function AdminDashboard() {
 
         sales.forEach((sale) => {
           switch (sale.status) {
-            case "PENDING_ADMIN_VALIDATION":
+            case "pending_admin_validation":
               nextStats.adminValidation++;
               break;
 
-            case "PENDING_ENVIRONMENTAL_VISIT":
+            case "pending_environmental_visit":
               nextStats.envVisit++;
               break;
 
-            case "PENDING_DELIVERY":
+            case "pending_delivery":
               nextStats.delivery++;
               break;
 
-            case "CLOSED":
+            case "closed":
               nextStats.closed++;
               break;
 
-            case "REJECTED_ADMIN":
-            case "ENVIRONMENTAL_REJECTED":
+            case "rejected_admin":
+            case "environmental_rejected":
               nextStats.rejected++;
               break;
           }

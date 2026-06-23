@@ -5,14 +5,34 @@ export default function ManagerDashboard() {
     <div>
       <h1 className="mb-6 text-3xl font-bold">Dashboard Gerente</h1>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <DashboardCard title="Clientes" value="0" />
+      <div className="grid gap-4 md:grid-cols-4">
+        <DashboardCard
+          title="Cobros Hoy"
+          description="0"
+          icon={<span>💰</span>}
+          onClick={() => {}}
+        />
 
-        <DashboardCard title="Cobros del mes" value="$0" />
+        <DashboardCard
+          title="Pendientes"
+          description="0"
+          icon={<span>📌</span>}
+          onClick={() => {}}
+        />
 
-        <DashboardCard title="Empleados" value="0" />
+        <DashboardCard
+          title="Clientes"
+          description="0"
+          icon={<span>👥</span>}
+          onClick={() => {}}
+        />
 
-        <DashboardCard title="Mora" value="0%" />
+        <DashboardCard
+          title="Visitas"
+          description="0"
+          icon={<span>🚚</span>}
+          onClick={() => {}}
+        />
       </div>
     </div>
   );

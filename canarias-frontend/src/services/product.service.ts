@@ -22,5 +22,7 @@ export async function getProducts() {
 
   const json = await res.json();
 
+  console.log("PRODUCTS JSON:", json);
+
   return json.data ?? [];
 }
