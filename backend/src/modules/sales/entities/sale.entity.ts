@@ -1,68 +1,78 @@
 import {
-  Entity, PrimaryGeneratedColumn, Column,
-  CreateDateColumn, UpdateDateColumn,
-  ManyToOne, OneToMany, JoinColumn,
-} from 'typeorm';
-import { SaleStatus } from '../../../common/enums/sale-status.enum';
-import { PaymentFrequency } from '../../../common/enums/payment-frequency.enum';
-import { Client } from '../../clients/entities/client.entity';
-import { SaleProduct } from './sale-product.entity';
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne,
+  OneToMany,
+  JoinColumn,
+} from "typeorm";
+import { SaleStatus } from "../../../common/enums/sale-status.enum";
+import { PaymentFrequency } from "../../../common/enums/payment-frequency.enum";
+import { Client } from "../../clients/entities/client.entity";
+import { SaleProduct } from "./sale-product.entity";
 
-@Entity('SALES')
+@Entity("SALES")
 export class Sale {
-  @PrimaryGeneratedColumn('uuid', { name: 'sale_id' })
+  @PrimaryGeneratedColumn("uuid", { name: "sale_id" })
   saleId!: string;
 
-  @Column({ name: 'client_id' })
+  @Column({ name: "client_id", type: "uuid" })
   clientId!: string;
 
   @ManyToOne(() => Client)
-  @JoinColumn({ name: 'client_id' })
+  @JoinColumn({ name: "client_id" })
   client!: Client;
 
-  @OneToMany(() => SaleProduct, sp => sp.sale)
+  @OneToMany(() => SaleProduct, (sp) => sp.sale)
   products!: SaleProduct[];
 
-  @Column({ name: 'staff_id' })
+  @Column({ name: "staff_id", type: "uuid" })
   staffId!: string;
 
-  @Column({ name: 'society_id' })
+  @Column({ name: "society_id", type: "uuid" })
   societyId!: string;
 
-  @Column({ name: 'total_amount', type: 'decimal', precision: 12, scale: 2 })
+  @Column({ name: "total_amount", type: "decimal", precision: 12, scale: 2 })
   totalAmount!: number;
 
-  @Column({ name: 'installment_amount', type: 'decimal', precision: 12, scale: 2 })
+  @Column({
+    name: "installment_amount",
+    type: "decimal",
+    precision: 12,
+    scale: 2,
+  })
   installmentAmount!: number;
 
-  @Column({ name: 'installments_count', type: 'integer' })
+  @Column({ name: "installments_count", type: "integer" })
   installmentsCount!: number;
 
-  @Column({ name: 'payment_frequency', type: 'enum', enum: PaymentFrequency })
+  @Column({ name: "payment_frequency", type: "enum", enum: PaymentFrequency })
   paymentFrequency!: PaymentFrequency;
 
-  @Column({ name: 'first_due_date', type: 'date' })
+  @Column({ name: "first_due_date", type: "date" })
   firstDueDate!: Date;
 
-  @Column({ name: 'sale_date', type: 'timestamptz' })
+  @Column({ name: "sale_date", type: "timestamptz" })
   saleDate!: Date;
 
   @Column({
-    type: 'enum',
+    type: "enum",
     enum: SaleStatus,
     default: SaleStatus.PENDING_ADMIN_VALIDATION,
   })
   status!: SaleStatus;
 
-  @Column({ name: 'assigned_collector_id', nullable: true })
+  @Column({ name: "assigned_collector_id", type: "uuid", nullable: true })
   assignedCollectorId!: string;
 
   @Column({ nullable: true })
   observation!: string;
 
-  @CreateDateColumn({ name: 'created_at' })
+  @CreateDateColumn({ name: "created_at" })
   createdAt!: Date;
 
-  @UpdateDateColumn({ name: 'updated_at' })
+  @UpdateDateColumn({ name: "updated_at" })
   updatedAt!: Date;
 }
