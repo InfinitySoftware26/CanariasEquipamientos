@@ -5,41 +5,45 @@ import { Sale } from '../entities/sale.entity';
 import { ISalesRepository } from '../interfaces/sales-repository.interface';
 import { SaleStatus } from '../../../common/enums/sale-status.enum';
 
+const SALE_RELATIONS = ['client', 'products', 'products.product'];
+
 @Injectable()
 export class SalesRepository implements ISalesRepository {
   constructor(@InjectRepository(Sale) private readonly repo: Repository<Sale>) {}
 
   findById(id: string): Promise<Sale | null> {
-    return this.repo.findOne({ where: { saleId: id } });
+    return this.repo.findOne({ where: { saleId: id }, relations: SALE_RELATIONS });
   }
 
   findByClient(clientId: string, societyId: string): Promise<Sale[]> {
-    return this.repo.find({ where: { clientId, societyId }, order: { saleDate: 'DESC' } });
+    return this.repo.find({ where: { clientId, societyId }, order: { saleDate: 'DESC' }, relations: SALE_RELATIONS });
   }
 
   findBySociety(societyId: string): Promise<Sale[]> {
-    return this.repo.find({ where: { societyId }, order: { saleDate: 'DESC' } });
+    return this.repo.find({ where: { societyId }, order: { saleDate: 'DESC' }, relations: SALE_RELATIONS });
   }
 
   findByStatus(societyId: string, status: SaleStatus): Promise<Sale[]> {
-    return this.repo.find({ where: { societyId, status }, order: { saleDate: 'ASC' } });
+    return this.repo.find({ where: { societyId, status }, order: { saleDate: 'ASC' }, relations: SALE_RELATIONS });
   }
 
   findPendingValidation(societyId: string): Promise<Sale[]> {
     return this.repo.find({
       where: { societyId, status: SaleStatus.PENDING_ADMIN_VALIDATION },
       order: { saleDate: 'ASC' },
+      relations: SALE_RELATIONS,
     });
   }
 
   findBySeller(staffId: string, societyId: string): Promise<Sale[]> {
-    return this.repo.find({ where: { staffId, societyId }, order: { saleDate: 'DESC' } });
+    return this.repo.find({ where: { staffId, societyId }, order: { saleDate: 'DESC' }, relations: SALE_RELATIONS });
   }
 
   findByCollector(collectorId: string, societyId: string): Promise<Sale[]> {
     return this.repo.find({
       where: { assignedCollectorId: collectorId, societyId },
       order: { saleDate: 'DESC' },
+      relations: SALE_RELATIONS,
     });
   }
 
@@ -51,6 +55,7 @@ export class SalesRepository implements ISalesRepository {
         { clientId, status: SaleStatus.PENDING_DELIVERY },
         { clientId, status: SaleStatus.DELIVERED },
       ],
+      relations: SALE_RELATIONS,
     });
   }
 
