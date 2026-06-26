@@ -12,7 +12,7 @@ export const navigationByRole = {
   [StaffRole.MANAGER]: [
     { label: "Panel Inicial", href: "/dashboard/manager" },
     { label: "Ventas", href: "/sales" },
-    { label: "Clientes", href: "/customers" },
+    { label: "Clientes", href: "/client" },
     { label: "Cobranzas", href: "/collections" },
     { label: "Balances", href: "/balances" },
     { label: "Empleados", href: "/employees" },
@@ -21,7 +21,7 @@ export const navigationByRole = {
   [StaffRole.ADMIN]: [
     { label: "Panel Inicial", href: "/dashboard/admin" },
     { label: "Ventas", href: "/sales" },
-    { label: "Clientes", href: "/customers" },
+    { label: "Clientes", href: "/client" },
     { label: "Productos", href: "/products" },
     { label: "Proveedores", href: "/suppliers" },
     { label: "Reportes", href: "/reports" },
@@ -42,7 +42,7 @@ export const navigationByRole = {
     },
     {
       label: "Clientes",
-      href: "/customers",
+      href: "/client",
     },
   ],
 
@@ -50,7 +50,7 @@ export const navigationByRole = {
     { label: "Panel Inicial", href: "/dashboard/collector" },
     { label: "Ventas asignadas", href: "/sales/collector" },
     { label: "Mis Cobros", href: "/collections" },
-    { label: "Clientes", href: "/customers" },
+    { label: "Clientes", href: "/client" },
     { label: "Agenda", href: "/schedule" },
   ],
 };

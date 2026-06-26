@@ -82,7 +82,7 @@ export default function SellerDashboard() {
             title="Mis Clientes"
             description="Gestión de clientes"
             icon={<Search size={22} />}
-            onClick={() => router.push("/clients")}
+            onClick={() => router.push("/client")}
           />
         </div>
       </section>

@@ -10,8 +10,8 @@ import {
   searchClientByDocument,
 } from "@/services/client.service";
 import { createSale } from "@/services/sales.service";
-import { ClientResponse } from "@/types/clientResponse.type";
 import { Product } from "@/types/preload-sale/preload.type";
+import { Client } from "@/types/cretateClient.type";
 
 const initialForm: PreloadFormData = {
   name: "",
@@ -22,7 +22,7 @@ const initialForm: PreloadFormData = {
   phone: "",
   productId: "",
   quantity: 1,
-  installmentsCount: 3 | 6 | 9,
+  installmentsCount: 3,
   paymentFrequency: "monthly",
   firstDueDate: "",
   ref1Phone: "",
@@ -46,9 +46,7 @@ export function usePreloadSale() {
   const [error, setError] = useState<string | null>(null);
 
   const [clientFound, setClientFound] = useState(false);
-  const [existingClient, setExistingClient] = useState<ClientResponse | null>(
-    null,
-  );
+  const [existingClient, setExistingClient] = useState<Client | null>(null);
 
   const loadedRef = useRef(false);
 
@@ -59,12 +57,7 @@ export function usePreloadSale() {
       setError(null);
 
       const data = await getProducts();
-
-      if (!Array.isArray(data)) {
-        throw new Error("Productos inválidos");
-      }
-
-      setProducts(data);
+      setProducts(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error(err);
       setError("No se pudieron cargar los productos");
@@ -91,40 +84,23 @@ export function usePreloadSale() {
       setLoading(true);
       setError(null);
 
-      const raw = await searchClientByDocument(form.documentNumber);
+      const client = await searchClientByDocument(form.documentNumber);
 
-      console.log("LOOKUP RAW:", raw);
-
-      // normalización real del objeto
-      const client = raw?.data ?? raw;
-
-      const clientId = client?.clientId ?? client?.client_id ?? client?.id;
-
-      // 🔥 IMPORTANTE: log para verificar realidad
-      console.log("CLIENT NORMALIZED:", client);
-      console.log("CLIENT ID:", clientId);
-
-      // SOLO esta condición manda el flujo
-      if (!clientId) {
+      if (!client) {
+        setClientFound(false);
         setStep(2);
         return;
       }
 
       setClientFound(true);
-
-      const normalizedClient = {
-        ...client,
-        clientId,
-      };
-
-      setExistingClient(normalizedClient);
+      setExistingClient(client);
 
       setForm((prev) => ({
         ...prev,
-        name: client?.name ?? "",
-        surname: client?.surname ?? "",
-        address: client?.address ?? "",
-        phone: client?.phone ?? "",
+        name: client.name ?? "",
+        surname: client.surname ?? "",
+        address: client.address ?? "",
+        phone: client.phone ?? "",
       }));
 
       setStep(3);
@@ -146,25 +122,25 @@ export function usePreloadSale() {
       setLoading(true);
       setError(null);
 
-      const clientId = existingClient?.clientId;
+      let finalClientId = existingClient?.clientId;
 
-      let finalClientId = clientId;
-
+      // 🔥 CREAR CLIENTE SI NO EXISTE
       if (!finalClientId) {
-        const client = await createPreloadClient({
+        const created = await createPreloadClient({
           name: form.name,
           surname: form.surname,
           documentNumber: form.documentNumber,
           address: form.address,
           phone: form.phone,
-          observations: form.locality,
         });
 
-        finalClientId = client.clientId ?? client;
+        const clientId = created.clientId;
+
+        finalClientId = clientId;
       }
 
       if (!finalClientId) {
-        throw new Error("No se pudo obtener el ID del cliente");
+        throw new Error("clientId inválido");
       }
 
       if (!form.productId) {
@@ -174,28 +150,13 @@ export function usePreloadSale() {
       const selectedProduct = products.find(
         (p) => p.productId === form.productId,
       );
-      console.log(selectedProduct);
 
       if (!selectedProduct) {
         throw new Error("Producto no válido");
       }
-      console.log("SALE PAYLOAD", {
-        clientId: finalClientId,
-        saleDate: new Date().toISOString(),
-        installmentsCount: form.installmentsCount,
-        paymentFrequency: form.paymentFrequency,
-        firstDueDate: form.firstDueDate,
-        observation: `Localidad: ${form.locality}`,
-        products: [
-          {
-            productId: form.productId,
-            quantity: form.quantity,
-            unitPrice: Number(selectedProduct.price),
-          },
-        ],
-      });
+
       await createSale({
-        clientId: finalClientId,
+        clientId: finalClientId, // 🔥 SIEMPRE STRING
         saleDate: new Date().toISOString(),
         installmentsCount: form.installmentsCount,
         paymentFrequency: form.paymentFrequency,
@@ -231,11 +192,8 @@ export function usePreloadSale() {
     error,
     clientFound,
 
-    loadProducts,
     handleSearchClient,
     handleSubmit,
     goToSaleStep,
-
-    router,
   };
 }
