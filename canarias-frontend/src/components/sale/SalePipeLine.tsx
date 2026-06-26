@@ -12,7 +12,7 @@ const steps: Sale["status"][] = [
 
 const labels: Record<Sale["status"], string> = {
   pending_admin_validation: "Validación admin",
-  pending_environmental_visit: "Visita técnica",
+  pending_environmental_visit: "Visita ambiental",
   pending_delivery: "Entrega",
   delivered: "Entregado",
   closed: "Cerrado",

@@ -12,7 +12,7 @@ export function StepClient({
     <section className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
       <StepTitle icon={<User size={18} />} label="Cliente" />
 
-      <div className="space-y-3">
+      <div className="space-y-4">
         <input
           name="documentNumber"
           value={form.documentNumber}
@@ -28,14 +28,18 @@ export function StepClient({
           Buscar cliente
         </button>
 
-        {clientFound ? (
-          <p className="text-xs text-green-400 mt-2">Cliente existente</p>
-        ) : (
-          form.documentNumber && (
-            <p className="text-xs text-yellow-400 mt-2">
-              Cliente nuevo (se creará al continuar)
-            </p>
-          )
+        {form.documentNumber && (
+          <div className="mt-2 text-xs">
+            {clientFound ? (
+              <p className="text-green-400">
+                ✔ Cliente encontrado en la base de datos
+              </p>
+            ) : (
+              <p className="text-yellow-400">
+                ⚠ Cliente no encontrado. Se creará automáticamente.
+              </p>
+            )}
+          </div>
         )}
       </div>
     </section>
