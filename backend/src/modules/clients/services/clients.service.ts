@@ -37,7 +37,7 @@ export class ClientsService {
       visitName: dto.visitName,
       visitDate: dto.visitDate ? new Date(dto.visitDate) : undefined,
       observations: dto.observations,
-      societyId: dto.societyId ?? performer.societyId,
+      societyId: performer.societyId ?? dto.societyId,
       createdBy: performer.staffId,
       updatedBy: performer.staffId,
     };

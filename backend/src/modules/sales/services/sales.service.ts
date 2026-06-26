@@ -331,6 +331,13 @@ export class SalesService {
     });
   }
 
+  // ─── OBSERVACIÓN ─────────────────────────────────────────────────────────
+
+  async updateObservation(saleId: string, observation: string | undefined): Promise<void> {
+    await this.findById(saleId);
+    await this.salesRepo.update(saleId, { observation: observation ?? null as any });
+  }
+
   // ─── REASIGNAR COLLECTOR ──────────────────────────────────────────────────
 
   async assignCollector(saleId: string, collectorId: string, user: JwtPayload): Promise<void> {

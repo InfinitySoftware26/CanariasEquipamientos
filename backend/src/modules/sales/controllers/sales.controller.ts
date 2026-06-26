@@ -8,6 +8,7 @@ import { CreateSaleDto } from '../dto/create-sale.dto';
 import { ValidateSaleDto } from '../dto/validate-sale.dto';
 import { FailDeliveryDto } from '../dto/fail-delivery.dto';
 import { AssignCollectorDto } from '../dto/assign-collector.dto';
+import { UpdateObservationDto } from '../dto/update-observation.dto';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../common/guards/roles.guard';
 import { SocietyGuard } from '../../../common/guards/society.guard';
@@ -138,6 +139,16 @@ export class SalesController {
   @ApiOperation({ summary: 'Cerrar venta (post entrega)' })
   close(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: JwtPayload) {
     return this.salesService.close(id, user);
+  }
+
+  @Patch(':id/observation')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Actualizar observación de la venta' })
+  updateObservation(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateObservationDto,
+  ) {
+    return this.salesService.updateObservation(id, dto.observation);
   }
 
   @Patch(':id/assign-collector')
