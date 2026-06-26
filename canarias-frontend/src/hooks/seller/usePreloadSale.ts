@@ -17,6 +17,7 @@ const initialForm: PreloadFormData = {
   name: "",
   surname: "",
   documentNumber: "",
+  email: "",
   address: "",
   locality: "",
   phone: "",
@@ -195,5 +196,6 @@ export function usePreloadSale() {
     handleSearchClient,
     handleSubmit,
     goToSaleStep,
+    router,
   };
 }
