@@ -17,12 +17,12 @@ export class ClientsService {
     @Inject(CLIENTS_REPOSITORY)
     private readonly clientsRepo: IClientsRepository,
     @InjectRepository(ClientHistory)
-    private readonly historyRepo: Repository<ClientHistory>
+    private readonly historyRepo: Repository<ClientHistory>,
   ) {}
 
   async createPreload(
     dto: CreateClientDto,
-    performer: { staffId: string; name: string; societyId?: string }
+    performer: { staffId: string; name: string; societyId?: string },
   ): Promise<Client> {
     const data: Partial<Client> = {
       name: dto.name,
@@ -50,7 +50,7 @@ export class ClientsService {
         action: "create",
         performedBy: performer.staffId,
         performedByName: performer.name,
-      })
+      }),
     );
     return client;
   }
@@ -67,7 +67,7 @@ export class ClientsService {
       name: string;
       role: string;
       societyId?: string;
-    }
+    },
   ): Promise<{
     items: Client[];
     total: number;
@@ -89,7 +89,7 @@ export class ClientsService {
       { name: query.name },
       page,
       perPage,
-      effectiveSociety
+      effectiveSociety,
     );
     return { items, total, page, perPage };
   }
@@ -97,7 +97,7 @@ export class ClientsService {
   async update(
     clientId: string,
     dto: UpdateClientDto,
-    performer: { staffId: string; name: string }
+    performer: { staffId: string; name: string },
   ): Promise<Client> {
     const existing = await this.clientsRepo.findById(clientId);
     if (!existing) throw new NotFoundException("Cliente no encontrado");
@@ -116,7 +116,7 @@ export class ClientsService {
         action: "update",
         performedBy: performer.staffId,
         performedByName: performer.name,
-      })
+      }),
     );
     return updated;
   }
@@ -124,7 +124,7 @@ export class ClientsService {
   async requestVerification(
     clientId: string,
     note: string | undefined,
-    performer: { staffId: string; name: string }
+    performer: { staffId: string; name: string },
   ): Promise<Client> {
     const existing = await this.clientsRepo.findById(clientId);
     if (!existing) throw new NotFoundException("Cliente no encontrado");
@@ -145,7 +145,7 @@ export class ClientsService {
         action: "request_verification",
         performedBy: performer.staffId,
         performedByName: performer.name,
-      })
+      }),
     );
     return updated;
   }
@@ -163,7 +163,10 @@ export class ClientsService {
 
     if (!found) return null;
 
-    return { ...found, alreadyInCurrentSociety: found.societyId === currentSocietyId };
+    return {
+      ...found,
+      alreadyInCurrentSociety: found.societyId === currentSocietyId,
+    };
   }
 
   findById(id: string): Promise<Client | null> {
