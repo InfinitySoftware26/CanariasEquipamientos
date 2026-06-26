@@ -77,14 +77,27 @@ export async function listClients(params?: {
   page?: number;
   perPage?: number;
   name?: string;
+  societyId?: string;
 }): Promise<ClientsResponse> {
   const token = useAuthStore.getState().accessToken;
 
   const query = new URLSearchParams();
 
-  if (params?.page) query.append("page", String(params.page));
-  if (params?.perPage) query.append("perPage", String(params.perPage));
-  if (params?.name) query.append("name", params.name);
+  if (params?.page) {
+    query.append("page", String(params.page));
+  }
+
+  if (params?.perPage) {
+    query.append("perPage", String(params.perPage));
+  }
+
+  if (params?.name) {
+    query.append("name", params.name);
+  }
+
+  if (params?.societyId) {
+    query.append("societyId", params.societyId);
+  }
 
   const res = await apiFetch(`/clients?${query.toString()}`, {
     headers: {
