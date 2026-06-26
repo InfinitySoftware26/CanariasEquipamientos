@@ -80,13 +80,19 @@ export class ClientsController {
     StaffRole.ADMIN,
     StaffRole.MANAGER,
     StaffRole.SUPER_ADMIN,
+    StaffRole.COLLECTOR,
   )
   getOne(@Param("id") id: string) {
     return this.clientsService.findById(id);
   }
 
   @Patch(":id")
-  @Roles(StaffRole.ADMIN, StaffRole.MANAGER, StaffRole.SUPER_ADMIN)
+  @Roles(
+    StaffRole.ADMIN,
+    StaffRole.MANAGER,
+    StaffRole.SUPER_ADMIN,
+    StaffRole.SELLER,
+  )
   update(
     @Param("id") id: string,
     @Body() dto: UpdateClientDto,
@@ -105,7 +111,13 @@ export class ClientsController {
   }
 
   @Get()
-  @Roles(StaffRole.ADMIN, StaffRole.MANAGER, StaffRole.SUPER_ADMIN)
+  @Roles(
+    StaffRole.ADMIN,
+    StaffRole.MANAGER,
+    StaffRole.SUPER_ADMIN,
+    StaffRole.SELLER,
+    StaffRole.COLLECTOR,
+  )
   @ApiOperation({
     summary:
       "Listar clientes con paging y filtros (solo admin/manager/super_admin)",

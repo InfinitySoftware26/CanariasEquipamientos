@@ -7,7 +7,6 @@ export function useCollectorDashboard(sales: Sale[]) {
   return useMemo(() => {
     const stats = {
       pendingVisit: 0,
-      pendingPayment: 0,
       pendingDelivery: 0,
       rejected: 0,
     };
@@ -18,7 +17,6 @@ export function useCollectorDashboard(sales: Sale[]) {
       switch (sale.status) {
         case "pending_environmental_visit":
           stats.pendingVisit++;
-          stats.pendingPayment++;
           break;
 
         case "pending_delivery":
@@ -31,12 +29,17 @@ export function useCollectorDashboard(sales: Sale[]) {
       }
     }
 
-    if (stats.pendingVisit > 5) {
-      alerts.push("Hay múltiples visitas pendientes de realizar.");
+    // 🔥 ALERTAS REALES (sin umbral absurdo)
+    if (stats.pendingVisit > 0) {
+      alerts.push(`${stats.pendingVisit} visitas pendientes de realizar`);
     }
 
-    if (stats.pendingDelivery > 5) {
-      alerts.push("Existen ventas aprobadas esperando preparación.");
+    if (stats.pendingDelivery > 0) {
+      alerts.push(`${stats.pendingDelivery} entregas pendientes`);
+    }
+
+    if (stats.rejected > 0) {
+      alerts.push(`${stats.rejected} operaciones rechazadas`);
     }
 
     return { stats, alerts };

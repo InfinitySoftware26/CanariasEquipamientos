@@ -19,7 +19,10 @@ export default function CollectorDashboard() {
 
   // 🔥 ahora SÍ pasamos sales al hook
   const { stats, alerts } = useCollectorDashboard(sales);
-
+  console.log(
+    "STATUSES:",
+    sales.map((s) => s.status),
+  );
   return (
     <div className="space-y-10">
       {/* HEADER */}
@@ -76,15 +79,8 @@ export default function CollectorDashboard() {
             title="Visitas pendientes"
             description="Ventas para visitar"
             icon={<Truck size={22} />}
-            onClick={() => router.push("/sales/collector")}
-          />
-
-          <DashboardCard
-            title="Confirmar cobros"
-            description="Cobros pendientes"
-            icon={<DollarSign size={22} />}
             onClick={() =>
-              router.push("/sales?status=PENDING_ENVIRONMENTAL_VISIT")
+              router.push("/sales/collector?status=PENDING_ENVIRONMENTAL_VISIT")
             }
           />
 
@@ -92,14 +88,18 @@ export default function CollectorDashboard() {
             title="Listas para entrega"
             description="Ventas cobradas"
             icon={<CheckCircle2 size={22} />}
-            onClick={() => router.push("/sales?status=PENDING_DELIVERY")}
+            onClick={() =>
+              router.push("/sales/collector?status=PENDING_DELIVERY")
+            }
           />
 
           <DashboardCard
             title="Rechazadas"
             description="Visitas rechazadas"
             icon={<AlertTriangle size={22} />}
-            onClick={() => router.push("/sales?status=ENVIRONMENTAL_REJECTED")}
+            onClick={() =>
+              router.push("/sales/collector?status=ENVIRONMENTAL_REJECTED")
+            }
           />
         </div>
       </section>

@@ -7,7 +7,7 @@ export function StepClientData({ form, setForm }: StepClientDataProps) {
     <section className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
       <StepTitle icon={<MapPin size={18} />} label="Datos del cliente" />
 
-      <div className="space-y-3">
+      <div className="space-y-4">
         <input
           className="input"
           placeholder="Nombre"
@@ -34,13 +34,6 @@ export function StepClientData({ form, setForm }: StepClientDataProps) {
           placeholder="Dirección"
           value={form.address}
           onChange={(e) => setForm({ ...form, address: e.target.value })}
-        />
-
-        <input
-          className="input"
-          placeholder="Localidad"
-          value={form.locality}
-          onChange={(e) => setForm({ ...form, locality: e.target.value })}
         />
       </div>
     </section>

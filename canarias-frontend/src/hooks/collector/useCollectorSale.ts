@@ -4,12 +4,19 @@ import { useCallback, useEffect, useState } from "react";
 
 import { Sale } from "@/types/sales/sale.type";
 import { getCollectorSales } from "@/services/collectors/collectors.services";
-import { normalizeSaleStatus } from "@/types/sales/saleStatus.mapper";
 
-const normalizeSale = (sale: Sale): Sale => ({
-  ...sale,
-  status: normalizeSaleStatus(sale.status) as Sale["status"],
-});
+/**
+ * Normaliza status de forma segura
+ * Evita null, undefined u objetos raros
+ */
+const normalizeSale = (sale: Sale): Sale => {
+  const status = sale.status;
+
+  return {
+    ...sale,
+    status: status,
+  };
+};
 
 export function useCollectorSales() {
   const [sales, setSales] = useState<Sale[]>([]);
@@ -23,22 +30,26 @@ export function useCollectorSales() {
 
       const response = await getCollectorSales();
 
-      // 🔥 FIX CRÍTICO: soporta distintos formatos de API
       const salesArray: Sale[] = Array.isArray(response)
         ? response
         : (response?.data ?? []);
 
       const normalized = salesArray.map(normalizeSale);
 
+      console.log(
+        "RAW:",
+        salesArray.map((s) => s.status),
+      );
+      console.log(
+        "NORMALIZED:",
+        normalized.map((s) => s.status),
+      );
+
       setSales(normalized);
     } catch (err: unknown) {
-      const message =
-        err instanceof Error
-          ? err.message
-          : "No se pudieron cargar las ventas asignadas";
-
-      setError(message ?? "No se pudieron cargar las ventas asignadas");
-
+      setError(
+        err instanceof Error ? err.message : "No se pudieron cargar las ventas",
+      );
       setSales([]);
     } finally {
       setLoading(false);

@@ -1,9 +1,17 @@
 import { useAuthStore } from "@/store/auth.store";
-import { CreateClientPayload } from "@/types/cretateClient.type";
 import { apiFetch } from "./apiFetch.service";
-import { normalizeClientResponse } from "@/utils/client/normalizeClient";
 
-export async function createPreloadClient(data: CreateClientPayload) {
+import {
+  Client,
+  ClientLookupResponse,
+  ClientsResponse,
+  CreateClientPayload,
+} from "@/types/cretateClient.type";
+
+// CREATE PRELOAD
+export async function createPreloadClient(
+  data: CreateClientPayload,
+): Promise<Client> {
   const token = useAuthStore.getState().accessToken;
 
   const res = await apiFetch("/clients/preload", {
@@ -16,35 +24,34 @@ export async function createPreloadClient(data: CreateClientPayload) {
   });
 
   if (!res.ok) {
-    const error = await res.text();
-    throw new Error(error || "Error creando cliente");
+    throw new Error("Error creando cliente");
   }
 
-  const dataRes = await res.json();
+  const json = await res.json();
+  console.log("CREATE CLIENT RESPONSE:", json);
 
-  return normalizeClientResponse(dataRes);
+  return json?.data ?? json;
 }
 
-export async function getClientById(id: string) {
+// GET BY ID
+export async function getClientById(id: string): Promise<Client | null> {
   const token = useAuthStore.getState().accessToken;
 
   const res = await apiFetch(`/clients/${id}`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
-    credentials: "include",
   });
 
-  if (!res.ok) {
-    return null;
-  }
+  if (!res.ok) return null;
 
   return res.json();
 }
 
-// services/client.service.ts
-
-export async function searchClientByDocument(documentNumber: string) {
+// LOOKUP
+export async function searchClientByDocument(
+  documentNumber: string,
+): Promise<ClientLookupResponse | null> {
   const token = useAuthStore.getState().accessToken;
 
   const res = await apiFetch(
@@ -56,12 +63,98 @@ export async function searchClientByDocument(documentNumber: string) {
     },
   );
 
-  if (res.status === 404) {
-    return null;
-  }
+  if (res.status === 404) return null;
 
   if (!res.ok) {
     throw new Error("Error buscando cliente");
+  }
+
+  return res.json();
+}
+
+// LIST
+export async function listClients(params?: {
+  page?: number;
+  perPage?: number;
+  name?: string;
+}): Promise<ClientsResponse> {
+  const token = useAuthStore.getState().accessToken;
+
+  const query = new URLSearchParams();
+
+  if (params?.page) query.append("page", String(params.page));
+  if (params?.perPage) query.append("perPage", String(params.perPage));
+  if (params?.name) query.append("name", params.name);
+
+  const res = await apiFetch(`/clients?${query.toString()}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!res.ok) {
+    throw new Error("Error obteniendo clientes");
+  }
+
+  const json = await res.json();
+
+  console.log("CLIENTS RESPONSE:", json);
+
+  return json.data;
+}
+
+// UPDATE
+export async function updateClient(id: string, data: Partial<Client>) {
+  const token = useAuthStore.getState().accessToken;
+
+  const res = await apiFetch(`/clients/${id}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!res.ok) {
+    throw new Error("Error actualizando cliente");
+  }
+
+  return res.json();
+}
+
+// HISTORY
+export async function getClientHistory(id: string) {
+  const token = useAuthStore.getState().accessToken;
+
+  const res = await apiFetch(`/clients/${id}/history`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!res.ok) {
+    throw new Error("Error obteniendo historial");
+  }
+
+  return res.json();
+}
+
+// REQUEST VERIFICATION
+export async function requestClientVerification(id: string, note: string) {
+  const token = useAuthStore.getState().accessToken;
+
+  const res = await apiFetch(`/clients/${id}/request-verification`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ note }),
+  });
+
+  if (!res.ok) {
+    throw new Error("Error solicitando verificación");
   }
 
   return res.json();
