@@ -33,12 +33,20 @@ export default function SelectSocietyPage() {
         return;
       }
 
+      const selected = user.societies?.find(
+        (society) => society.societyId === societyId,
+      );
+
       setError("");
       setLoadingId(societyId);
 
       const response = await selectSocietyRequest(societyId, accessToken);
 
-      setSelectedSociety(societyId, response.accessToken);
+      setSelectedSociety(
+        societyId,
+        selected?.societyName,
+        response.accessToken,
+      );
 
       router.replace(getDashboardRoute(user.role));
     } catch {
@@ -56,10 +64,11 @@ export default function SelectSocietyPage() {
     const autoSelect = async () => {
       try {
         const societyId = user.societies[0].societyId;
+        const societyName = user.societies[0].societyName;
 
         const response = await selectSocietyRequest(societyId, accessToken);
 
-        setSelectedSociety(societyId, response.accessToken);
+        setSelectedSociety(societyId, societyName, response.accessToken);
 
         router.replace(getDashboardRoute(user.role));
       } catch (error) {
