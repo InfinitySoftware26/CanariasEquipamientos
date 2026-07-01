@@ -1,99 +1,98 @@
-# Canarias System — Staff Scope Business Rules
+# Staff Scope
 
 # Objetivo
 
 Documentar las reglas de negocio relacionadas con el alcance operativo de los empleados dentro del sistema.
 
-Este alcance está definido mediante sociedades y zonas asignadas.
+El alcance operativo está determinado por:
+
+- sociedades asignadas;
+- zonas asignadas;
+- rol activo;
+- contexto operativo seleccionado.
+
+Este documento define qué información puede visualizar y operar cada empleado según su contexto.
 
 ---
 
-# Descripción
-
-Un empleado puede operar dentro de una o varias sociedades.
-
-Además puede tener asignaciones específicas de zonas según su función dentro de la organización.
-
-El alcance del empleado determina qué información y operaciones puede gestionar.
-
----
-
-# Staff Society Relationship
+# Reglas Generales
 
 ## BR-STAFF-SCOPE-001
 
-Un empleado puede pertenecer a una o varias sociedades.
+Todo empleado deberá pertenecer al menos a una sociedad.
 
-Ejemplo:
+Restricciones:
 
-Empleado:
-
-Juan Pérez
-
-Sociedades:
-
-- Canarias Equipamientos
-- Canarias Motos
+- no existen empleados sin sociedad asignada;
+- la sociedad determina contexto operativo.
 
 ---
 
 ## BR-STAFF-SCOPE-002
 
-La relación entre empleado y sociedad se administra mediante la entidad:
+Un empleado podrá pertenecer a múltiples sociedades.
 
-staff_societies
+Condiciones:
+
+- cada sociedad opera de forma aislada;
+- los permisos deberán respetar el contexto activo.
 
 ---
 
 ## BR-STAFF-SCOPE-003
 
-La relación empleado-sociedad posee un estado.
+Un empleado podrá tener una o múltiples zonas asignadas.
 
+Objetivo:
 
-Estados:
-
-ACTIVE
-
-INACTIVE
-
+permitir organización operativa y segmentación territorial.
 
 ---
 
 ## BR-STAFF-SCOPE-004
 
-Una relación inactiva no debe considerarse para operaciones nuevas.
+El acceso operativo deberá respetar simultáneamente:
+
+- sociedad activa;
+- zonas asignadas;
+- rol del usuario.
 
 ---
 
-# Staff Zone Relationship
+## BR-STAFF-SCOPE-004A
 
-## BR-STAFF-SCOPE-005
+Un empleado que pertenezca a múltiples sociedades deberá operar únicamente dentro de la sociedad activa seleccionada durante la sesión.
 
-Un empleado puede estar asignado a una o varias zonas.
+Implicancias:
 
+- visualización de información;
+- permisos operativos;
+- consultas;
+- creación de registros.
+
+Objetivo:
+
+garantizar aislamiento operativo entre sociedades.
 
 ---
 
-## BR-STAFF-SCOPE-006
+# Alcance Operativo
 
-La relación empleado-zona se administra mediante:
+El sistema deberá filtrar información considerando:
 
-staff_zones
+Empleado
+↓
 
+Sociedad activa
+↓
 
----
+Zona asignada
+↓
 
-## BR-STAFF-SCOPE-007
+Permisos del rol
+↓
 
-Las zonas permiten organizar la operación comercial y territorial.
-
-
-Ejemplos:
-
-- vendedores por zona
-- cobradores por zona
-- visitas asignadas
-
+Información visible
 
 ---
 
@@ -101,73 +100,126 @@ Ejemplos:
 
 ## SELLER
 
-Puede pertenecer a una o varias sociedades.
+Puede:
 
-Puede tener zonas asignadas para registrar operaciones.
+- pertenecer a una o varias sociedades;
+- tener zonas asignadas;
+- registrar preventas.
 
+Restricciones:
+
+- no puede validar ventas;
+- no puede cerrar operaciones.
 
 ---
 
 ## COLLECTOR
 
-Puede pertenecer a una o varias sociedades.
+Puede:
 
-Puede tener zonas asignadas para realizar tareas operativas.
+- pertenecer a una o varias sociedades;
+- tener zonas asignadas;
+- realizar visitas ambientales;
+- confirmar entregas.
 
+Restricciones:
+
+- no puede validar ventas;
+- no puede cerrar ventas.
 
 ---
 
 ## ADMIN
 
-Puede gestionar información dentro de las sociedades habilitadas.
+Puede:
 
+- operar dentro de sociedades habilitadas;
+- validar operaciones;
+- coordinar entregas;
+- cerrar operaciones.
 
----
+Restricciones actuales:
 
-# Reglas de Consistencia
+- no puede registrar ventas.
 
-## BR-STAFF-SCOPE-008
+Observación:
 
-No se debe asignar una zona perteneciente a una sociedad donde el empleado no tenga relación activa.
-
-
----
-
-## BR-STAFF-SCOPE-009
-
-Las asignaciones deben mantener historial mediante estados.
-
-No se eliminan físicamente.
-
+Existe una definición funcional aprobada para habilitar registro de ventas en futuras iteraciones.
 
 ---
 
-# Eliminación
+# Restricciones Técnicas
 
-Las relaciones utilizan soft delete.
-
-Cambiar:
-
-status = inactive
-
-mantiene trazabilidad histórica.
-
+- Backend deberá aplicar filtros obligatorios.
+- Frontend deberá respetar alcance devuelto.
+- No se permitirá acceso cruzado entre sociedades.
+- La sociedad activa deberá mantenerse durante sesión.
 
 ---
 
-# Evolución Futura
+# Casos de Ejemplo
 
-Preparado para:
+## Caso 1 — Sociedad única
 
-- permisos por sociedad
-- permisos por zona
-- restricciones de visualización
-- rutas de cobradores
-- reportes segmentados
+Empleado:
 
+SELLER
+
+Sociedad:
+
+Canarias Norte
+
+Resultado:
+
+Visualiza únicamente información de esa sociedad.
+
+---
+
+## Caso 2 — Multi-sociedad
+
+Empleado:
+
+ADMIN
+
+Sociedades:
+
+- Canarias Norte
+- Canarias Sur
+
+Resultado:
+
+Opera únicamente dentro de la sociedad seleccionada.
+
+---
+
+## Caso 3 — Zona restringida
+
+Empleado:
+
+COLLECTOR
+
+Zona:
+
+Zona Oeste
+
+Resultado:
+
+Visualiza únicamente registros correspondientes.
 
 ---
 
 # Estado
 
-Documento vigente Sprint 02.
+Documento vigente.
+
+Implementado:
+✅ Alcance por sociedad
+
+Implementación parcial:
+🟡 Gestión por zonas
+
+Pendiente:
+
+- formularios administrativos;
+- configuración completa de asignaciones;
+- ampliación de permisos.
