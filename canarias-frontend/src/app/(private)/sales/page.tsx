@@ -2,29 +2,34 @@
 
 import { useEffect } from "react";
 
-import { SaleCard } from "@/components/sale/SaleCard";
 import { SalesFilters } from "@/components/sale/SaleFilter";
 import { SalesStats } from "@/components/sale/SalesStats";
+import { SalesTable } from "@/components/sale/SaleTable";
 
 import { useSales } from "@/hooks/sales/useSale";
 import { useSalesView } from "@/hooks/sales/useSalesView";
 import { useSalesPagination } from "@/hooks/sales/useSalePagination";
 
-import { Sale } from "@/types/sales/sale.type";
-
 export default function SalesPage() {
   const { sales, loading, error } = useSales();
 
-  const { filter, setFilter, filteredSales, stats, filters } =
-    useSalesView(sales);
+  const {
+    filter,
+    setFilter,
+    search,
+    setSearch,
+    filteredSales,
+    stats,
+    filters,
+  } = useSalesView(sales);
 
   const { paginated, page, setPage, totalPages } =
     useSalesPagination(filteredSales);
 
-  // reset page cuando cambia filtro
+  // Reiniciar la paginación cuando cambia el filtro o la búsqueda
   useEffect(() => {
     setPage(1);
-  }, [filter, setPage]);
+  }, [filter, search, setPage]);
 
   return (
     <div className="space-y-10">
@@ -34,33 +39,36 @@ export default function SalesPage() {
         <p className="mt-2 text-white/60">Gestión y seguimiento comercial.</p>
       </section>
 
-      {/* FILTERS */}
-      <SalesFilters filters={filters} current={filter} onChange={setFilter} />
-
       {/* STATS */}
       <SalesStats stats={stats} />
+
+      {/* FILTERS */}
+      <SalesFilters
+        filters={filters}
+        current={filter}
+        onChange={setFilter}
+        search={search}
+        onSearch={setSearch}
+      />
       {/* LIST */}
       <section className="space-y-4">
         {loading && <p className="text-white/60">Cargando ventas...</p>}
 
         {error && <p className="text-red-400">{error}</p>}
 
-        {!loading &&
-          paginated.map((sale: Sale) => (
-            <SaleCard key={sale.saleId} sale={sale} />
-          ))}
+        {!loading && !error && paginated.length > 0 && (
+          <SalesTable sales={paginated} />
+        )}
 
-        {!loading && paginated.length === 0 && (
+        {!loading && !error && paginated.length === 0 && (
           <p className="text-white/50">No hay ventas.</p>
         )}
       </section>
 
       {/* PAGINATION */}
-      {totalPages > 1 && (
+      {!loading && !error && totalPages > 1 && (
         <div className="flex justify-center gap-2 pt-2">
-          {Array.from({ length: totalPages }).map((_, i) => {
-            console.log("FILTER:", filter);
-            console.log("FILTERED:", filteredSales.length);
+          {Array.from({ length: totalPages }, (_, i) => {
             const pageNumber = i + 1;
 
             return (

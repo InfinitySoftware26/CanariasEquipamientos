@@ -21,6 +21,10 @@ export const navigationByRole = {
   [StaffRole.ADMIN]: [
     { label: "Panel Inicial", href: "/dashboard/admin" },
     { label: "Ventas", href: "/sales" },
+    {
+      label: "Nueva Venta",
+      href: "/sales/preload",
+    },
     { label: "Clientes", href: "/client" },
     { label: "Productos", href: "/products" },
     { label: "Proveedores", href: "/suppliers" },
