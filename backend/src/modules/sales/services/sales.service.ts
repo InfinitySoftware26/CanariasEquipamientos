@@ -14,7 +14,7 @@ import { FailDeliveryDto } from '../dto/fail-delivery.dto';
 import { Sale } from '../entities/sale.entity';
 import { SaleProduct } from '../entities/sale-product.entity';
 import { Installment } from '../../installments/entities/installment.entity';
-import { FinancingConfiguration } from '../../financing-config/entities/financing-configuration.entity';
+import { FinancingConfigService } from '../../financing-config/services/financing-config.service';
 import { SaleStatus } from '../../../common/enums/sale-status.enum';
 import { ValidationStep } from '../../../common/enums/validation-step.enum';
 import { ValidationStatus } from '../../../common/enums/validation-status.enum';
@@ -22,6 +22,8 @@ import { PaymentFrequency } from '../../../common/enums/payment-frequency.enum';
 import { InstallmentStatus } from '../../../common/enums/installment-status.enum';
 import { StaffRole } from '../../../common/enums/staff-role.enum';
 import { JwtPayload } from '../../auth/interfaces/jwt-payload.interface';
+
+const SELLER_COMMISSION_RATE = 0.1;
 
 @Injectable()
 export class SalesService {
@@ -38,8 +40,7 @@ export class SalesService {
     private readonly saleProductRepo: Repository<SaleProduct>,
     @InjectRepository(Installment)
     private readonly installmentRepo: Repository<Installment>,
-    @InjectRepository(FinancingConfiguration)
-    private readonly financingConfigRepo: Repository<FinancingConfiguration>,
+    private readonly financingConfigService: FinancingConfigService,
   ) {}
 
   // ─── QUERIES ──────────────────────────────────────────────────────────────
@@ -89,25 +90,36 @@ export class SalesService {
 
     const totalAmount = dto.products.reduce((sum, p) => sum + p.unitPrice * p.quantity, 0);
 
-    const config = await this.financingConfigRepo.findOne({
-      where: { societyId, isActive: true },
-    });
+    const config = await this.financingConfigService.getConfigForProduct(
+      societyId,
+      dto.products[0].productId,
+    );
 
-    let rate = 0.25;
-    if (config) {
-      if (dto.installmentsCount === 3) rate = Number(config.installments3Rate);
-      else if (dto.installmentsCount === 6) rate = Number(config.installments6Rate);
-      else rate = Number(config.installments9Rate);
+    if (dto.installmentsCount > config.maxInstallments) {
+      throw new BadRequestException(
+        `La cantidad de cuotas no puede superar ${config.maxInstallments} para este producto`,
+      );
     }
+
+    let rate: number;
+    if (dto.installmentsCount === 3) rate = Number(config.installments3Rate);
+    else if (dto.installmentsCount === 6) rate = Number(config.installments6Rate);
+    else rate = Number(config.installments9Rate);
 
     const totalWithInterest = Math.round(totalAmount * (1 + rate) * 100) / 100;
     const installmentAmount = Math.round((totalWithInterest / dto.installmentsCount) * 100) / 100;
+
+    // Comisión del vendedor: se calcula sobre el valor del producto (totalAmount),
+    // sin los intereses de financiación que paga el cliente.
+    const sellerCommission = Math.round(totalAmount * SELLER_COMMISSION_RATE * 100) / 100;
 
     const sale = await this.salesRepo.create({
       clientId: dto.clientId,
       staffId,
       societyId,
       totalAmount,
+      sellerCommissionRate: SELLER_COMMISSION_RATE,
+      sellerCommission,
       installmentAmount,
       installmentsCount: dto.installmentsCount,
       paymentFrequency: dto.paymentFrequency,

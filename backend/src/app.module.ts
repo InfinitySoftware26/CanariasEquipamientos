@@ -17,6 +17,7 @@ import { InstallmentsModule } from "./modules/installments/installments.module";
 import { PaymentsModule } from "./modules/payments/payments.module";
 import { RouteSheetsModule } from "./modules/route-sheets/route-sheets.module";
 import { ClosuresModule } from "./modules/closures/closures.module";
+import { SettlementsModule } from "./modules/settlements/settlements.module";
 import { CashboxModule } from "./modules/cashbox/cashbox.module";
 import { NotificationsModule } from "./modules/notifications/notifications.module";
 import { HealthModule } from "@modules/health/health.module";
@@ -45,6 +46,7 @@ import { JwtAuthGuard } from "@common/guards";
     PaymentsModule,
     RouteSheetsModule,
     ClosuresModule,
+    SettlementsModule,
     CashboxModule,
     NotificationsModule,
     HealthModule,

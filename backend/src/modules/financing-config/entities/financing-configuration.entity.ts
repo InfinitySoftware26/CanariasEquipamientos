@@ -23,6 +23,15 @@ export class FinancingConfiguration {
   @Column({ name: 'is_active', default: true })
   isActive!: boolean;
 
+  @Column({ name: 'product_id', type: 'uuid', nullable: true })
+  productId!: string | null;
+
+  @Column({ name: 'is_global', default: true })
+  isGlobal!: boolean;
+
+  @Column({ name: 'max_installments', type: 'integer', default: 9 })
+  maxInstallments!: number;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;
 
