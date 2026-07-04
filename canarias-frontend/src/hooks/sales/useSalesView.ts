@@ -22,6 +22,7 @@ const QUERY_STATUS_MAP: Record<string, string> = {
 
 export function useSalesView(sales: Sale[], statusFromQuery?: string) {
   const [filter, setFilter] = useState<FilterType>("ALL");
+  const [search, setSearch] = useState("");
 
   // 🔥 traducimos query param a status interno real
   const queryStatus = statusFromQuery
@@ -40,19 +41,33 @@ export function useSalesView(sales: Sale[], statusFromQuery?: string) {
   const filteredSales = useMemo(() => {
     const activeFilter = queryStatus ?? filter;
 
-    if (activeFilter === "ALL") return normalizedSales;
+    let result = normalizedSales;
 
+    // Filtro por estado
     if (activeFilter === "PENDING") {
-      return normalizedSales.filter((s) => PENDING_STATUSES.includes(s.status));
+      result = result.filter((s) => PENDING_STATUSES.includes(s.status));
+    } else if (activeFilter === "CLOSED") {
+      result = result.filter((s) => s.status === "closed");
+    } else if (activeFilter !== "ALL") {
+      result = result.filter((s) => s.status === activeFilter);
     }
 
-    if (activeFilter === "CLOSED") {
-      return normalizedSales.filter((s) => s.status === "closed");
+    // Filtro por búsqueda
+    if (search.trim()) {
+      const value = search.toLowerCase();
+
+      result = result.filter((sale) => {
+        const client =
+          `${sale.client?.name ?? ""} ${sale.client?.surname ?? ""}`.toLowerCase();
+
+        const saleId = sale.saleId.toLowerCase();
+
+        return client.includes(value) || saleId.includes(value);
+      });
     }
 
-    // 🔥 si viene status directo desde query (ej pending_delivery)
-    return normalizedSales.filter((s) => s.status === activeFilter);
-  }, [normalizedSales, filter, queryStatus]);
+    return result;
+  }, [normalizedSales, filter, queryStatus, search]);
 
   // 🔥 stats consistentes
   const stats = useMemo(() => {
@@ -91,5 +106,7 @@ export function useSalesView(sales: Sale[], statusFromQuery?: string) {
     filteredSales,
     stats,
     filters,
+    search, // Placeholder for search functionality
+    setSearch, // Placeholder for search functionality
   };
 }

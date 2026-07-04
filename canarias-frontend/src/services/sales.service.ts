@@ -159,3 +159,68 @@ export async function assignCollector(saleId: string, collectorId: string) {
 
   return true;
 }
+
+export async function deliverSale(id: string) {
+  const token = useAuthStore.getState().accessToken;
+
+  const res = await apiFetch(`/sales/${id}/deliver`, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!res.ok) {
+    throw new Error("No se pudo marcar la venta como entregada");
+  }
+}
+
+export async function closeSale(id: string) {
+  const token = useAuthStore.getState().accessToken;
+
+  const res = await apiFetch(`/sales/${id}/close`, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!res.ok) {
+    throw new Error("No se pudo cerrar la venta");
+  }
+}
+
+export async function getSaleHistory(saleId: string) {
+  const token = useAuthStore.getState().accessToken;
+  const res = await apiFetch(`/sales/${saleId}/history`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!res.ok) {
+    throw new Error("No se pudo obtener el historial");
+  }
+
+  return res.json();
+}
+
+export async function updateSaleObservation(
+  saleId: string,
+  observation: string,
+) {
+  const token = useAuthStore.getState().accessToken;
+  const res = await apiFetch(`/sales/${saleId}/observation`, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      observation,
+    }),
+  });
+
+  if (!res.ok) {
+    throw new Error("No se pudo actualizar la observación");
+  }
+}
