@@ -56,7 +56,7 @@ export const useAuthStore = create<AuthState>()(
           accessToken,
           selectedSocietyId: null,
           selectedSociety: null,
-          activeRole: user.role, // 🔥 ESTO FALTABA
+          activeRole: user.role,
         }),
 
       setSelectedSociety: (

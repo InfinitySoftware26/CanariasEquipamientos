@@ -8,6 +8,10 @@ export function StepClient({
   handleSearchClient,
   clientFound,
 }: StepClientProps) {
+  console.log({
+    documentNumber: form.documentNumber,
+    clientFound,
+  });
   return (
     <section className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
       <StepTitle icon={<User size={18} />} label="Cliente" />

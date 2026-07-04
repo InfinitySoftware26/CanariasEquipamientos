@@ -105,4 +105,13 @@ Todos los estados deben:
 
 # Estado
 
-Documento vigente Sprint 02.
+Documento vigente.
+
+Estados definidos:
+✅ Completos
+
+Implementación operativa:
+🟡 Parcial
+
+Validado Sprint 02:
+Hasta PENDING_ENVIRONMENTAL_VISIT

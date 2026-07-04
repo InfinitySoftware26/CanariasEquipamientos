@@ -1,6 +1,6 @@
 "use client";
 
-import { Truck, CheckCircle2, DollarSign, AlertTriangle } from "lucide-react";
+import { Truck, CheckCircle2, AlertTriangle } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import { DashboardCard } from "@/components/dashboard/DashboardCard";

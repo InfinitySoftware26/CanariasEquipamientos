@@ -4,6 +4,8 @@ import { PreloadSaleViewProps } from "@/types/preload-sale/preload.type";
 import { StepClient } from "./StepClient";
 import { StepClientData } from "./StepClientData";
 import { StepSale } from "./StepSale";
+import { createPreloadClient } from "@/services/client.service";
+import { Client } from "@/types/cretateClient.type";
 
 export function PreloadSaleView({
   step,
@@ -17,6 +19,34 @@ export function PreloadSaleView({
   handleSubmit,
   goToSaleStep,
 }: PreloadSaleViewProps) {
+  const handleGoToSaleStep = async () => {
+    try {
+      let clientId = form.clientId;
+
+      // 🧠 SI NO EXISTE CLIENTE → LO CREAMOS
+      if (!clientId) {
+        const created: Client = await createPreloadClient({
+          name: form.name,
+          surname: form.surname,
+          documentNumber: form.documentNumber,
+          phone: form.phone,
+          address: form.address,
+        });
+
+        clientId = created.clientId;
+
+        setForm({
+          ...form,
+          clientId,
+        });
+      }
+
+      goToSaleStep();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   return (
     <div className="pb-24 space-y-6">
       {step === 1 && (
@@ -33,7 +63,7 @@ export function PreloadSaleView({
           <StepClientData form={form} setForm={setForm} />
 
           <button
-            onClick={goToSaleStep}
+            onClick={handleGoToSaleStep}
             className="w-full rounded-xl bg-[#F5A300] py-2 font-semibold text-[#0D1B2A]"
           >
             Continuar a la venta
