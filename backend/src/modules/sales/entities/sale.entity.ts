@@ -37,6 +37,12 @@ export class Sale {
   @Column({ name: "total_amount", type: "decimal", precision: 12, scale: 2 })
   totalAmount!: number;
 
+  @Column({ name: "seller_commission_rate", type: "decimal", precision: 5, scale: 4, default: 0.1 })
+  sellerCommissionRate!: number;
+
+  @Column({ name: "seller_commission", type: "decimal", precision: 12, scale: 2 })
+  sellerCommission!: number;
+
   @Column({
     name: "installment_amount",
     type: "decimal",
