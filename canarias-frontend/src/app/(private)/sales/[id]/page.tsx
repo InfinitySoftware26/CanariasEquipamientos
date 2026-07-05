@@ -10,9 +10,11 @@ import { Sale } from "@/types/sales/sale.type";
 import { SalePipeline } from "@/components/sale/SalePipeLine";
 
 import { useRolePermissions } from "@/hooks/auth/useRolePermissions";
-import { AdminSalePanel } from "@/components/sale/AdminSalePanel";
-import { CollectorAssignPanel } from "@/components/sale/CollectorAssingPanel";
+import { AdminSalePanel } from "@/components/sale/details/AdminSalePanel";
+import { CollectorAssignPanel } from "@/components/sale/details/CollectorAssingPanel";
 import { EnvironmentalVisitPanel } from "@/components/collector/EnviromentalVisitPanel";
+import { SaleHeader } from "@/components/sale/details/SalesHeader";
+import { SaleInformationCard } from "@/components/sale/details/SaleInformationCard";
 
 export default function SaleDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -52,41 +54,12 @@ export default function SaleDetailPage() {
   console.log("ROLE:", permissions);
   console.log("STATUS:", sale.status);
   return (
-    <div className="p-6 space-y-6">
-      {/* HEADER */}
-      <div>
-        <h1 className="text-2xl font-bold text-white">Venta #{sale.saleId}</h1>
-      </div>
+    <div className="space-y-6 p-6">
+      <SaleHeader sale={sale} />
 
-      {/* INFO PRINCIPAL */}
-      <div className="grid grid-cols-2 gap-4 text-gray-300">
-        <div>
-          <p>
-            <b>Cliente ID:</b> {sale.clientId}
-          </p>
-          <p>
-            <b>Cliente:</b> {sale.client?.name} {sale.client?.surname}
-          </p>
-          <p>
-            <b>Total:</b> ${sale.totalAmount}
-          </p>
-          <p>
-            <b>Cuotas:</b> {sale.installmentsCount}
-          </p>
-        </div>
+      <SaleInformationCard sale={sale} />
 
-        <div>
-          <p>
-            <b>Fecha venta:</b> {sale.saleDate}
-          </p>
-          <p>
-            <b>Creada:</b> {sale.createdAt}
-          </p>
-        </div>
-      </div>
-
-      {/* PIPELINE VISUAL */}
-      <SalePipeline status={sale.status?.trim() as Sale["status"]} />
+      <SalePipeline status={sale.status} />
 
       {permissions.canValidateSale && (
         <AdminSalePanel sale={sale} onRefresh={loadSale} />
@@ -95,6 +68,7 @@ export default function SaleDetailPage() {
       {permissions.canAssignCollector && (
         <CollectorAssignPanel sale={sale} onRefresh={loadSale} />
       )}
+
       {permissions.canValidateEnvironmentalVisit && (
         <EnvironmentalVisitPanel sale={sale} onRefresh={loadSale} />
       )}

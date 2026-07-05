@@ -86,13 +86,13 @@ export function usePreloadSale() {
       setError(null);
 
       const client = await searchClientByDocument(form.documentNumber);
-
+      console.log("Respuesta del backend:", client);
       if (!client) {
         setClientFound(false);
         setStep(2);
         return;
       }
-
+      console.log("Encontrado, seteando true");
       setClientFound(true);
       setExistingClient(client);
 

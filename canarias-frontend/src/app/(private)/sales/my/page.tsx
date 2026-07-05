@@ -11,19 +11,31 @@ import { useEffect } from "react";
 export default function MySalesPage() {
   const { sales, loading, error } = useSellerSales();
 
-  const { filter, setFilter, filteredSales, stats, filters } =
-    useSalesView(sales);
-
+  const {
+    filter,
+    setFilter,
+    search,
+    setSearch,
+    filteredSales,
+    stats,
+    filters,
+  } = useSalesView(sales);
   const { paginated, page, setPage, totalPages } =
     useSalesPagination(filteredSales);
 
-  useEffect(() => setPage(1), [filter, setPage]);
+  useEffect(() => setPage(1), [filter, setPage, search]);
 
   return (
     <div className="space-y-10">
       <SalesStats stats={stats} />
 
-      <SalesFilters filters={filters} current={filter} onChange={setFilter} />
+      <SalesFilters
+        filters={filters}
+        current={filter}
+        onChange={setFilter}
+        search={search}
+        onSearch={setSearch}
+      />
 
       <SalesList
         sales={paginated}

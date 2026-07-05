@@ -2,230 +2,291 @@
 
 # Fecha Sprint Review
 
-19/06/2026
+24/06/2026
 
 ---
 
 # Duración Sprint
 
-08/06/2026 → 19/06/2026
+08/06/2026 → 24/06/2026
 
 ---
 
 # Objetivo General
 
-Construcción completa del dominio comercial.
+Construir la primera representación operativa del dominio comercial del sistema y validar el flujo inicial de ventas dentro de una plataforma segmentada por roles y sociedades.
 
-El objetivo es dejar operativo:
+El objetivo del sprint fue:
 
-* gestión de zonas
-* asignación de empleados a sociedades
-* asignación de empleados a zonas
-* validación administrativa de ventas
-* generación y administración de cuotas
+- consolidar autenticación multi-sociedad;
+- incorporar selección de sociedad al ingreso;
+- iniciar el flujo comercial;
+- validar transición de estados;
+- evolucionar dashboards operativos;
+- preparar estructuras para futuras etapas comerciales y cobranzas.
 
 ---
 
 # Eventos Sprint
 
-| Fecha | Evento               |
-| ----- | -------------------- |
-| 08/06 | Daily                |
-| 10/06 | Daily                |
-| 12/06 | Daily                |
-| 15/06 | Daily                |
-| 17/06 | Daily                |
-| 18/06 | Pre-Demo QA          |
-| 19/06 | Sprint Review + Demo |
+| Fecha | Evento |
+|---|---|
+| 08/06 | Inicio Sprint |
+| 10/06 | Daily |
+| 12/06 | Daily |
+| 15/06 | Daily |
+| 17/06 | Daily |
+| 19/06 | Pre-Demo |
+| 24/06 | Sprint Review + Validación |
 
 ---
 
-# Entidades Sprint
+# Dominio Trabajado
 
-* zones
-* staff_zones
-* staff_societys
-* sale_validations
-* installments
+Durante Sprint 02 se trabajó sobre los siguientes dominios:
 
----
-
-# Backend Tasks
-
-## Zones Module
-
-* CRUD zonas
-* activación/desactivación zonas
-* asignación de clientes a zona
-* validaciones de cobertura
+- autenticación;
+- sociedades;
+- ventas;
+- validaciones comerciales;
+- cuotas;
+- zonas;
+- dashboards;
+- segmentación por rol.
 
 ---
 
-## Staff Zones Module
+# Alcance Implementado
 
-* asignación de cobradores a zonas
-* asignación de vendedores a zonas
-* validaciones de disponibilidad
-* restricciones por sociedad
+## Multi-Sociedad
 
----
+Implementaciones:
 
-## Staff Societies Module
+- selector de sociedad al ingresar;
+- persistencia de sociedad activa;
+- aislamiento por contexto operativo.
 
-* asignación de empleados a sociedades
-* validaciones multi-sociedad
-* restricciones de acceso por sociedad
-* auditoría de asignaciones
+Estado:
+
+✅ Implementado
 
 ---
 
-## Sale Validations Module
+## Dashboards Operativos
 
-* aprobación de ventas
-* rechazo de ventas
-* observaciones administrativas
-* historial de validaciones
-* estados de validación
+Perfiles demostrados:
 
----
+- Vendedor
+- Administración
+- Cobrador
+- Superadmin
 
-## Installments Module
+Capacidades:
 
-* generación automática de cuotas
-* cálculo de vencimientos
-* cálculo de importes
-* estados de cuota
-* validaciones de financiación
+- visualización por rol;
+- seguimiento inicial de estados;
+- actualización entre perfiles.
 
----
+Estado:
 
-# API Endpoints
-
-## Zones
-
-### POST /zones
-
-### GET /zones
-
-### GET /zones/:id
-
-### PATCH /zones/:id
+✅ Implementado
 
 ---
 
-## Staff Zones
+## Preventa
 
-### POST /staff-zones
+Primer formulario operativo disponible.
 
-### GET /staff-zones
+Flujo:
 
-### DELETE /staff-zones/:id
+Cliente
 
----
+↓
 
-## Staff Societies
+Selección de producto
 
-### POST /staff-societies
+↓
 
-### GET /staff-societies
+Generación de preventa
 
-### DELETE /staff-societies/:id
+Capacidades:
 
----
+- selección de cliente;
+- selección desde catálogo;
+- generación inicial de operación.
 
-## Sale Validations
+Restricción:
 
-### POST /sale-validations
+- únicamente vendedor puede iniciar venta.
 
-### GET /sale-validations
+Estado:
 
-### PATCH /sale-validations/:id
-
----
-
-## Installments
-
-### GET /installments
-
-### GET /installments/:id
-
-### PATCH /installments/:id
+✅ Implementado
 
 ---
 
-# Frontend Tasks
+## Flujo Comercial
 
-## Zones UI
+Modelo definido:
 
-* alta zona
-* edición zona
-* listado zonas
-* detalle zona
+PENDING_ADMIN_VALIDATION
 
----
+↓
 
-## Staff Assignment UI
+PENDING_ENVIRONMENTAL_VISIT
 
-* asignación de cobradores
-* asignación de vendedores
-* asignación a sociedades
-* visualización de relaciones
+↓
 
----
+PENDING_DELIVERY
 
-## Sale Validation UI
+↓
 
-* listado ventas pendientes
-* aprobación venta
-* rechazo venta
-* observaciones administrativas
+DELIVERED
 
----
+↓
 
-## Installments UI
+CLOSED
 
-* listado cuotas
-* detalle cuota
-* estados de cuota
-* cronograma de vencimientos
+Estado validado:
+
+Hasta:
+
+PENDING_ENVIRONMENTAL_VISIT
+
+Observación:
+
+La demostración se realizó utilizando datos precargados mediante seeds.
 
 ---
 
-# QA
+# Backend Preparado
 
-## Validaciones
+Se dejaron disponibles estructuras y APIs para:
 
-* creación zona
-* asignación empleado-zona
-* asignación empleado-sociedad
-* aprobación venta
-* rechazo venta
-* generación automática cuotas
-* cálculo vencimientos
-* estados cuota
+- sociedades;
+- staff;
+- clientes;
+- productos;
+- ventas;
+- validaciones;
+- cuotas;
+- financiación;
+- zonas.
+
+Estado:
+
+🟡 Preparado para integración frontend.
 
 ---
 
-# Riesgos
+# Frontend Disponible
 
-| Riesgo                        | Mitigación                      |
-| ----------------------------- | ------------------------------- |
-| reglas comerciales cambiantes | validación continua con cliente |
-| complejidad de cuotas         | pruebas tempranas               |
-| asignaciones incorrectas      | validaciones automáticas        |
+Se encuentra operativo:
+
+- login;
+- selector de sociedad;
+- dashboards;
+- preventa;
+- visualización de estados.
+
+Pendiente:
+
+- gestión de sociedades;
+- gestión de zonas;
+- asignaciones;
+- formularios administrativos;
+- cuotas;
+- configuración financiera.
+
+---
+
+# Validación Realizada
+
+Se validó:
+
+- identidad visual;
+- separación por sociedades;
+- dashboards por perfil;
+- avance del flujo comercial;
+- consistencia visual entre estados.
+
+Resultado:
+
+✅ Validación satisfactoria.
+
+---
+
+# QA Ejecutado
+
+Casos validados:
+
+- ingreso multi-sociedad;
+- navegación protegida;
+- generación de preventa;
+- transición administrativa;
+- visualización por rol;
+- flujo hasta visita ambiental.
+
+Observación:
+
+No se realizaron pruebas operativas completas de cuotas ni entrega.
+
+---
+
+# Riesgos Detectados
+
+| Riesgo | Mitigación |
+|---|---|
+| Backend adelantado respecto al frontend | integración incremental |
+| Dependencia de seeds | construcción progresiva de formularios |
+| cambios funcionales | validaciones continuas |
+
+---
+
+# Definiciones Confirmadas
+
+- administración podrá registrar ventas en futuras iteraciones;
+- ventas rechazadas conservarán historial;
+- remover IDs visibles;
+- mostrar comisión vendedor (10%);
+- validar cliente seleccionado visualmente.
 
 ---
 
 # Entregables
 
-* zonas operativas
-* asignaciones de empleados funcionales
-* validación administrativa de ventas
-* cuotas generadas automáticamente
-* flujo comercial preparado para cobranza
+Entregado:
+
+- autenticación multi-sociedad;
+- selector de sociedad;
+- dashboards por rol;
+- preventa inicial;
+- flujo comercial parcial;
+- validación de estados.
+
+No entregado:
+
+- gestión de zonas;
+- gestión de sociedades;
+- cuotas operativas;
+- cierre completo de venta;
+- cobranzas.
+
+---
+
+# Próximo Sprint
+
+Objetivos iniciales:
+
+- hojas de ruta;
+- cobranzas;
+- financiación;
+- entrega;
+- primera cuota;
+- continuidad del flujo comercial.
 
 ---
 
 # Sprint Goal
 
-Proceso comercial validado y estructurado para iniciar la operación de cobranzas.
+Representar y validar el inicio del flujo comercial real de Canarias y dejar preparada la base para continuar operación comercial y cobranzas.

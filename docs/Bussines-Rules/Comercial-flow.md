@@ -263,7 +263,8 @@ Definido.
 
 ## BR-CF-006 — Cierre administrativo obligatorio
 
-Solo administración puede confirmar cierre definitivo.
+- la carga inicial se encuentra disponible únicamente para vendedor;
+- se prevé habilitar carga también desde administración en Sprint 03;
 
 Estado:
 Definido.
@@ -284,19 +285,30 @@ Actualmente:
 
 ## DF-CF-001 — Registro de ventas por Administración
 
-Se acordó habilitar que Administración también pueda registrar ventas.
+Se acordó habilitar que el perfil **Administración** también pueda iniciar una venta además del perfil **Vendedor**.
+
+Objetivo:
+permitir continuidad operativa y evitar dependencia exclusiva del área comercial para iniciar operaciones.
 
 Estado:
 Aprobado funcionalmente.
 
 Implementación:
-Pendiente.
+Planificada para Sprint 03.
+
+Comportamiento esperado:
+
+Roles habilitados:
+
+- Vendedor
+- Administración
 
 Consideraciones:
 
-* mantener trazabilidad del creador;
-* respetar permisos activos.
-
+- mantener trazabilidad del usuario creador;
+- conservar permisos por sociedad;
+- registrar rol origen de creación;
+- mantener validación administrativa posterior según flujo definido.
 ---
 
 ## DF-CF-002 — Confirmación visual de cliente
@@ -308,6 +320,8 @@ reducir errores operativos.
 
 Estado:
 Pendiente.
+
+
 
 ---
 

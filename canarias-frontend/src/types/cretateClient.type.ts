@@ -9,6 +9,8 @@ export interface Client {
   address?: string;
   phone?: string;
   email?: string;
+  createdByName: string;
+  createdBySocietyName: string;
 
   observations?: string;
 
@@ -58,3 +60,9 @@ export interface CreatePreloadClientDto {
   supportBill?: boolean;
   supportVisit?: boolean;
 }
+
+export type ClientView = Client & {
+  isActive: boolean;
+  societyName?: string;
+  societyId?: string;
+};
