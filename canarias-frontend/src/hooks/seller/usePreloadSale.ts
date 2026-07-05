@@ -98,10 +98,21 @@ export function usePreloadSale() {
 
       setForm((prev) => ({
         ...prev,
+
+        clientId: client.clientId,
+
         name: client.name ?? "",
         surname: client.surname ?? "",
-        address: client.address ?? "",
-        phone: client.phone ?? "",
+
+        documentNumber:
+          client.documentNumber ??
+          prev.documentNumber,
+
+        address:
+          client.address ?? "",
+
+        phone:
+          client.phone ?? "",
       }));
 
       setStep(3);

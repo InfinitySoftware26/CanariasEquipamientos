@@ -21,7 +21,9 @@ export function StepSale({
   const [openInstallments, setOpenInstallments] = useState(false);
   const [openFrequency, setOpenFrequency] = useState(false);
 
-  const selectedProduct = products.find((p) => p.productId === form.productId);
+  const selectedProduct = products.find(
+    (p) => p.productId === form.productId,
+  );
 
   // ---------------- CUOTAS ----------------
 
@@ -36,6 +38,7 @@ export function StepSale({
   );
 
   // ---------------- FRECUENCIA ----------------
+
   const frequencyOptions: Option<"weekly" | "monthly">[] = [
     { label: "Mensual", value: "monthly" },
     { label: "Semanal", value: "weekly" },
@@ -50,12 +53,30 @@ export function StepSale({
       <StepTitle icon={<Package size={18} />} label="Venta" />
 
       <div className="space-y-3">
+
+        {/* ---------------- CLIENTE ---------------- */}
+        <div className="rounded-2xl border border-[#F5A300]/20 bg-[#F5A300]/5 p-4">
+          <p className="mb-1 text-xs uppercase tracking-wider text-[#F5A300]/80">
+            Cliente seleccionado
+          </p>
+
+          <div className="flex flex-col">
+            <span className="text-base font-semibold text-white">
+              {form.name} {form.surname}
+            </span>
+
+            <span className="text-sm text-white/60">
+              DNI {form.documentNumber}
+            </span>
+          </div>
+        </div>
+
         {/* ---------------- PRODUCTO ---------------- */}
         <div className="relative">
           <button
             type="button"
             onClick={() => setOpenProduct(!openProduct)}
-            className="w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-white text-left transition hover:border-[#F5A300]/60 focus:border-[#F5A300] focus:outline-none"
+            className="w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-left text-white transition hover:border-[#F5A300]/60 focus:border-[#F5A300] focus:outline-none"
           >
             {selectedProduct?.name ?? "Seleccionar producto"}
           </button>
@@ -66,7 +87,11 @@ export function StepSale({
                 <div
                   key={p.productId}
                   onClick={() => {
-                    setForm({ ...form, productId: p.productId });
+                    setForm({
+                      ...form,
+                      productId: p.productId,
+                    });
+
                     setOpenProduct(false);
                   }}
                   className="cursor-pointer px-3 py-2 hover:bg-white/10"
@@ -83,7 +108,7 @@ export function StepSale({
           <button
             type="button"
             onClick={() => setOpenInstallments(!openInstallments)}
-            className="w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-white text-left transition hover:border-[#F5A300]/60 focus:border-[#F5A300] focus:outline-none"
+            className="w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-left text-white transition hover:border-[#F5A300]/60 focus:border-[#F5A300] focus:outline-none"
           >
             {selectedInstallment?.label ?? "Cantidad de cuotas"}
           </button>
@@ -98,6 +123,7 @@ export function StepSale({
                       ...form,
                       installmentsCount: opt.value,
                     });
+
                     setOpenInstallments(false);
                   }}
                   className="cursor-pointer px-3 py-2 hover:bg-white/10"
@@ -114,7 +140,7 @@ export function StepSale({
           <button
             type="button"
             onClick={() => setOpenFrequency(!openFrequency)}
-            className="w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-white text-left transition hover:border-[#F5A300]/60 focus:border-[#F5A300] focus:outline-none"
+            className="w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-left text-white transition hover:border-[#F5A300]/60 focus:border-[#F5A300] focus:outline-none"
           >
             {selectedFrequency?.label ?? "Frecuencia de pago"}
           </button>
@@ -129,6 +155,7 @@ export function StepSale({
                       ...form,
                       paymentFrequency: opt.value,
                     });
+
                     setOpenFrequency(false);
                   }}
                   className="cursor-pointer px-3 py-2 hover:bg-white/10"
