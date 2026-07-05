@@ -63,13 +63,28 @@ export async function searchClientByDocument(
     },
   );
 
-  if (res.status === 404) return null;
+  if (res.status === 404) {
+    return null;
+  }
 
   if (!res.ok) {
     throw new Error("Error buscando cliente");
   }
 
-  return res.json();
+  const response = await res.json();
+
+  const client = response.data
+
+  return {
+    ...client,
+
+    clientId:
+      client.clientId,
+
+    alreadyInCurrentSociety:
+      client.alreadyInCurrentSociety ??
+      false,
+  };
 }
 
 // LIST
