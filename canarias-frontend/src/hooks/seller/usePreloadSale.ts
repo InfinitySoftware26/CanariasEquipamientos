@@ -51,6 +51,8 @@ export function usePreloadSale() {
 
   const loadedRef = useRef(false);
 
+  const submittingRef = useRef(false);
+
   // ---------------- PRODUCTS ----------------
   async function loadProducts() {
     try {
@@ -131,10 +133,23 @@ export function usePreloadSale() {
   // ---------------- SUBMIT ----------------
   async function handleSubmit() {
     try {
+      if (submittingRef.current) return;
+      submittingRef.current = true;
+
       setLoading(true);
       setError(null);
 
-      let finalClientId = existingClient?.clientId;
+      console.log("=== HANDLE SUBMIT ===");
+    console.log({
+      existingClient,
+      formClientId: form.clientId,
+      clientFound,
+      document: form.documentNumber,
+    })
+
+      let finalClientId =
+        existingClient?.clientId ??
+        form.clientId;
 
       // 🔥 CREAR CLIENTE SI NO EXISTE
       if (!finalClientId) {
@@ -146,9 +161,23 @@ export function usePreloadSale() {
           phone: form.phone,
         });
 
-        const clientId = created.clientId;
+        // ✅ Sincronizamos el estado del hook con la base de datos
+        setExistingClient(created);
+        setClientFound(true);
 
-        finalClientId = clientId;
+        setForm((prev) => ({
+          ...prev,
+          clientId: created.clientId,
+
+          // Dejamos sincronizados también los datos del cliente
+          name: created.name ?? prev.name,
+          surname: created.surname ?? prev.surname,
+          documentNumber: created.documentNumber ?? prev.documentNumber,
+          address: created.address ?? prev.address,
+          phone: created.phone ?? prev.phone,
+        }));
+
+        finalClientId = created.clientId;
       }
 
       if (!finalClientId) {
@@ -188,8 +217,9 @@ export function usePreloadSale() {
       console.error(err);
       setError("Error creando la venta");
     } finally {
-      setLoading(false);
-    }
+  submittingRef.current = false;
+  setLoading(false);
+}
   }
 
   return {
