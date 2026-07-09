@@ -6,7 +6,7 @@ import { getDisplayCode } from "@/lib/sales/displayCode";
 
 export function ClientRow({ client }: { client: Client }) {
   const router = useRouter();
-
+  console.log("client", client);
   const clientStatus =
     client.supportDni && client.supportBill && client.supportVisit
       ? "COMPLETE"
@@ -53,13 +53,20 @@ export function ClientRow({ client }: { client: Client }) {
         <span className="block truncate">{client.address ?? "-"}</span>
       </td>
 
+      <td className="px-6 py-4 text-sm text-white/70">
+        {getDisplayCode("SOC", client.societyId ?? "-")}
+      </td>
+
+      <td className="px-6 py-4 text-sm text-white/70">
+        {" "}
+        {getDisplayCode("VEN", client.createdBy ?? "-")}
+      </td>
       {/* STATUS (igual estética que badge de Sales) */}
       <td
         className={`px-3 py-3 text-xs md:px-6 md:py-5 md:text-sm font-semibold ${status.color}`}
       >
         {status.label}
       </td>
-
       {/* ARROW */}
       <td className="px-3 py-3 text-center md:px-6 md:py-5">
         <span className="text-white/40">›</span>

@@ -73,19 +73,14 @@ export async function searchClientByDocument(
     throw new Error("Error buscando cliente");
   }
 
-  const response = await res.json();
+  const client = await res.json();
 
-  const client = response.data
+  console.log("LOOKUP CLIENT RESPONSE:", client);
 
   return {
     ...client,
-
-    clientId:
-      client.clientId,
-
-    alreadyInCurrentSociety:
-      client.alreadyInCurrentSociety ??
-      false,
+    clientId: client.clientId,
+    alreadyInCurrentSociety: client.alreadyInCurrentSociety ?? false,
   };
 }
 

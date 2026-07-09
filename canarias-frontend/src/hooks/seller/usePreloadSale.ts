@@ -86,7 +86,6 @@ export function usePreloadSale() {
     try {
       setLoading(true);
       setError(null);
-
       const client = await searchClientByDocument(form.documentNumber);
       console.log("Respuesta del backend:", client);
       if (!client) {
@@ -106,15 +105,11 @@ export function usePreloadSale() {
         name: client.name ?? "",
         surname: client.surname ?? "",
 
-        documentNumber:
-          client.documentNumber ??
-          prev.documentNumber,
+        documentNumber: client.documentNumber ?? prev.documentNumber,
 
-        address:
-          client.address ?? "",
+        address: client.address ?? "",
 
-        phone:
-          client.phone ?? "",
+        phone: client.phone ?? "",
       }));
 
       setStep(3);
@@ -140,16 +135,14 @@ export function usePreloadSale() {
       setError(null);
 
       console.log("=== HANDLE SUBMIT ===");
-    console.log({
-      existingClient,
-      formClientId: form.clientId,
-      clientFound,
-      document: form.documentNumber,
-    })
+      console.log({
+        existingClient,
+        formClientId: form.clientId,
+        clientFound,
+        document: form.documentNumber,
+      });
 
-      let finalClientId =
-        existingClient?.clientId ??
-        form.clientId;
+      let finalClientId = existingClient?.clientId ?? form.clientId;
 
       // 🔥 CREAR CLIENTE SI NO EXISTE
       if (!finalClientId) {
@@ -217,9 +210,9 @@ export function usePreloadSale() {
       console.error(err);
       setError("Error creando la venta");
     } finally {
-  submittingRef.current = false;
-  setLoading(false);
-}
+      submittingRef.current = false;
+      setLoading(false);
+    }
   }
 
   return {

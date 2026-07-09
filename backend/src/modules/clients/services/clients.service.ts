@@ -1,4 +1,9 @@
-import { Injectable, Inject, NotFoundException } from "@nestjs/common";
+import {
+  Injectable,
+  Inject,
+  NotFoundException,
+  ConflictException,
+} from "@nestjs/common";
 import {
   IClientsRepository,
   CLIENTS_REPOSITORY,
@@ -41,6 +46,15 @@ export class ClientsService {
       createdBy: performer.staffId,
       updatedBy: performer.staffId,
     };
+    const existingClient = await this.clientsRepo.findByDocumentNumber(
+      dto.documentNumber ?? "",
+    );
+
+    if (existingClient) {
+      throw new ConflictException(
+        "Ya existe un cliente registrado con ese DNI.",
+      );
+    }
 
     const client = await this.clientsRepo.create(data);
     await this.historyRepo.save(

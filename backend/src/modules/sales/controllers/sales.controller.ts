@@ -1,24 +1,32 @@
 import {
-  Controller, Get, Post, Patch, Body, Param,
-  UseGuards, HttpCode, HttpStatus, ParseUUIDPipe,
-} from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-import { SalesService } from '../services/sales.service';
-import { CreateSaleDto } from '../dto/create-sale.dto';
-import { ValidateSaleDto } from '../dto/validate-sale.dto';
-import { FailDeliveryDto } from '../dto/fail-delivery.dto';
-import { AssignCollectorDto } from '../dto/assign-collector.dto';
-import { UpdateObservationDto } from '../dto/update-observation.dto';
-import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
-import { RolesGuard } from '../../../common/guards/roles.guard';
-import { SocietyGuard } from '../../../common/guards/society.guard';
-import { Roles } from '../../../common/decorators/roles.decorator';
-import { CurrentUser } from '../../../common/decorators/current-user.decorator';
-import { StaffRole } from '../../../common/enums/staff-role.enum';
-import { JwtPayload } from '../../auth/interfaces/jwt-payload.interface';
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Body,
+  Param,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+  ParseUUIDPipe,
+} from "@nestjs/common";
+import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
+import { SalesService } from "../services/sales.service";
+import { CreateSaleDto } from "../dto/create-sale.dto";
+import { ValidateSaleDto } from "../dto/validate-sale.dto";
+import { FailDeliveryDto } from "../dto/fail-delivery.dto";
+import { AssignCollectorDto } from "../dto/assign-collector.dto";
+import { UpdateObservationDto } from "../dto/update-observation.dto";
+import { JwtAuthGuard } from "../../../common/guards/jwt-auth.guard";
+import { RolesGuard } from "../../../common/guards/roles.guard";
+import { SocietyGuard } from "../../../common/guards/society.guard";
+import { Roles } from "../../../common/decorators/roles.decorator";
+import { CurrentUser } from "../../../common/decorators/current-user.decorator";
+import { StaffRole } from "../../../common/enums/staff-role.enum";
+import { JwtPayload } from "../../auth/interfaces/jwt-payload.interface";
 
-@ApiTags('sales')
-@ApiBearerAuth('access-token')
+@ApiTags("sales")
+@ApiBearerAuth("access-token")
 @UseGuards(JwtAuthGuard, RolesGuard, SocietyGuard)
 @Controller("sales")
 export class SalesController {
@@ -41,7 +49,7 @@ export class SalesController {
   }
 
   @Get("my")
-  @Roles(StaffRole.SELLER)
+  @Roles(StaffRole.SELLER, StaffRole.ADMIN)
   @ApiOperation({ summary: "Mis ventas (vendedor)" })
   findMy(@CurrentUser() user: JwtPayload) {
     return this.salesService.findBySeller(user.sub, user.societyId);
@@ -152,17 +160,17 @@ export class SalesController {
     return this.salesService.close(id, user);
   }
 
-  @Patch(':id/observation')
+  @Patch(":id/observation")
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Actualizar observación de la venta' })
+  @ApiOperation({ summary: "Actualizar observación de la venta" })
   updateObservation(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param("id", ParseUUIDPipe) id: string,
     @Body() dto: UpdateObservationDto,
   ) {
     return this.salesService.updateObservation(id, dto.observation);
   }
 
-  @Patch(':id/assign-collector')
+  @Patch(":id/assign-collector")
   @Roles(StaffRole.ADMIN, StaffRole.MANAGER, StaffRole.SUPER_ADMIN)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: "Asignar o reasignar collector a la venta" })
