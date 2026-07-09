@@ -71,8 +71,6 @@ export function SaleInformationCard({ sale }: SaleInformationCardProps) {
           title="Primer vencimiento"
           value={new Date(sale.firstDueDate).toLocaleDateString()}
         />
-
-        <Info title="Descuento" value={sale.hasDiscount ? "Sí" : "No"} />
       </div>
 
       <div className="border-t border-white/10 p-6">
