@@ -65,7 +65,7 @@ export default function SaleDetailPage() {
         <AdminSalePanel sale={sale} onRefresh={loadSale} />
       )}
 
-      {permissions.canAssignCollector && (
+      {(permissions.canAssignCollector || permissions.canManageCollection) && (
         <CollectorAssignPanel sale={sale} onRefresh={loadSale} />
       )}
 
