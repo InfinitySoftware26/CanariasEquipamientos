@@ -1,13 +1,18 @@
 "use client";
 
-import { getDisplayCode } from "@/lib/sales/displayCode";
 import { Sale } from "@/types/sales/sale.type";
+import { useAuthStore } from "@/store/auth.store";
+import { StaffRole } from "@/types/auth.types";
 
 interface SaleInformationCardProps {
   sale: Sale;
 }
 
 export function SaleInformationCard({ sale }: SaleInformationCardProps) {
+  const user = useAuthStore((state) => state.user);
+
+  const isSeller = user?.role === StaffRole.SELLER;
+  const products = sale.products ?? [];
   return (
     <section className="rounded-3xl border border-white/10 bg-[#111827] shadow-xl">
       <div className="border-b border-white/10 px-6 py-5">
@@ -26,12 +31,24 @@ export function SaleInformationCard({ sale }: SaleInformationCardProps) {
           value={`${sale.client?.name ?? "-"} ${sale.client?.surname ?? ""}`}
         />
 
-        <Info title="Cliente ID" value={getDisplayCode("CLI", sale.clientId)} />
+        {isSeller ? (
+          <>
+            <Info
+              title="Comisión (%)"
+              value={`${(sale.sellerCommissionRate * 100).toFixed(0)} %`}
+            />
 
-        <Info
-          title="Monto total"
-          value={`$ ${sale.totalAmount.toLocaleString()}`}
-        />
+            <Info
+              title="Comisión"
+              value={`$ ${sale.sellerCommission.toLocaleString()}`}
+            />
+          </>
+        ) : (
+          <Info
+            title="Monto total"
+            value={`$ ${sale.totalAmount.toLocaleString()}`}
+          />
+        )}
 
         <Info
           title="Cantidad de cuotas"
@@ -66,24 +83,24 @@ export function SaleInformationCard({ sale }: SaleInformationCardProps) {
         </div>
       </div>
 
-      {sale.products && sale.products.length > 0 && (
+      {products.length > 0 && (
         <div className="border-t border-white/10 p-6">
           <p className="mb-4 text-sm font-medium text-white/60">Productos</p>
 
           <div className="flex flex-wrap gap-3">
-            {sale.products.map((product) => (
+            {products.map((product) => (
               <span
                 key={product.saleProductId}
                 className="
-                  rounded-full
-                  border
-                  border-[#F5A300]/20
-                  bg-[#F5A300]/10
-                  px-4
-                  py-2
-                  text-sm
-                  text-[#F5A300]
-                "
+            rounded-full
+            border
+            border-[#F5A300]/20
+            bg-[#F5A300]/10
+            px-4
+            py-2
+            text-sm
+            text-[#F5A300]
+          "
               >
                 {product.product?.name}
               </span>

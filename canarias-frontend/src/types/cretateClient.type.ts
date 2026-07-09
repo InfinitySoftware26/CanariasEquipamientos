@@ -11,6 +11,7 @@ export interface Client {
   email?: string;
   createdByName: string;
   createdBySocietyName: string;
+  societyId: string;
 
   observations?: string;
 

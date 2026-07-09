@@ -40,7 +40,7 @@ export function StepClient({
               </p>
             ) : (
               <p className="text-yellow-400">
-                ⚠ Cliente no encontrado. Se creará automáticamente.
+                ⚠ Cliente no encontrado. Se registrarán sus datos.
               </p>
             )}
           </div>

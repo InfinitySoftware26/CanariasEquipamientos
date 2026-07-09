@@ -12,16 +12,24 @@ export interface Sale {
   societyId: string;
 
   totalAmount: number;
+
+  // Comisión del vendedor
+  sellerCommissionRate: number;
+  sellerCommission: number;
+
   installmentAmount: number;
   installmentsCount: number;
-  observation: string;
 
   paymentFrequency: string;
 
   firstDueDate: string;
   saleDate: string;
+
+  observation: string;
   hasDiscount?: boolean;
+
   createdAt?: number;
+
   status:
     | "pending_admin_validation"
     | "pending_environmental_visit"
@@ -31,7 +39,8 @@ export interface Sale {
     | "rejected_admin"
     | "environmental_rejected";
 
-  // ← preparados para cuando el back los empiece a devolver
+  assignedCollectorId?: string | null;
+
   products?: {
     saleProductId: string;
     productId: string;
@@ -40,8 +49,6 @@ export interface Sale {
       name: string;
     };
   }[];
-
-  assignedCollectorId?: string | null;
 }
 
 export type Pipeline = {

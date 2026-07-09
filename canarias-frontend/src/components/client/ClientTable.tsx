@@ -14,10 +14,13 @@ export function ClientTable({ clients }: Props) {
         <table className="min-w-[760px] w-full">
           <thead className="border-b border-white/10 bg-white/5">
             <tr className="text-left text-[10px] uppercase tracking-wider text-white/50 md:text-xs">
-              <th className="px-3 py-3 md:px-6 md:py-4">Cliente</th>
+              <th className="px-3 py-3 md:px-6 md:py-4">Codigo de ID</th>
+              <th className="px-3 py-3 md:px-6 md:py-4">Nombre Cliente</th>
               <th className="px-3 py-3 md:px-6 md:py-4">Documento</th>
               <th className="px-3 py-3 md:px-6 md:py-4">Teléfono</th>
               <th className="px-3 py-3 md:px-6 md:py-4">Dirección</th>
+              <th className="px-3 py-3 md:px-6 md:py-4">Sociedad</th>
+              <th className="px-3 py-3 md:px-6 md:py-4">Vendedor</th>
               <th className="px-3 py-3 md:px-6 md:py-4">Estado</th>
               <th className="px-3 py-3 md:px-6 md:py-4"></th>
             </tr>
