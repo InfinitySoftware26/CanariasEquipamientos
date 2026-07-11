@@ -9,7 +9,10 @@ export default new DataSource({
   database: process.env.DB_NAME,
   username: process.env.DB_USER,
   password: process.env.DB_PASS,
-  synchronize: true,
+  synchronize: false,
   entities: ["src/**/*.entity.ts"],
   migrations: ["src/database/migrations/*.ts"],
+  ssl: {
+    rejectUnauthorized: false, // Supabase requiere SSL
+  },
 });
