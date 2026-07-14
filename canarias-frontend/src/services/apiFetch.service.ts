@@ -6,6 +6,9 @@ const API_URL =
     : (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api/v1");
 
 export async function apiFetch(endpoint: string, options: RequestInit = {}) {
+  console.log("API_URL:", API_URL);
+  console.log("ENDPOINT:", endpoint);
+  console.log("FETCH:", `${API_URL}${endpoint}`);
   const response = await fetch(`${API_URL}${endpoint}`, {
     ...options,
     credentials: "include",
