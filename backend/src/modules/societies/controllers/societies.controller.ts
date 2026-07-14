@@ -38,7 +38,7 @@ export class SocietiesController {
   constructor(private readonly societiesService: SocietiesService) {}
 
   @Get()
-  @Roles(StaffRole.MANAGER, StaffRole.ADMIN)
+  @Roles(StaffRole.SUPER_ADMIN, StaffRole.MANAGER, StaffRole.ADMIN)
   @ApiOperation({ summary: "Listar todas las sociedades" })
   @ApiResponse({ status: 200, type: [SocietyResponseDto] })
   findAll() {
@@ -46,7 +46,7 @@ export class SocietiesController {
   }
 
   @Get(":id")
-  @Roles(StaffRole.MANAGER, StaffRole.ADMIN)
+  @Roles(StaffRole.SUPER_ADMIN, StaffRole.MANAGER, StaffRole.ADMIN)
   @ApiOperation({ summary: "Obtener sociedad por ID" })
   @ApiParam({ name: "id", description: "UUID de la sociedad" })
   @ApiResponse({ status: 200, type: SocietyResponseDto })
@@ -55,8 +55,8 @@ export class SocietiesController {
   }
 
   @Post()
-  @Roles(StaffRole.MANAGER)
-  @ApiOperation({ summary: "Crear nueva sociedad (solo gerente)" })
+  @Roles(StaffRole.SUPER_ADMIN)
+  @ApiOperation({ summary: "Crear nueva sociedad (solo super admin)" })
   @ApiResponse({ status: 201, type: SocietyResponseDto })
   @ApiResponse({ status: 409, description: "CUIT ya registrado" })
   create(@Body() dto: CreateSocietyDto) {
@@ -64,8 +64,8 @@ export class SocietiesController {
   }
 
   @Patch(":id")
-  @Roles(StaffRole.MANAGER)
-  @ApiOperation({ summary: "Actualizar sociedad (solo gerente)" })
+  @Roles(StaffRole.SUPER_ADMIN)
+  @ApiOperation({ summary: "Actualizar sociedad (solo super admin)" })
   @ApiParam({ name: "id", description: "UUID de la sociedad" })
   update(
     @Param("id", ParseUUIDPipe) id: string,
@@ -75,16 +75,16 @@ export class SocietiesController {
   }
 
   @Delete(":id")
-  @Roles(StaffRole.MANAGER)
+  @Roles(StaffRole.SUPER_ADMIN)
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: "Desactivar sociedad - soft delete (solo gerente)" })
+  @ApiOperation({ summary: "Desactivar sociedad - soft delete (solo super admin)" })
   @ApiParam({ name: "id", description: "UUID de la sociedad" })
   deactivate(@Param("id", ParseUUIDPipe) id: string) {
     return this.societiesService.deactivate(id);
   }
 
   @Get(":id/staff")
-  @Roles(StaffRole.MANAGER, StaffRole.ADMIN)
+  @Roles(StaffRole.SUPER_ADMIN, StaffRole.MANAGER, StaffRole.ADMIN)
   @ApiOperation({ summary: "Listar staff asignado a la sociedad" })
   @ApiParam({ name: "id", description: "UUID de la sociedad" })
   getStaff(@Param("id", ParseUUIDPipe) id: string) {
