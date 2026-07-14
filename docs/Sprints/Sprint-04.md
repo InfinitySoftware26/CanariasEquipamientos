@@ -2,7 +2,7 @@
 
 # Fecha Sprint Review
 
-17/07/2026
+24/07/2026
 
 ---
 
