@@ -1,7 +1,7 @@
 "use client";
 
 import { CreateStaffPayload } from "@/types/staff/createStaff.type";
-import { StaffRole } from "@/types/auth.types";
+// import { StaffRole } from "@/types/auth.types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,6 +12,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useAuthStore } from "@/store/auth.store";
+import { getCreatableRoles } from "@/lib/permissions";
 
 interface StaffFormProps {
   form: CreateStaffPayload;
@@ -28,6 +30,9 @@ export function StaffForm({
   loading,
   error,
 }: StaffFormProps) {
+  const { activeRole } = useAuthStore();
+  const availableRoles = getCreatableRoles(activeRole);
+
   return (
     <section className="rounded-3xl border border-white/10 bg-white/[0.04] p-6">
       <h2 className="mb-6 text-2xl font-bold text-white">Nuevo empleado</h2>
@@ -107,27 +112,17 @@ export function StaffForm({
         <div className="space-y-2">
           <Label>Rol</Label>
 
-          <Select
-            value={form.role}
-            onValueChange={(value) =>
-              setForm({
-                ...form,
-                role: value as StaffRole,
-              })
-            }
-          >
+          <Select>
             <SelectTrigger>
               <SelectValue placeholder="Seleccione un rol" />
             </SelectTrigger>
 
             <SelectContent>
-              <SelectItem value={StaffRole.ADMIN}>Administrador</SelectItem>
-
-              <SelectItem value={StaffRole.SELLER}>Vendedor</SelectItem>
-
-              <SelectItem value={StaffRole.COLLECTOR}>Cobrador</SelectItem>
-
-              <SelectItem value={StaffRole.MANAGER}>Gerente</SelectItem>
+              {availableRoles.map((role) => (
+                <SelectItem key={role} value={role}>
+                  {role}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
