@@ -19,8 +19,16 @@ export const navigationByRole = {
   ],
 
   [StaffRole.ADMIN]: [
-    { label: "Panel Inicial", href: "/dashboard/admin" },
-    { label: "Ventas", href: "/sales" },
+    {
+      label: "Panel Inicial",
+      href: "/dashboard/admin",
+    },
+
+    {
+      label: "Ventas",
+      href: "/sales",
+    },
+
     {
       label: "Nueva Venta",
       href: "/sales/preload",
@@ -37,14 +45,17 @@ export const navigationByRole = {
       label: "Panel Inicial",
       href: "/dashboard/seller",
     },
+
     {
       label: "Nueva Venta",
       href: "/sales/preload",
     },
+
     {
       label: "Mis Ventas",
       href: "/sales/my",
     },
+
     {
       label: "Clientes",
       href: "/client",
@@ -52,10 +63,29 @@ export const navigationByRole = {
   ],
 
   [StaffRole.COLLECTOR]: [
-    { label: "Panel Inicial", href: "/dashboard/collector" },
-    { label: "Ventas asignadas", href: "/sales/collector" },
-    { label: "Mis Cobros", href: "/collections" },
-    { label: "Clientes", href: "/client" },
-    { label: "Agenda", href: "/schedule" },
+    {
+      label: "Panel Inicial",
+      href: "/dashboard/collector",
+    },
+
+    {
+      label: "Mis Hojas de Ruta",
+      href: "/route-sheets",
+    },
+
+    {
+      label: "Mis Cobros",
+      href: "/collections",
+    },
+
+    {
+      label: "Liquidaciones",
+      href: "/settlements",
+    },
+
+    {
+      label: "Clientes",
+      href: "/client",
+    },
   ],
 };
