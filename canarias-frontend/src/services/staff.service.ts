@@ -4,9 +4,7 @@ import { apiFetch } from "./apiFetch.service";
 import { CreateStaffPayload } from "../types/staff/createStaff.type";
 import { Staff } from "../types/staff/staff.type";
 
-export async function createStaff(
-  data: CreateStaffPayload,
-): Promise<Staff> {
+export async function createStaff(data: CreateStaffPayload): Promise<Staff> {
   const token = useAuthStore.getState().accessToken;
 
   if (!token) {
@@ -30,4 +28,32 @@ export async function createStaff(
   const json = await res.json();
 
   return json.data ?? json;
+}
+
+export async function getStaff(): Promise<Staff[]> {
+  const token = useAuthStore.getState().accessToken;
+
+  if (!token) {
+    throw new Error("No hay token de autenticación");
+  }
+
+  const res = await apiFetch("/staff", {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!res.ok) {
+    throw new Error("Error obteniendo empleados");
+  }
+
+  const json = await res.json();
+
+  return json.data ?? json;
+}
+
+export async function getCollectors(): Promise<Staff[]> {
+  const staff = await getStaff();
+
+  return staff.filter((person) => person.role === "cobrador");
 }

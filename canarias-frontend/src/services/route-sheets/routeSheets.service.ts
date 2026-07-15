@@ -64,13 +64,15 @@ export async function createRouteSheet(payload: CreateRouteSheetPayload) {
     body: JSON.stringify(payload),
   });
 
-  if (!res.ok) {
-    const error = await res.json();
+  const json = await res.json();
 
-    throw new Error(error.message);
+  console.log("POST /route-sheets RESPONSE:", json);
+
+  if (!res.ok) {
+    throw new Error(json.message);
   }
 
-  return (await res.json()) as RouteSheetDetail;
+  return (json.data ?? json) as RouteSheetDetail;
 }
 
 export async function updateRouteSheetStatus(
