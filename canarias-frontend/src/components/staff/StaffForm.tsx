@@ -1,10 +1,11 @@
 "use client";
 
 import { CreateStaffPayload } from "@/types/staff/createStaff.type";
-// import { StaffRole } from "@/types/auth.types";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { FormField } from "@/components/ui/formField";
+
 import {
   Select,
   SelectContent,
@@ -12,25 +13,38 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+
 import { useAuthStore } from "@/store/auth.store";
-import { getCreatableRoles } from "@/lib/permissions";
+import { getCreatableRoles } from "@/permissions/staff.permissions";
+
+import { StaffValidationErrors } from "@/validators/staff.validator";
+import { StaffRole } from "@/types/auth.types";
 
 interface StaffFormProps {
   form: CreateStaffPayload;
-  setForm: React.Dispatch<React.SetStateAction<CreateStaffPayload>>;
+
+  updateField: <K extends keyof CreateStaffPayload>(
+    field: K,
+    value: CreateStaffPayload[K],
+  ) => void;
+
   handleSubmit: () => Promise<void>;
+
   loading: boolean;
   error: string | null;
+  errors: StaffValidationErrors;
 }
 
 export function StaffForm({
   form,
-  setForm,
-  handleSubmit,
+  updateField,
   loading,
   error,
+  errors,
+  handleSubmit,
 }: StaffFormProps) {
   const { activeRole } = useAuthStore();
+
   const availableRoles = getCreatableRoles(activeRole);
 
   return (
@@ -38,82 +52,50 @@ export function StaffForm({
       <h2 className="mb-6 text-2xl font-bold text-white">Nuevo empleado</h2>
 
       <div className="space-y-5">
-        {/* Nombre */}
-        <div className="space-y-2">
-          <Label>Nombre completo</Label>
-
+        <FormField label="Nombre completo" error={errors.name}>
           <Input
             placeholder="Ingrese el nombre"
             value={form.name}
-            onChange={(e) =>
-              setForm({
-                ...form,
-                name: e.target.value,
-              })
-            }
+            onChange={(e) => updateField("name", e.target.value)}
             className="h-11 border-white/10 bg-white/5 text-white"
           />
-        </div>
+        </FormField>
 
-        {/* DNI */}
-        <div className="space-y-2">
-          <Label>DNI</Label>
-
+        <FormField label="DNI" error={errors.dni}>
           <Input
             placeholder="Ingrese el DNI"
             value={form.dni}
-            onChange={(e) =>
-              setForm({
-                ...form,
-                dni: e.target.value,
-              })
-            }
+            onChange={(e) => updateField("dni", e.target.value)}
             className="h-11 border-white/10 bg-white/5 text-white"
           />
-        </div>
+        </FormField>
 
-        {/* Email */}
-        <div className="space-y-2">
-          <Label>Email</Label>
-
+        <FormField label="Email" error={errors.email}>
           <Input
             type="email"
             placeholder="correo@empresa.com"
             value={form.email}
-            onChange={(e) =>
-              setForm({
-                ...form,
-                email: e.target.value,
-              })
-            }
+            onChange={(e) => updateField("email", e.target.value)}
             className="h-11 border-white/10 bg-white/5 text-white"
           />
-        </div>
+        </FormField>
 
-        {/* Password */}
-        <div className="space-y-2">
-          <Label>Contraseña temporal</Label>
-
+        <FormField label="Contraseña temporal" error={errors.password}>
           <Input
             type="password"
             placeholder="********"
             value={form.password}
-            onChange={(e) =>
-              setForm({
-                ...form,
-                password: e.target.value,
-              })
-            }
+            onChange={(e) => updateField("password", e.target.value)}
             className="h-11 border-white/10 bg-white/5 text-white"
           />
-        </div>
+        </FormField>
 
-        {/* Rol */}
-        <div className="space-y-2">
-          <Label>Rol</Label>
-
-          <Select>
-            <SelectTrigger>
+        <FormField label="Rol" error={errors.role}>
+          <Select
+            value={form.role}
+            onValueChange={(value) => updateField("role", value as StaffRole)}
+          >
+            <SelectTrigger className="w-full border-white/10 bg-white/5 text-white">
               <SelectValue placeholder="Seleccione un rol" />
             </SelectTrigger>
 
@@ -125,7 +107,7 @@ export function StaffForm({
               ))}
             </SelectContent>
           </Select>
-        </div>
+        </FormField>
 
         {error && <p className="text-sm text-red-400">{error}</p>}
 
