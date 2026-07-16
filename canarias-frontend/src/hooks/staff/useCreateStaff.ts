@@ -6,6 +6,10 @@ import { createStaff } from "@/services/staff.service";
 import { CreateStaffPayload } from "../../types/staff/createStaff.type";
 import { StaffRole } from "@/types/auth.types";
 import { useAuthStore } from "@/store/auth.store";
+import {
+  StaffValidationErrors,
+  validateStaff,
+} from "@/validators/staff.validator";
 
 const initialForm: CreateStaffPayload = {
   name: "",
@@ -21,6 +25,21 @@ export function useCreateStaff() {
   const [form, setForm] = useState<CreateStaffPayload>(initialForm);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [errors, setErrors] = useState<StaffValidationErrors>({});
+
+  function updateField<K extends keyof CreateStaffPayload>(
+    field: K,
+    value: CreateStaffPayload[K],
+  ) {
+    const updatedForm = {
+      ...form,
+      [field]: value,
+    };
+
+    setForm(updatedForm);
+    setError(null);
+    setErrors(validateStaff(updatedForm));
+  }
 
   async function handleSubmit() {
     try {
@@ -31,9 +50,12 @@ export function useCreateStaff() {
         ...form,
         societyId: selectedSocietyId ?? undefined,
       };
+      const validation = validateStaff(payload);
 
-      console.log("Payload:", payload);
-
+      if (Object.keys(validation).length > 0) {
+        setErrors(validation);
+        return;
+      }
       await createStaff(payload);
 
       router.push("/staff");
@@ -47,11 +69,10 @@ export function useCreateStaff() {
 
   return {
     form,
-    setForm,
-
     loading,
     error,
-
+    errors,
+    updateField,
     handleSubmit,
   };
 }
