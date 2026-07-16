@@ -1,18 +1,27 @@
 import {
-  Injectable, Inject, NotFoundException,
-  ConflictException, BadRequestException,
-} from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { IZonesRepository, ZONES_REPOSITORY } from '../interfaces/zones-repository.interface';
-import { IStaffZonesRepository, STAFF_ZONES_REPOSITORY } from '../interfaces/staff-zones-repository.interface';
-import { CreateZoneDto } from '../dto/create-zone.dto';
-import { UpdateZoneDto } from '../dto/update-zone.dto';
-import { AssignStaffZoneDto } from '../dto/assign-staff-zone.dto';
-import { Zone, ZoneStatus } from '../entities/zone.entity';
-import { StaffZoneStatus } from '../entities/staff-zone.entity';
-import { Staff } from '../../staff/entities/staff.entity';
-import { StaffRole } from '../../../common/enums/staff-role.enum';
+  Injectable,
+  Inject,
+  NotFoundException,
+  ConflictException,
+  BadRequestException,
+} from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import {
+  IZonesRepository,
+  ZONES_REPOSITORY,
+} from "../interfaces/zones-repository.interface";
+import {
+  IStaffZonesRepository,
+  STAFF_ZONES_REPOSITORY,
+} from "../interfaces/staff-zones-repository.interface";
+import { CreateZoneDto } from "../dto/create-zone.dto";
+import { UpdateZoneDto } from "../dto/update-zone.dto";
+import { AssignStaffZoneDto } from "../dto/assign-staff-zone.dto";
+import { Zone, ZoneStatus } from "../entities/zone.entity";
+import { StaffZoneStatus } from "../entities/staff-zone.entity";
+import { Staff } from "../../staff/entities/staff.entity";
+import { StaffRole } from "../../../common/enums/staff-role.enum";
 
 const ASSIGNABLE_ROLES: StaffRole[] = [StaffRole.SELLER, StaffRole.COLLECTOR];
 
@@ -32,9 +41,12 @@ export class ZonesService {
   }
 
   async findById(id: string, societyId: string): Promise<Zone> {
+    console.log("ZONE ID:", id);
+    console.log("SOCIETY:", societyId);
+
     const zone = await this.zonesRepo.findById(id);
     if (!zone || zone.societyId !== societyId)
-      throw new NotFoundException('Zona ' + id + ' no encontrada');
+      throw new NotFoundException("Zona " + id + " no encontrada");
     return zone;
   }
 
@@ -43,7 +55,11 @@ export class ZonesService {
     return this.zonesRepo.create({ ...dto, societyId });
   }
 
-  async update(id: string, dto: UpdateZoneDto, societyId: string): Promise<Zone> {
+  async update(
+    id: string,
+    dto: UpdateZoneDto,
+    societyId: string,
+  ): Promise<Zone> {
     await this.findById(id, societyId);
     if (dto.name) await this.assertUniqueNameInSociety(dto.name, societyId, id);
     return this.zonesRepo.update(id, dto);
@@ -52,7 +68,7 @@ export class ZonesService {
   async deactivate(id: string, societyId: string): Promise<void> {
     const zone = await this.findById(id, societyId);
     if (zone.status === ZoneStatus.INACTIVE)
-      throw new BadRequestException('La zona ya está inactiva');
+      throw new BadRequestException("La zona ya está inactiva");
     await this.zonesRepo.softDelete(id);
   }
 
@@ -61,13 +77,25 @@ export class ZonesService {
     return this.staffZonesRepo.findByZone(zoneId);
   }
 
-  async assignStaff(zoneId: string, dto: AssignStaffZoneDto, societyId: string): Promise<void> {
+  async assignStaff(
+    zoneId: string,
+    dto: AssignStaffZoneDto,
+    societyId: string,
+  ): Promise<void> {
     await this.findById(zoneId, societyId);
     await this.assertCanAssignStaff(dto.staffId);
-    await this.staffZonesRepo.assign(dto.staffId, zoneId, dto.status ?? StaffZoneStatus.ACTIVE);
+    await this.staffZonesRepo.assign(
+      dto.staffId,
+      zoneId,
+      dto.status ?? StaffZoneStatus.ACTIVE,
+    );
   }
 
-  async unassignStaff(zoneId: string, staffId: string, societyId: string): Promise<void> {
+  async unassignStaff(
+    zoneId: string,
+    staffId: string,
+    societyId: string,
+  ): Promise<void> {
     await this.findById(zoneId, societyId);
     await this.staffZonesRepo.unassign(staffId, zoneId);
   }
@@ -79,13 +107,18 @@ export class ZonesService {
   ): Promise<void> {
     const existing = await this.zonesRepo.findByNameAndSociety(name, societyId);
     if (existing && existing.zoneId !== excludeZoneId)
-      throw new ConflictException('Ya existe una zona con el nombre "' + name + '" en esta sociedad');
+      throw new ConflictException(
+        'Ya existe una zona con el nombre "' + name + '" en esta sociedad',
+      );
   }
 
   private async assertCanAssignStaff(staffId: string): Promise<void> {
     const staff = await this.staffRepo.findOne({ where: { staffId } });
-    if (!staff) throw new NotFoundException('Empleado ' + staffId + ' no encontrado');
+    if (!staff)
+      throw new NotFoundException("Empleado " + staffId + " no encontrado");
     if (!ASSIGNABLE_ROLES.includes(staff.role))
-      throw new BadRequestException('Solo se pueden asignar vendedores y cobradores a zonas');
+      throw new BadRequestException(
+        "Solo se pueden asignar vendedores y cobradores a zonas",
+      );
   }
 }
