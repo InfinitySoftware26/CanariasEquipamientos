@@ -1,8 +1,10 @@
 import {
   Entity, PrimaryGeneratedColumn, Column,
-  CreateDateColumn, UpdateDateColumn,
+  CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn,
 } from 'typeorm';
 import { RouteSheetStatus } from '../../../common/enums/route-sheet-status.enum';
+import { Zone } from '../../zones/entities/zone.entity';
+import { Staff } from '../../staff/entities/staff.entity';
 
 @Entity('ROUTE_SHEETS')
 export class RouteSheet {
@@ -15,8 +17,16 @@ export class RouteSheet {
   @Column({ name: 'zone_id', type: 'uuid' })
   zoneId!: string;
 
+  @ManyToOne(() => Zone)
+  @JoinColumn({ name: 'zone_id' })
+  zone!: Zone;
+
   @Column({ name: 'staff_id', type: 'uuid' })
   staffId!: string;
+
+  @ManyToOne(() => Staff)
+  @JoinColumn({ name: 'staff_id' })
+  staff!: Staff;
 
   @Column({ name: 'assigned_by', type: 'uuid' })
   assignedBy!: string;

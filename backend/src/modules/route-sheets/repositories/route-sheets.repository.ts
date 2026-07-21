@@ -8,6 +8,8 @@ import {
 } from '../interfaces/route-sheets-repository.interface';
 import { RouteSheetStatus } from '../../../common/enums/route-sheet-status.enum';
 
+const ROUTE_SHEET_RELATIONS = ['zone', 'staff'];
+
 @Injectable()
 export class RouteSheetsRepository implements IRouteSheetsRepository {
   constructor(
@@ -24,6 +26,7 @@ export class RouteSheetsRepository implements IRouteSheetsRepository {
         ...(filters?.routeDate ? { routeDate: filters.routeDate as unknown as Date } : {}),
       },
       order: { routeDate: 'DESC' },
+      relations: ROUTE_SHEET_RELATIONS,
     });
   }
 
@@ -37,11 +40,12 @@ export class RouteSheetsRepository implements IRouteSheetsRepository {
         ...(filters?.routeDate ? { routeDate: filters.routeDate as unknown as Date } : {}),
       },
       order: { routeDate: 'DESC' },
+      relations: ROUTE_SHEET_RELATIONS,
     });
   }
 
   findById(id: string): Promise<RouteSheet | null> {
-    return this.repo.findOne({ where: { routeSheetId: id } });
+    return this.repo.findOne({ where: { routeSheetId: id }, relations: ROUTE_SHEET_RELATIONS });
   }
 
   findActiveForStaffZoneDate(staffId: string, zoneId: string, routeDate: string): Promise<RouteSheet | null> {
