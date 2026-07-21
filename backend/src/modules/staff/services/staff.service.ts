@@ -82,8 +82,12 @@ export class StaffService {
 
     if (!found) return null;
 
-    const societies = await this.societiesService.getSocietiesForStaff(found.staffId);
-    const alreadyInCurrentSociety = societies.some(s => s.societyId === currentSocietyId);
+    const societies = await this.societiesService.getSocietiesForStaff(
+      found.staffId,
+    );
+    const alreadyInCurrentSociety = societies.some(
+      (s) => s.societyId === currentSocietyId,
+    );
 
     return { ...found, alreadyInCurrentSociety };
   }
@@ -97,7 +101,7 @@ export class StaffService {
   async create(dto: CreateStaffDto, currentUser: JwtPayload): Promise<Staff> {
     this.assertCanCreateRole(
       currentUser.role,
-      dto.role as unknown as StaffRole
+      dto.role as unknown as StaffRole,
     );
     await this.assertUniqueEmailAndDni(dto.email, dto.dni);
 
@@ -114,6 +118,7 @@ export class StaffService {
       name: dto.name,
       dni: dto.dni,
       email: dto.email,
+      phone: dto.phone,
       passwordHash,
       role: dto.role as unknown as StaffRole,
       primarySocietyId,
@@ -121,7 +126,10 @@ export class StaffService {
     });
 
     if (primarySocietyId) {
-      await this.societiesService.linkStaffToSociety(staff.staffId, primarySocietyId);
+      await this.societiesService.linkStaffToSociety(
+        staff.staffId,
+        primarySocietyId,
+      );
     }
 
     return staff;
@@ -133,7 +141,7 @@ export class StaffService {
    */
   async createSuperAdmin(
     dto: CreateSuperAdminDto,
-    currentUser: JwtPayload
+    currentUser: JwtPayload,
   ): Promise<Staff> {
     this.assertCanCreateRole(currentUser.role, StaffRole.SUPER_ADMIN);
     await this.assertUniqueEmailAndDni(dto.email, dto.dni);
@@ -144,6 +152,7 @@ export class StaffService {
       name: dto.name,
       dni: dto.dni,
       email: dto.email,
+      phone: dto.phone,
       passwordHash,
       role: StaffRole.SUPER_ADMIN,
       primarySocietyId: dto.societyId ?? undefined,
@@ -154,30 +163,29 @@ export class StaffService {
   async update(
     id: string,
     dto: UpdateStaffDto,
-    currentUser: JwtPayload
+    currentUser: JwtPayload,
   ): Promise<Staff> {
-    await this.findById(id);
-    this.assertCanUpdate(id, dto, currentUser);
+    await this.assertCanUpdate(id, dto, currentUser);
     return this.staffRepo.update(id, dto);
   }
 
   async changePassword(
     id: string,
     dto: ChangePasswordDto,
-    currentUser: JwtPayload
+    currentUser: JwtPayload,
   ): Promise<void> {
     if (currentUser.sub !== id) {
       throw new ForbiddenException("Solo puedes cambiar tu propia contrasena");
     }
 
     const staff = await this.staffRepo.findByEmailWithPassword(
-      (await this.findById(id)).email
+      (await this.findById(id)).email,
     );
     if (!staff) throw new NotFoundException("Empleado no encontrado");
 
     const isMatch = await bcrypt.compare(
       dto.currentPassword,
-      staff.passwordHash
+      staff.passwordHash,
     );
     if (!isMatch)
       throw new UnauthorizedException("La contrasena actual es incorrecta");
@@ -195,19 +203,19 @@ export class StaffService {
 
   private assertCanCreateRole(
     creatorRole: string,
-    targetRole: StaffRole
+    targetRole: StaffRole,
   ): void {
     const allowed = CREATION_PERMISSIONS[creatorRole] ?? [];
     if (!allowed.includes(targetRole)) {
       throw new ForbiddenException(
-        "No tienes permiso para crear usuarios con el rol " + targetRole
+        "No tienes permiso para crear usuarios con el rol " + targetRole,
       );
     }
   }
 
   private async assertUniqueEmailAndDni(
     email: string,
-    dni: string
+    dni: string,
   ): Promise<void> {
     const [byEmail, byDni] = await Promise.all([
       this.staffRepo.findByEmail(email),
@@ -219,29 +227,42 @@ export class StaffService {
       throw new ConflictException("El DNI " + dni + " ya esta registrado");
   }
 
-  private assertCanUpdate(
+  private async assertCanUpdate(
     targetId: string,
     dto: UpdateStaffDto,
-    currentUser: JwtPayload
-  ): void {
+    currentUser: JwtPayload,
+  ): Promise<void> {
     const isSuperAdmin = currentUser.role === StaffRole.SUPER_ADMIN;
     const isManager = currentUser.role === StaffRole.MANAGER;
     const isAdmin = currentUser.role === StaffRole.ADMIN;
     const isSelf = currentUser.sub === targetId;
 
+    const target = await this.findById(targetId);
     if (
       (dto.role !== undefined || dto.isActive !== undefined) &&
       !isSuperAdmin &&
-      !isManager
+      !isManager &&
+      !isAdmin
     ) {
       throw new ForbiddenException(
-        "Solo el gerente o superadmin puede cambiar el rol o estado"
+        "No tienes permiso para cambiar el rol o estado",
+      );
+    }
+
+    if (
+      isAdmin &&
+      !isSelf &&
+      target.role !== StaffRole.SELLER &&
+      target.role !== StaffRole.COLLECTOR
+    ) {
+      throw new ForbiddenException(
+        "Solo puedes editar vendedores y cobradores",
       );
     }
 
     if (!isSuperAdmin && !isManager && !isAdmin && !isSelf) {
       throw new ForbiddenException(
-        "No tienes permiso para editar este empleado"
+        "No tienes permiso para editar este empleado",
       );
     }
   }

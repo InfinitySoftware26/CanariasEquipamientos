@@ -4,14 +4,8 @@ import { StaffForm } from "@/components/staff/StaffForm";
 import { useCreateStaff } from "@/hooks/staff/useCreateStaff";
 
 export default function CreateStaffPage() {
-  const {
-    form,
-    loading,
-    error,
-    errors,
-    handleSubmit,
-    updateField,
-  } = useCreateStaff();
+  const { form, loading, error, errors, handleSubmit, updateField } =
+    useCreateStaff();
 
   return (
     <div className="container-page py-8">
@@ -23,6 +17,7 @@ export default function CreateStaffPage() {
           error={error}
           errors={errors}
           handleSubmit={handleSubmit}
+          mode="create"
         />
       </div>
     </div>

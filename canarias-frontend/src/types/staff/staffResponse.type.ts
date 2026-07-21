@@ -1,11 +1,11 @@
 import { StaffRole } from "../auth.types";
 
-export interface CreateStaffPayload {
+export interface StaffResponse {
+  staffId: string;
   name: string;
   dni: string;
   email: string;
-  password?: string;
   role: StaffRole;
-  societyId?: string;
-  phone: string;
+  phone?: string;
+  isActive: boolean;
 }
