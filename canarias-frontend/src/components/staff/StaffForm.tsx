@@ -1,11 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import { CreateStaffPayload } from "@/types/staff/createStaff.type";
-
+import { StaffRole } from "@/types/auth.types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FormField } from "@/components/ui/formField";
-
 import {
   Select,
   SelectContent,
@@ -13,12 +13,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
 import { useAuthStore } from "@/store/auth.store";
 import { getCreatableRoles } from "@/permissions/staff.permissions";
-
 import { StaffValidationErrors } from "@/validators/staff.validator";
-import { StaffRole } from "@/types/auth.types";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 interface StaffFormProps {
   form: CreateStaffPayload;
@@ -33,6 +31,10 @@ interface StaffFormProps {
   loading: boolean;
   error: string | null;
   errors: StaffValidationErrors;
+  mode: "create" | "edit";
+
+  title?: string;
+  submitLabel?: string;
 }
 
 export function StaffForm({
@@ -42,14 +44,20 @@ export function StaffForm({
   error,
   errors,
   handleSubmit,
+  mode = "create",
 }: StaffFormProps) {
   const { activeRole } = useAuthStore();
-
   const availableRoles = getCreatableRoles(activeRole);
+
+  const title = mode === "create" ? "Nuevo empleado" : "Editar empleado";
+  const submitLabel = mode === "create" ? "Crear empleado" : "Guardar cambios";
+
+  // Estado para abrir/cerrar el diálogo de confirmación
+  const [openConfirm, setOpenConfirm] = useState(false);
 
   return (
     <section className="rounded-3xl border border-white/10 bg-white/[0.04] p-6">
-      <h2 className="mb-6 text-2xl font-bold text-white">Nuevo empleado</h2>
+      <h2 className="mb-6 text-2xl font-bold text-white">{title}</h2>
 
       <div className="space-y-5">
         <FormField label="Nombre completo" error={errors.name}>
@@ -70,6 +78,16 @@ export function StaffForm({
           />
         </FormField>
 
+        <FormField label="Teléfono" error={errors.phone}>
+          <Input
+            type="tel"
+            placeholder="Ej: 2994123456"
+            value={form.phone}
+            onChange={(e) => updateField("phone", e.target.value)}
+            className="h-11 border-white/10 bg-white/5 text-white"
+          />
+        </FormField>
+        
         <FormField label="Email" error={errors.email}>
           <Input
             type="email"
@@ -80,15 +98,18 @@ export function StaffForm({
           />
         </FormField>
 
-        <FormField label="Contraseña temporal" error={errors.password}>
-          <Input
-            type="password"
-            placeholder="********"
-            value={form.password}
-            onChange={(e) => updateField("password", e.target.value)}
-            className="h-11 border-white/10 bg-white/5 text-white"
-          />
-        </FormField>
+
+        {mode === "create" && (
+          <FormField label="Contraseña temporal" error={errors.password}>
+            <Input
+              type="password"
+              placeholder="********"
+              value={form.password}
+              onChange={(e) => updateField("password", e.target.value)}
+              className="h-11 border-white/10 bg-white/5 text-white"
+            />
+          </FormField>
+        )}
 
         <FormField label="Rol" error={errors.role}>
           <Select
@@ -109,15 +130,36 @@ export function StaffForm({
           </Select>
         </FormField>
 
-        {error && <p className="text-sm text-red-400">{error}</p>}
+        {error && (
+          <p className="rounded-lg bg-red-500/10 p-3 text-sm text-red-400">
+            {error}
+          </p>
+        )}
 
+        {/* Botón que abre el diálogo */}
         <Button
-          onClick={handleSubmit}
+          onClick={() => setOpenConfirm(true)}
           disabled={loading}
           className="mt-4 h-12 w-full rounded-xl bg-[#F5A300] font-semibold text-[#0D1B2A] hover:bg-[#e89b00]"
         >
-          {loading ? "Creando empleado..." : "Crear empleado"}
+          {loading ? "Guardando..." : submitLabel}
         </Button>
+
+        {/* ConfirmDialog */}
+        <ConfirmDialog
+          open={openConfirm}
+          onOpenChange={setOpenConfirm}
+          title={mode === "create" ? "¿Crear nuevo empleado?" : "¿Guardar cambios?"}
+          description={
+            mode === "create"
+              ? "Se creará un nuevo registro de empleado en el sistema."
+              : "Se guardarán los cambios realizados en la información del empleado."
+          }
+          confirmText={submitLabel}
+          cancelText="Cancelar"
+          loading={loading}
+          onConfirm={handleSubmit}
+        />
       </div>
     </section>
   );

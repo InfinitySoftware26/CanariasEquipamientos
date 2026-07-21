@@ -6,5 +6,7 @@ export interface Staff {
   dni: string;
   email: string;
   role: StaffRole;
+  phone?: string;
+  isActive: boolean;
   societyId?: string;
 }
