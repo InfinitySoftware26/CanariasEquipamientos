@@ -35,12 +35,12 @@ export function SaleInformationCard({ sale }: SaleInformationCardProps) {
           <>
             <Info
               title="Comisión (%)"
-              value={`${(sale.sellerCommissionRate * 100).toFixed(0)} %`}
+              value={`${(Number(sale.sellerCommission) * 100).toFixed(0)} %`}
             />
 
             <Info
               title="Comisión"
-              value={`$ ${sale.sellerCommission.toLocaleString()}`}
+              value={`$ ${Number(sale.sellerCommission).toLocaleString()}`}
             />
           </>
         ) : (

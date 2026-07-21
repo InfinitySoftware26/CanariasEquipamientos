@@ -46,6 +46,7 @@ export function usePreloadSale() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [searched, setSearched] = useState(false);
   const [clientFound, setClientFound] = useState(false);
   const [existingClient, setExistingClient] = useState<Client | null>(null);
 
@@ -88,6 +89,9 @@ export function usePreloadSale() {
       setError(null);
       const client = await searchClientByDocument(form.documentNumber);
       console.log("Respuesta del backend:", client);
+      console.log("CLIENT ENCONTRADO:", client);
+      console.log("CLIENT ID:", client?.clientId);
+      setSearched(true);
       if (!client) {
         setClientFound(false);
         setStep(2);
@@ -143,34 +147,49 @@ export function usePreloadSale() {
       });
 
       let finalClientId = existingClient?.clientId ?? form.clientId;
-
+      console.log("ANTES DE CREAR CLIENTE", {
+        existingClient,
+        form,
+        finalClientId,
+        clientFound,
+      });
       // 🔥 CREAR CLIENTE SI NO EXISTE
       if (!finalClientId) {
-        const created = await createPreloadClient({
-          name: form.name,
-          surname: form.surname,
-          documentNumber: form.documentNumber,
-          address: form.address,
-          phone: form.phone,
-        });
+        let client: Client | null = null;
 
-        // ✅ Sincronizamos el estado del hook con la base de datos
-        setExistingClient(created);
+        try {
+          client = await createPreloadClient({
+            name: form.name,
+            surname: form.surname,
+            documentNumber: form.documentNumber,
+            address: form.address,
+            phone: form.phone,
+          });
+        } catch (err) {
+          console.warn("El cliente ya existe. Reintentando búsqueda...");
+
+          client = await searchClientByDocument(form.documentNumber);
+          setSearched(true);
+          console.log("CLIENTE BUSCADO:", client);
+          if (!client) {
+            throw err;
+          }
+        }
+
+        setExistingClient(client);
         setClientFound(true);
 
         setForm((prev) => ({
           ...prev,
-          clientId: created.clientId,
-
-          // Dejamos sincronizados también los datos del cliente
-          name: created.name ?? prev.name,
-          surname: created.surname ?? prev.surname,
-          documentNumber: created.documentNumber ?? prev.documentNumber,
-          address: created.address ?? prev.address,
-          phone: created.phone ?? prev.phone,
+          clientId: client.clientId,
+          name: client.name ?? prev.name,
+          surname: client.surname ?? prev.surname,
+          documentNumber: client.documentNumber ?? prev.documentNumber,
+          address: client.address ?? prev.address,
+          phone: client.phone ?? prev.phone,
         }));
 
-        finalClientId = created.clientId;
+        finalClientId = client.clientId;
       }
 
       if (!finalClientId) {
@@ -214,7 +233,11 @@ export function usePreloadSale() {
       setLoading(false);
     }
   }
-
+  console.log("ESTADOS CLIENTE", {
+    searched,
+    clientFound,
+    existingClient,
+  });
   return {
     step,
     form,
@@ -225,6 +248,7 @@ export function usePreloadSale() {
 
     loading,
     error,
+    searched,
     clientFound,
 
     handleSearchClient,

@@ -71,6 +71,10 @@ export const navigationByRole = {
       href: "/dashboard/seller",
     },
     {
+      label: "Mis Comisiones",
+      href: "/dashboard/seller/commissions",
+    },
+    {
       label: "Nueva Venta",
       href: "/sales/preload",
     },
@@ -89,6 +93,7 @@ export const navigationByRole = {
       label: "Panel Inicial",
       href: "/dashboard/collector",
     },
+    { label: "Mis Ventas", href: "/sales/collector" },
     {
       label: "Mis Hojas de Ruta",
       href: "/route-sheets",

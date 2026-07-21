@@ -73,9 +73,11 @@ export async function searchClientByDocument(
     throw new Error("Error buscando cliente");
   }
 
-  const client = await res.json();
+  const response = await res.json();
 
-  console.log("LOOKUP CLIENT RESPONSE:", client);
+  console.log("LOOKUP CLIENT RESPONSE:", response);
+
+  const client = response.data ?? response;
 
   return {
     ...client,
@@ -83,7 +85,6 @@ export async function searchClientByDocument(
     alreadyInCurrentSociety: client.alreadyInCurrentSociety ?? false,
   };
 }
-
 // LIST
 export async function listClients(params?: {
   page?: number;

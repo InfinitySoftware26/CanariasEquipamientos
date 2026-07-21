@@ -18,6 +18,7 @@ export function PreloadSaleView({
   handleSearchClient,
   handleSubmit,
   goToSaleStep,
+  searched,
 }: PreloadSaleViewProps) {
   const handleGoToSaleStep = async () => {
     try {
@@ -55,6 +56,7 @@ export function PreloadSaleView({
           setForm={setForm}
           handleSearchClient={handleSearchClient}
           clientFound={clientFound}
+          searched={searched}
         />
       )}
 

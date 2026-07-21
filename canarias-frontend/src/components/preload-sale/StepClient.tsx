@@ -7,11 +7,8 @@ export function StepClient({
   setForm,
   handleSearchClient,
   clientFound,
+  searched,
 }: StepClientProps) {
-  console.log({
-    documentNumber: form.documentNumber,
-    clientFound,
-  });
   return (
     <section className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
       <StepTitle icon={<User size={18} />} label="Cliente" />
@@ -20,7 +17,12 @@ export function StepClient({
         <input
           name="documentNumber"
           value={form.documentNumber}
-          onChange={(e) => setForm({ ...form, documentNumber: e.target.value })}
+          onChange={(e) =>
+            setForm({
+              ...form,
+              documentNumber: e.target.value,
+            })
+          }
           placeholder="DNI"
           className="w-full rounded-xl border border-white/10 bg-white/[0.06] px-4 py-2.5 text-white"
         />
@@ -32,7 +34,7 @@ export function StepClient({
           Buscar cliente
         </button>
 
-        {form.documentNumber && (
+        {searched && (
           <div className="mt-2 text-xs">
             {clientFound ? (
               <p className="text-green-400">

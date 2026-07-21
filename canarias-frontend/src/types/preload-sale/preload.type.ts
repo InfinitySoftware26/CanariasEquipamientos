@@ -22,6 +22,7 @@ export type StepClientProps = {
   setForm: React.Dispatch<React.SetStateAction<PreloadFormData>>;
   handleSearchClient: () => void;
   clientFound: boolean;
+  searched: boolean;
 };
 
 export type StepTitleProps = {
@@ -41,6 +42,7 @@ export type PreloadSaleViewProps = {
   setForm: React.Dispatch<React.SetStateAction<PreloadFormData>>;
   products: Product[];
   clientFound: boolean;
+  searched: boolean;
   error: string | null;
   loading: boolean;
 
