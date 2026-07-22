@@ -65,16 +65,32 @@ export function useSellerSales() {
 
   // ---------------- STATS ----------------
   const stats = useMemo(() => {
+    const now = new Date();
+
     return sales.reduce(
       (acc, sale) => {
         acc.total++;
 
+        const saleDate = new Date(sale.saleDate);
+
+        if (
+          saleDate.getMonth() === now.getMonth() &&
+          saleDate.getFullYear() === now.getFullYear()
+        ) {
+          acc.monthlyCommission += Number(sale.sellerCommission ?? 0);
+        }
+
         if (PENDING_STATUSES.includes(sale.status)) {
           if (sale.status === "pending_admin_validation") acc.adminValidation++;
+
           if (sale.status === "pending_environmental_visit") acc.envVisit++;
+
           if (sale.status === "pending_delivery") acc.delivery++;
         }
-        if (sale.status === "closed") acc.closed++;
+
+        if (sale.status === "closed") {
+          acc.closed++;
+        }
 
         return acc;
       },
@@ -84,6 +100,7 @@ export function useSellerSales() {
         envVisit: 0,
         delivery: 0,
         closed: 0,
+        monthlyCommission: 0,
       },
     );
   }, [sales]);

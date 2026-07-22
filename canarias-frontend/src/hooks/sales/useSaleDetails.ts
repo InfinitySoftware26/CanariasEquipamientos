@@ -31,38 +31,14 @@ export function useSaleDetail(saleId: string) {
     }
   }, [saleId]);
 
- useEffect(() => {
-  if (!saleId) return;
+  useEffect(() => {
+    loadSale();
+  }, [loadSale]);
 
-  let mounted = true;
-
-  async function fetchSale() {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const data = await getSaleById(saleId);
-
-      if (mounted) setSale(data);
-    } catch (err) {
-      console.error(err);
-      if (mounted) setError("No se pudo cargar la venta");
-    } finally {
-      if (mounted) setLoading(false);
-    }
-  }
-
-  void fetchSale();
-
-  return () => {
-    mounted = false;
-  };
-}, [saleId]);
   return {
     sale,
     loading,
     error,
-
     refresh: loadSale,
   };
 }
