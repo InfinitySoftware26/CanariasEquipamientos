@@ -1,6 +1,5 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
 import { Pencil, UserX } from "lucide-react";
 
 interface StaffActionsProps {
@@ -17,22 +16,51 @@ export function StaffActions({
   loading = false,
 }: StaffActionsProps) {
   return (
-    <div className="flex gap-2">
-      <Button variant="secondary" size="sm" onClick={onEdit}>
-        <Pencil className="mr-1 h-4 w-4" />
+    <div className="flex gap-3">
+      <button
+        type="button"
+        onClick={onEdit}
+        className="
+          inline-flex
+          items-center
+          gap-2
+          rounded-xl
+          border
+          border-[#F5A300]/40
+          px-4
+          py-2
+          text-[#F5A300]
+          transition
+          hover:bg-[#F5A300]/10
+        "
+      >
+        <Pencil size={16} />
         Editar
-      </Button>
+      </button>
 
       {isActive && (
-        <Button
-          size="sm"
-          variant="destructive"
+        <button
+          type="button"
           onClick={onDeactivate}
           disabled={loading}
+          className="
+            inline-flex
+            items-center
+            gap-2
+            rounded-xl
+            border
+            border-red-500/40
+            px-4
+            py-2
+            text-red-400
+            transition
+            hover:bg-red-500/10
+            disabled:opacity-50
+          "
         >
-          <UserX className="mr-1 h-4 w-4" />
+          <UserX size={16} />
           {loading ? "Desactivando..." : "Desactivar"}
-        </Button>
+        </button>
       )}
     </div>
   );

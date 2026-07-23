@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Pencil, Trash2, Users } from "lucide-react";
+import { Pencil, Trash2, Users } from "lucide-react";
 
 import { useZone } from "@/hooks/zones/useZone";
 import { useZoneStaff } from "@/hooks/zones/useZoneStaff";
@@ -13,12 +13,16 @@ import { useDeleteZone } from "@/hooks/zones/useDeleteZone";
 import { ZoneStatusBadge } from "@/components/zone/ZoneStatusBadge";
 import { ZoneStaffList } from "@/components/zone/ZoneStaffList";
 import { AssignStaffModal } from "@/components/staff/AssignStaffModal";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 export default function ZoneDetailPage() {
   const params = useParams();
   const router = useRouter();
 
   const [openAssign, setOpenAssign] = useState(false);
+
+  const [openDeleteConfirm, setOpenDeleteConfirm] = useState(false);
+  const [openDeleteSuccess, setOpenDeleteSuccess] = useState(false);
 
   const id = params?.id;
 
@@ -42,14 +46,11 @@ export default function ZoneDetailPage() {
   async function handleDelete() {
     if (!zoneId) return;
 
-    const confirmed = window.confirm("¿Desea desactivar esta zona?");
-
-    if (!confirmed) return;
-
     const success = await deleteZone(zoneId);
 
     if (success) {
-      router.push("/zones");
+      setOpenDeleteConfirm(false);
+      setOpenDeleteSuccess(true);
     }
   }
 
@@ -84,21 +85,6 @@ export default function ZoneDetailPage() {
   return (
     <>
       <section className="space-y-8">
-        <Link
-          href="/zones"
-          className="
-            inline-flex
-            items-center
-            gap-2
-            text-white/60
-            transition
-            hover:text-white
-          "
-        >
-          <ArrowLeft size={18} />
-          Volver
-        </Link>
-
         <div
           className="
             rounded-3xl
@@ -120,7 +106,9 @@ export default function ZoneDetailPage() {
           >
             <div>
               <div className="flex items-center gap-3">
-                <h1 className="text-3xl font-bold text-white">{zone.name}</h1>
+                <h1 className="text-3xl font-bold text-white">
+                  {zone.name}
+                </h1>
 
                 <ZoneStatusBadge status={zone.status} />
               </div>
@@ -139,11 +127,12 @@ export default function ZoneDetailPage() {
                   gap-2
                   rounded-xl
                   border
-                  border-cyan-500/40
+                  border-[#F5A300]/40
                   px-4
                   py-2
-                  text-cyan-400
-                  hover:bg-cyan-500/10
+                  text-[#F5A300]
+                  transition
+                  hover:bg-[#F5A300]/10
                 "
               >
                 <Pencil size={16} />
@@ -151,7 +140,7 @@ export default function ZoneDetailPage() {
               </Link>
 
               <button
-                onClick={handleDelete}
+                onClick={() => setOpenDeleteConfirm(true)}
                 disabled={deleting}
                 className="
                   inline-flex
@@ -163,13 +152,16 @@ export default function ZoneDetailPage() {
                   px-4
                   py-2
                   text-red-400
+                  transition
                   hover:bg-red-500/10
                   disabled:opacity-50
                 "
               >
                 <Trash2 size={16} />
 
-                {deleting ? "Desactivando..." : "Desactivar"}
+                {deleting
+                  ? "Desactivando..."
+                  : "Desactivar"}
               </button>
             </div>
           </div>
@@ -188,18 +180,28 @@ export default function ZoneDetailPage() {
             <div className="flex items-center gap-3">
               <Users />
 
-              <h2 className="text-xl font-semibold">Personal asignado</h2>
+              <h2 className="text-xl font-semibold">
+                Personal asignado
+              </h2>
             </div>
 
             <button
               onClick={() => setOpenAssign(true)}
               className="
-                rounded-xl
-                bg-cyan-600
-                px-4
-                py-2
-                transition
-                hover:bg-cyan-500
+                inline-flex
+                items-center
+                gap-2
+                rounded-2xl
+                bg-[#F5A300]
+                px-5
+                py-3
+                font-semibold
+                text-[#0F172A]
+                transition-all
+                duration-200
+                hover:bg-[#E09400]
+                hover:shadow-lg
+                hover:shadow-[#F5A300]/20
               "
             >
               Asignar personal
@@ -211,11 +213,13 @@ export default function ZoneDetailPage() {
               Cargando personal...
             </div>
           ) : (
-            <ZoneStaffList staff={staff} onRemove={removeStaff} />
+            <ZoneStaffList
+              staff={staff}
+              onRemove={removeStaff}
+            />
           )}
         </div>
-
-        {deleteError && (
+                {deleteError && (
           <div
             className="
               rounded-xl
@@ -234,6 +238,27 @@ export default function ZoneDetailPage() {
         zoneId={zoneId}
         onClose={() => setOpenAssign(false)}
         onAssigned={reload}
+      />
+
+      <ConfirmDialog
+        open={openDeleteConfirm}
+        onOpenChange={setOpenDeleteConfirm}
+        title="Desactivar zona"
+        description={`¿Está seguro que desea desactivar la zona "${zone.name}"?`}
+        confirmText="Desactivar"
+        cancelText="Cancelar"
+        loading={deleting}
+        destructive
+        onConfirm={handleDelete}
+      />
+
+      <ConfirmDialog
+        open={openDeleteSuccess}
+        onOpenChange={setOpenDeleteSuccess}
+        title="Zona desactivada"
+        description="La zona fue desactivada correctamente."
+        confirmText="Aceptar"
+        onConfirm={() => router.push("/zones")}
       />
     </>
   );

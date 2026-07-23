@@ -67,18 +67,25 @@ export function ZoneForm({ initialValues, loading, onSubmit }: Props) {
       <button
         disabled={loading}
         className="
-          rounded-2xl
-          bg-gradient-to-r
-          from-cyan-500
-          to-blue-600
-          px-6
-          py-3
-          font-semibold
-          transition
-          hover:opacity-90
-        "
+    inline-flex
+    items-center
+    justify-center
+    rounded-2xl
+    bg-[#F5A300]
+    px-6
+    py-3
+    font-semibold
+    text-[#0F172A]
+    transition-all
+    duration-200
+    hover:bg-[#E09400]
+    hover:shadow-lg
+    hover:shadow-[#F5A300]/20
+    disabled:cursor-not-allowed
+    disabled:opacity-50
+  "
       >
-        Guardar zona
+        {loading ? "Guardando..." : "Guardar zona"}
       </button>
     </form>
   );

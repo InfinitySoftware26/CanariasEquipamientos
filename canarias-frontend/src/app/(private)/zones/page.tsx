@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { Plus } from "lucide-react";
-
 import { useZones } from "@/hooks/zones/useZones";
 import { ZoneCard } from "@/components/zone/ZoneCard";
 
@@ -22,7 +21,22 @@ export default function ZonesPage() {
 
         <Link
           href="/zones/new"
-          className="inline-flex items-center gap-2 rounded-2xl bg-cyan-600 px-5 py-3 font-medium transition hover:bg-cyan-500"
+          className="
+          inline-flex
+          items-center
+          gap-2
+          rounded-2xl
+          bg-[#F5A300]
+          px-5
+          py-3
+          font-semibold
+          text-[#0F172A]
+          transition-all
+          duration-200
+          hover:bg-[#E09400]
+          hover:shadow-lg
+          hover:shadow-[#F5A300]/20
+          "
         >
           <Plus size={18} />
           Nueva zona
