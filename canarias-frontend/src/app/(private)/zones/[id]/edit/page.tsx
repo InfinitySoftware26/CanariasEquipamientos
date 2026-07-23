@@ -1,13 +1,13 @@
 "use client";
 
-import Link from "next/link";
+import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-
-import { ArrowLeft } from "lucide-react";
 
 import { useZone } from "@/hooks/zones/useZone";
 import { useUpdateZone } from "@/hooks/zones/useUpdateZone";
+
 import { ZoneForm } from "@/components/zone/ZoneForm";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 export default function EditZonePage() {
   const params = useParams();
@@ -22,13 +22,15 @@ export default function EditZonePage() {
 
   const { update, loading: saving } = useUpdateZone();
 
+  const [successOpen, setSuccessOpen] = useState(false);
+
   async function handleSubmit(data: { name: string; description: string }) {
     if (!zoneId) return;
 
     const updated = await update(zoneId, data);
 
     if (updated) {
-      router.push(`/zones/${zoneId}`);
+      setSuccessOpen(true);
     }
   }
 
@@ -49,54 +51,51 @@ export default function EditZonePage() {
   }
 
   return (
-    <section className="space-y-8">
-      <Link
-        href={`/zones/${zoneId}`}
-        className="
-          inline-flex
-          items-center
-          gap-2
-          text-white/60
-          hover:text-white
-        "
-      >
-        <ArrowLeft size={18} />
-        Volver
-      </Link>
+    <>
+      <section className="space-y-8">
+        <div
+          className="
+            rounded-3xl
+            border
+            border-white/10
+            bg-white/5
+            p-8
+          "
+        >
+          <h1 className="text-3xl font-bold">Editar Zona</h1>
 
-      <div
-        className="
-          rounded-3xl
-          border
-          border-white/10
-          bg-white/5
-          p-8
-        "
-      >
-        <h1 className="text-3xl font-bold">Editar Zona</h1>
+          <p className="mt-2 text-white/60">
+            Modificá la información de la zona.
+          </p>
+        </div>
 
-        <p className="mt-2 text-white/60">
-          Modificá la información de la zona.
-        </p>
-      </div>
+        <div
+          className="
+            rounded-3xl
+            border
+            border-white/10
+            bg-white/5
+            p-8
+          "
+        >
+          <ZoneForm
+            initialValues={zone}
+            loading={saving}
+            onSubmit={handleSubmit}
+          />
+        </div>
 
-      <div
-        className="
-          rounded-3xl
-          border
-          border-white/10
-          bg-white/5
-          p-8
-        "
-      >
-        <ZoneForm
-          initialValues={zone}
-          loading={saving}
-          onSubmit={handleSubmit}
-        />
-      </div>
+        {error && <div className="text-red-400">{error}</div>}
+      </section>
 
-      {error && <div className="text-red-400">{error}</div>}
-    </section>
+      <ConfirmDialog
+        open={successOpen}
+        onOpenChange={setSuccessOpen}
+        title="Zona actualizada"
+        description="La zona fue actualizada correctamente."
+        confirmText="Aceptar"
+        onConfirm={() => router.push(`/zones/${zoneId}`)}
+      />
+    </>
   );
 }
