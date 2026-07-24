@@ -1,11 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Between, Repository } from 'typeorm';
 import { Sale } from '../entities/sale.entity';
 import { ISalesRepository } from '../interfaces/sales-repository.interface';
 import { SaleStatus } from '../../../common/enums/sale-status.enum';
 
-const SALE_RELATIONS = ['client', 'products', 'products.product'];
+const SALE_RELATIONS = ['client', 'products', 'products.product', 'staff', 'collector'];
 
 @Injectable()
 export class SalesRepository implements ISalesRepository {
@@ -42,6 +42,14 @@ export class SalesRepository implements ISalesRepository {
   findByCollector(collectorId: string, societyId: string): Promise<Sale[]> {
     return this.repo.find({
       where: { assignedCollectorId: collectorId, societyId },
+      order: { saleDate: 'DESC' },
+      relations: SALE_RELATIONS,
+    });
+  }
+
+  findBySellerInRange(staffId: string, societyId: string, from: Date, to: Date): Promise<Sale[]> {
+    return this.repo.find({
+      where: { staffId, societyId, saleDate: Between(from, to) },
       order: { saleDate: 'DESC' },
       relations: SALE_RELATIONS,
     });

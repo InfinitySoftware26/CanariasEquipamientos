@@ -11,6 +11,7 @@ import {
 import { SaleStatus } from "../../../common/enums/sale-status.enum";
 import { PaymentFrequency } from "../../../common/enums/payment-frequency.enum";
 import { Client } from "../../clients/entities/client.entity";
+import { Staff } from "../../staff/entities/staff.entity";
 import { SaleProduct } from "./sale-product.entity";
 
 @Entity("SALES")
@@ -30,6 +31,10 @@ export class Sale {
 
   @Column({ name: "staff_id", type: "uuid" })
   staffId!: string;
+
+  @ManyToOne(() => Staff)
+  @JoinColumn({ name: "staff_id" })
+  staff!: Staff;
 
   @Column({ name: "society_id", type: "uuid" })
   societyId!: string;
@@ -72,6 +77,10 @@ export class Sale {
 
   @Column({ name: "assigned_collector_id", type: "uuid", nullable: true })
   assignedCollectorId!: string;
+
+  @ManyToOne(() => Staff, { nullable: true })
+  @JoinColumn({ name: "assigned_collector_id" })
+  collector!: Staff;
 
   @Column({ nullable: true })
   observation!: string;

@@ -9,6 +9,7 @@ export interface ISalesRepository {
   findPendingValidation(societyId: string): Promise<Sale[]>;
   findBySeller(staffId: string, societyId: string): Promise<Sale[]>;
   findByCollector(collectorId: string, societyId: string): Promise<Sale[]>;
+  findBySellerInRange(staffId: string, societyId: string, from: Date, to: Date): Promise<Sale[]>;
   findActiveByClient(clientId: string): Promise<Sale[]>;
   create(data: Partial<Sale>): Promise<Sale>;
   update(id: string, data: Partial<Sale>): Promise<void>;
