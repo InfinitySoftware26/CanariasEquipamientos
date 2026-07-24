@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { CreateStaffPayload } from "@/types/staff/createStaff.type";
-import { StaffRole } from "@/types/auth.types";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FormField } from "@/components/ui/formField";
+
 import {
   Select,
   SelectContent,
@@ -13,31 +14,36 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+
 import { useAuthStore } from "@/store/auth.store";
 import { getCreatableRoles } from "@/permissions/staff.permissions";
 import { StaffValidationErrors } from "@/validators/staff.validator";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
-interface StaffFormProps {
-  form: CreateStaffPayload;
+type StaffFormData = Pick<
+  CreateStaffPayload,
+  "name" | "dni" | "phone" | "email" | "role" | "password"
+> & {
+  societyId?: string;
+};
 
-  updateField: <K extends keyof CreateStaffPayload>(
-    field: K,
-    value: CreateStaffPayload[K],
-  ) => void;
+interface StaffFormProps<T extends StaffFormData> {
+  form: T;
+
+  updateField: <K extends keyof T>(field: K, value: T[K]) => void;
 
   handleSubmit: () => Promise<void>;
 
   loading: boolean;
-  error: string | null;
-  errors: StaffValidationErrors;
-  mode: "create" | "edit";
 
-  title?: string;
-  submitLabel?: string;
+  error: string | null;
+
+  errors: StaffValidationErrors;
+
+  mode: "create" | "edit";
 }
 
-export function StaffForm({
+export function StaffForm<T extends StaffFormData>({
   form,
   updateField,
   loading,
@@ -45,14 +51,15 @@ export function StaffForm({
   errors,
   handleSubmit,
   mode = "create",
-}: StaffFormProps) {
+}: StaffFormProps<T>) {
   const { activeRole } = useAuthStore();
+
   const availableRoles = getCreatableRoles(activeRole);
 
   const title = mode === "create" ? "Nuevo empleado" : "Editar empleado";
+
   const submitLabel = mode === "create" ? "Crear empleado" : "Guardar cambios";
 
-  // Estado para abrir/cerrar el diálogo de confirmación
   const [openConfirm, setOpenConfirm] = useState(false);
 
   return (
@@ -64,7 +71,7 @@ export function StaffForm({
           <Input
             placeholder="Ingrese el nombre"
             value={form.name}
-            onChange={(e) => updateField("name", e.target.value)}
+            onChange={(e) => updateField("name", e.target.value as T["name"])}
             className="h-11 border-white/10 bg-white/5 text-white"
           />
         </FormField>
@@ -73,7 +80,7 @@ export function StaffForm({
           <Input
             placeholder="Ingrese el DNI"
             value={form.dni}
-            onChange={(e) => updateField("dni", e.target.value)}
+            onChange={(e) => updateField("dni", e.target.value as T["dni"])}
             className="h-11 border-white/10 bg-white/5 text-white"
           />
         </FormField>
@@ -83,29 +90,30 @@ export function StaffForm({
             type="tel"
             placeholder="Ej: 2994123456"
             value={form.phone}
-            onChange={(e) => updateField("phone", e.target.value)}
+            onChange={(e) => updateField("phone", e.target.value as T["phone"])}
             className="h-11 border-white/10 bg-white/5 text-white"
           />
         </FormField>
-        
+
         <FormField label="Email" error={errors.email}>
           <Input
             type="email"
             placeholder="correo@empresa.com"
             value={form.email}
-            onChange={(e) => updateField("email", e.target.value)}
+            onChange={(e) => updateField("email", e.target.value as T["email"])}
             className="h-11 border-white/10 bg-white/5 text-white"
           />
         </FormField>
-
 
         {mode === "create" && (
           <FormField label="Contraseña temporal" error={errors.password}>
             <Input
               type="password"
               placeholder="********"
-              value={form.password}
-              onChange={(e) => updateField("password", e.target.value)}
+              value={form.password ?? ""}
+              onChange={(e) =>
+                updateField("password", e.target.value as T["password"])
+              }
               className="h-11 border-white/10 bg-white/5 text-white"
             />
           </FormField>
@@ -114,7 +122,7 @@ export function StaffForm({
         <FormField label="Rol" error={errors.role}>
           <Select
             value={form.role}
-            onValueChange={(value) => updateField("role", value as StaffRole)}
+            onValueChange={(value) => updateField("role", value as T["role"])}
           >
             <SelectTrigger className="w-full border-white/10 bg-white/5 text-white">
               <SelectValue placeholder="Seleccione un rol" />
@@ -136,7 +144,6 @@ export function StaffForm({
           </p>
         )}
 
-        {/* Botón que abre el diálogo */}
         <Button
           onClick={() => setOpenConfirm(true)}
           disabled={loading}
@@ -145,11 +152,12 @@ export function StaffForm({
           {loading ? "Guardando..." : submitLabel}
         </Button>
 
-        {/* ConfirmDialog */}
         <ConfirmDialog
           open={openConfirm}
           onOpenChange={setOpenConfirm}
-          title={mode === "create" ? "¿Crear nuevo empleado?" : "¿Guardar cambios?"}
+          title={
+            mode === "create" ? "¿Crear nuevo empleado?" : "¿Guardar cambios?"
+          }
           description={
             mode === "create"
               ? "Se creará un nuevo registro de empleado en el sistema."
