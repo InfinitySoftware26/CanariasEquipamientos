@@ -21,6 +21,7 @@ import { ValidationStatus } from '../../../common/enums/validation-status.enum';
 import { PaymentFrequency } from '../../../common/enums/payment-frequency.enum';
 import { InstallmentStatus } from '../../../common/enums/installment-status.enum';
 import { StaffRole } from '../../../common/enums/staff-role.enum';
+import { CommissionPeriod } from '../../../common/enums/commission-period.enum';
 import { JwtPayload } from '../../auth/interfaces/jwt-payload.interface';
 
 const SELLER_COMMISSION_RATE = 0.1;
@@ -59,6 +60,35 @@ export class SalesService {
 
   findByCollector(collectorId: string, societyId: string) {
     return this.salesRepo.findByCollector(collectorId, societyId);
+  }
+
+  async getSellerCommissions(
+    staffId: string,
+    societyId: string,
+    period: CommissionPeriod,
+    dateStr?: string,
+  ) {
+    const { from, to } = this.resolveCommissionPeriodRange(period, dateStr);
+    const sales = await this.salesRepo.findBySellerInRange(staffId, societyId, from, to);
+
+    const closedSales = sales.filter((s) => s.status === SaleStatus.CLOSED);
+    const totalCommission = Math.round(
+      closedSales.reduce((sum, s) => sum + Number(s.sellerCommission), 0) * 100,
+    ) / 100;
+    const averageCommission = closedSales.length
+      ? Math.round((totalCommission / closedSales.length) * 100) / 100
+      : 0;
+
+    return {
+      period,
+      from: from.toISOString(),
+      to: to.toISOString(),
+      salesCount: sales.length,
+      closedSalesCount: closedSales.length,
+      totalCommission,
+      averageCommission,
+      sales,
+    };
   }
 
   findByClient(clientId: string, societyId: string) {
@@ -377,6 +407,49 @@ export class SalesService {
       name: user.email,
       role: user.role as StaffRole,
     };
+  }
+
+  private resolveCommissionPeriodRange(
+    period: CommissionPeriod,
+    dateStr?: string,
+  ): { from: Date; to: Date } {
+    const anchor = dateStr ? new Date(dateStr) : new Date();
+    if (isNaN(anchor.getTime())) {
+      throw new BadRequestException('Fecha inválida');
+    }
+
+    let from: Date;
+    let to: Date;
+
+    switch (period) {
+      case CommissionPeriod.YEAR:
+        from = new Date(anchor.getFullYear(), 0, 1);
+        to = new Date(anchor.getFullYear(), 11, 31, 23, 59, 59, 999);
+        break;
+
+      case CommissionPeriod.MONTH:
+        from = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
+        to = new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0, 23, 59, 59, 999);
+        break;
+
+      case CommissionPeriod.WEEK: {
+        const day = anchor.getDay();
+        const diffToMonday = day === 0 ? -6 : 1 - day;
+        from = new Date(anchor.getFullYear(), anchor.getMonth(), anchor.getDate() + diffToMonday);
+        to = new Date(from.getFullYear(), from.getMonth(), from.getDate() + 6, 23, 59, 59, 999);
+        break;
+      }
+
+      case CommissionPeriod.DAY:
+        from = new Date(anchor.getFullYear(), anchor.getMonth(), anchor.getDate());
+        to = new Date(anchor.getFullYear(), anchor.getMonth(), anchor.getDate(), 23, 59, 59, 999);
+        break;
+
+      default:
+        throw new BadRequestException('period debe ser day, week, month o year');
+    }
+
+    return { from, to };
   }
 
   private calculateDueDates(firstDueDate: Date, count: number, frequency: PaymentFrequency): Date[] {

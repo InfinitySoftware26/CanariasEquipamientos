@@ -5,12 +5,13 @@ import {
   Patch,
   Body,
   Param,
+  Query,
   UseGuards,
   HttpCode,
   HttpStatus,
   ParseUUIDPipe,
 } from "@nestjs/common";
-import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from "@nestjs/swagger";
 import { SalesService } from "../services/sales.service";
 import { CreateSaleDto } from "../dto/create-sale.dto";
 import { ValidateSaleDto } from "../dto/validate-sale.dto";
@@ -23,6 +24,7 @@ import { SocietyGuard } from "../../../common/guards/society.guard";
 import { Roles } from "../../../common/decorators/roles.decorator";
 import { CurrentUser } from "../../../common/decorators/current-user.decorator";
 import { StaffRole } from "../../../common/enums/staff-role.enum";
+import { CommissionPeriod } from "../../../common/enums/commission-period.enum";
 import { JwtPayload } from "../../auth/interfaces/jwt-payload.interface";
 
 @ApiTags("sales")
@@ -53,6 +55,19 @@ export class SalesController {
   @ApiOperation({ summary: "Mis ventas (vendedor)" })
   findMy(@CurrentUser() user: JwtPayload) {
     return this.salesService.findBySeller(user.sub, user.societyId);
+  }
+
+  @Get("my/commissions")
+  @Roles(StaffRole.SELLER)
+  @ApiOperation({ summary: "Comisiones del vendedor filtradas por período (año, mes, semana o día)" })
+  @ApiQuery({ name: "period", enum: CommissionPeriod, required: false, description: "Granularidad del filtro. Default: month" })
+  @ApiQuery({ name: "date", required: false, description: "Fecha de referencia (ISO, ej: 2026-07-23). Default: hoy" })
+  findMyCommissions(
+    @CurrentUser() user: JwtPayload,
+    @Query("period") period: CommissionPeriod = CommissionPeriod.MONTH,
+    @Query("date") date?: string,
+  ) {
+    return this.salesService.getSellerCommissions(user.sub, user.societyId, period, date);
   }
 
   @Get("collector")

@@ -12,6 +12,7 @@ import { SaleValidation } from './entities/sale-validation.entity';
 import { DeliveryAttempt } from './entities/delivery-attempt.entity';
 import { SaleHistory } from './entities/sale-history.entity';
 import { Installment } from '../installments/entities/installment.entity';
+import { Staff } from '../staff/entities/staff.entity';
 import { FinancingConfigModule } from '../financing-config/financing-config.module';
 import { SALES_REPOSITORY } from './interfaces/sales-repository.interface';
 import { SALE_VALIDATIONS_REPOSITORY } from './interfaces/sale-validations-repository.interface';
@@ -27,6 +28,7 @@ import { SALE_HISTORY_REPOSITORY } from './interfaces/sale-history-repository.in
       DeliveryAttempt,
       SaleHistory,
       Installment,
+      Staff,
     ]),
     FinancingConfigModule,
   ],
