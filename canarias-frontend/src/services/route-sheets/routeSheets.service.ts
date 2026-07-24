@@ -99,3 +99,24 @@ export async function updateRouteSheetStatus(
 
   return true;
 }
+
+export async function getMyRouteSheets() {
+  const token = useAuthStore.getState().accessToken;
+
+  const res = await apiFetch("/route-sheets", {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!res.ok) {
+    const error = await res.json();
+    console.error(error);
+
+    throw new Error("Error obteniendo mis hojas de ruta");
+  }
+
+  const json = await res.json();
+
+  return (Array.isArray(json) ? json : (json.data ?? [])) as RouteSheet[];
+}

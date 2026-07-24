@@ -50,7 +50,11 @@ export interface RouteSheet {
 
   zoneId: string;
 
+  zoneName?: string | null;
+
   staffId: string;
+
+  staffName?: string | null;
 
   assignedBy: string;
 

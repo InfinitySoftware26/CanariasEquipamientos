@@ -4,7 +4,7 @@ import { ReactNode } from "react";
 
 import { Header } from "./Header";
 import { Sidebar } from "./Sidebar";
-import { BackButton } from "../ui/backButton";
+import { BackButton } from "./BackButton";
 
 interface DashboardLayoutProps {
   children: ReactNode;

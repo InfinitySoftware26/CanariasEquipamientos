@@ -39,10 +39,7 @@ export const navigationByRole = {
       label: "Clientes",
       href: "/client",
     },
-    {
-      label: "Productos",
-      href: "/products",
-    },
+
     {
       label: "Hojas de Ruta",
       href: "/route-sheets",
@@ -51,17 +48,10 @@ export const navigationByRole = {
       label: "Zonas",
       href: "/zones",
     },
-    {
-      label: "Proveedores",
-      href: "/suppliers",
-    },
+
     {
       label: "Empleados",
       href: "/staff",
-    },
-    {
-      label: "Reportes",
-      href: "/reports",
     },
   ],
 
@@ -96,7 +86,7 @@ export const navigationByRole = {
     { label: "Mis Ventas", href: "/sales/collector" },
     {
       label: "Mis Hojas de Ruta",
-      href: "/route-sheets",
+      href: "/route-sheets/collector/routes",
     },
     {
       label: "Zonas",

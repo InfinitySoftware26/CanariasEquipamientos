@@ -52,16 +52,10 @@ text-xs
       )}
 
       {item.result === "PENDING" && (
-        <button
-          onClick={onAction}
-          className="
-rounded-xl
-bg-yellow-600
-px-4
-py-2
-"
-        >
-          Registrar visita
+        <button onClick={onAction}>
+          {item.itemType === "DELIVERY"
+            ? "Confirmar entrega"
+            : "Registrar cobro"}
         </button>
       )}
     </article>
