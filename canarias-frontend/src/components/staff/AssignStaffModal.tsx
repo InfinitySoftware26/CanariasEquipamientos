@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-
 import { useAssignStaff } from "@/hooks/zones/useAssignStaff";
 import { useCollectors } from "@/hooks/collector/useCollectors";
 
@@ -17,9 +16,7 @@ interface Props {
 
 export function AssignStaffModal({ zoneId, open, onClose, onAssigned }: Props) {
   const { collectors, loading } = useCollectors();
-
   const { assign, loading: saving, error } = useAssignStaff();
-
   const [staffId, setStaffId] = useState("");
 
   if (!open) {

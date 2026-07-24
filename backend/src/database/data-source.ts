@@ -1,6 +1,9 @@
 import { DataSource } from "typeorm";
 import * as dotenv from "dotenv";
+
 dotenv.config();
+
+const isProduction = process.env.NODE_ENV === "production";
 
 export default new DataSource({
   type: "postgres",
@@ -9,10 +12,15 @@ export default new DataSource({
   database: process.env.DB_NAME,
   username: process.env.DB_USER,
   password: process.env.DB_PASS,
+
   synchronize: false,
+
   entities: ["src/**/*.entity.ts"],
   migrations: ["src/database/migrations/*.ts"],
-  ssl: {
-    rejectUnauthorized: false, // Supabase requiere SSL
-  },
+
+  ssl: isProduction
+    ? {
+        rejectUnauthorized: false,
+      }
+    : false,
 });

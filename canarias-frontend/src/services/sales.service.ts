@@ -192,6 +192,7 @@ export async function closeSale(id: string) {
 
 export async function getSaleHistory(saleId: string) {
   const token = useAuthStore.getState().accessToken;
+
   const res = await apiFetch(`/sales/${saleId}/history`, {
     headers: {
       Authorization: `Bearer ${token}`,
@@ -202,7 +203,37 @@ export async function getSaleHistory(saleId: string) {
     throw new Error("No se pudo obtener el historial");
   }
 
-  return res.json();
+  const json = await res.json();
+
+  return Array.isArray(json) ? json : (json.data ?? []);
+}
+
+export async function validateEnvironmentalVisit(
+  saleId: string,
+  status: "approved" | "rejected",
+) {
+  const token = useAuthStore.getState().accessToken;
+
+  const res = await apiFetch(`/sales/${saleId}/env-validate`, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      status,
+    }),
+  });
+
+  if (!res.ok) {
+    const error = await res.json();
+
+    throw new Error(error.message || "Error validando visita ambiental");
+  }
+
+  const text = await res.text();
+
+  return text ? JSON.parse(text) : null;
 }
 
 export async function updateSaleObservation(

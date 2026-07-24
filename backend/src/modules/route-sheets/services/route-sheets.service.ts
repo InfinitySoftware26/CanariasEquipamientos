@@ -74,19 +74,19 @@ export class RouteSheetsService {
 
   // ─── QUERIES ──────────────────────────────────────────────────────────────
 
-  findBySociety(
-    societyId: string,
-    filters?: RouteSheetFilters,
-  ): Promise<RouteSheet[]> {
-    return this.routeSheetsRepo.findBySociety(societyId, filters);
+  private toResponse(routeSheet: RouteSheet) {
+    const { zone, staff, ...rest } = routeSheet;
+    return { ...rest, zoneName: zone?.name ?? null, staffName: staff?.name ?? null };
   }
 
-  findByStaff(
-    staffId: string,
-    societyId: string,
-    filters?: RouteSheetFilters,
-  ): Promise<RouteSheet[]> {
-    return this.routeSheetsRepo.findByStaff(staffId, societyId, filters);
+  async findBySociety(societyId: string, filters?: RouteSheetFilters) {
+    const routeSheets = await this.routeSheetsRepo.findBySociety(societyId, filters);
+    return routeSheets.map(rs => this.toResponse(rs));
+  }
+
+  async findByStaff(staffId: string, societyId: string, filters?: RouteSheetFilters) {
+    const routeSheets = await this.routeSheetsRepo.findByStaff(staffId, societyId, filters);
+    return routeSheets.map(rs => this.toResponse(rs));
   }
 
   async findById(id: string): Promise<RouteSheet> {
@@ -96,20 +96,15 @@ export class RouteSheetsService {
     return routeSheet;
   }
 
-  async findByIdWithItems(
-    id: string,
-  ): Promise<RouteSheet & { items: RouteSheetItem[] }> {
+  async findByIdWithItems(id: string) {
     const routeSheet = await this.findById(id);
     const items = await this.itemsRepo.findByRouteSheet(id);
-    return { ...routeSheet, items };
+    return { ...this.toResponse(routeSheet), items };
   }
 
   // ─── CREAR HOJA DE RUTA ───────────────────────────────────────────────────
 
-  async create(
-    dto: CreateRouteSheetDto,
-    user: JwtPayload,
-  ): Promise<RouteSheet & { items: RouteSheetItem[] }> {
+  async create(dto: CreateRouteSheetDto, user: JwtPayload) {
     const societyId = user.societyId;
     const zone = await this.zoneRepo.findOne({ where: { zoneId: dto.zoneId } });
     if (!zone || zone.societyId !== societyId) {
@@ -168,7 +163,7 @@ export class RouteSheetsService {
 
     const items = await this.generateItems(routeSheet, dto.routeDate);
 
-    return { ...routeSheet, items };
+    return { ...routeSheet, zoneName: zone.name, staffName: staff.name, items };
   }
 
   private async generateItems(

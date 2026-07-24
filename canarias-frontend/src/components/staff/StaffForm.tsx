@@ -1,10 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import { CreateStaffPayload } from "@/types/staff/createStaff.type";
-// import { StaffRole } from "@/types/auth.types";
+import { StaffRole } from "@/types/auth.types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { FormField } from "@/components/ui/formField";
 import {
   Select,
   SelectContent,
@@ -13,107 +14,109 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAuthStore } from "@/store/auth.store";
-import { getCreatableRoles } from "@/lib/permissions";
+import { getCreatableRoles } from "@/permissions/staff.permissions";
+import { StaffValidationErrors } from "@/validators/staff.validator";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 interface StaffFormProps {
   form: CreateStaffPayload;
-  setForm: React.Dispatch<React.SetStateAction<CreateStaffPayload>>;
+
+  updateField: <K extends keyof CreateStaffPayload>(
+    field: K,
+    value: CreateStaffPayload[K],
+  ) => void;
+
   handleSubmit: () => Promise<void>;
+
   loading: boolean;
   error: string | null;
+  errors: StaffValidationErrors;
+  mode: "create" | "edit";
+
+  title?: string;
+  submitLabel?: string;
 }
 
 export function StaffForm({
   form,
-  setForm,
-  handleSubmit,
+  updateField,
   loading,
   error,
+  errors,
+  handleSubmit,
+  mode = "create",
 }: StaffFormProps) {
   const { activeRole } = useAuthStore();
   const availableRoles = getCreatableRoles(activeRole);
 
+  const title = mode === "create" ? "Nuevo empleado" : "Editar empleado";
+  const submitLabel = mode === "create" ? "Crear empleado" : "Guardar cambios";
+
+  // Estado para abrir/cerrar el diálogo de confirmación
+  const [openConfirm, setOpenConfirm] = useState(false);
+
   return (
     <section className="rounded-3xl border border-white/10 bg-white/[0.04] p-6">
-      <h2 className="mb-6 text-2xl font-bold text-white">Nuevo empleado</h2>
+      <h2 className="mb-6 text-2xl font-bold text-white">{title}</h2>
 
       <div className="space-y-5">
-        {/* Nombre */}
-        <div className="space-y-2">
-          <Label>Nombre completo</Label>
-
+        <FormField label="Nombre completo" error={errors.name}>
           <Input
             placeholder="Ingrese el nombre"
             value={form.name}
-            onChange={(e) =>
-              setForm({
-                ...form,
-                name: e.target.value,
-              })
-            }
+            onChange={(e) => updateField("name", e.target.value)}
             className="h-11 border-white/10 bg-white/5 text-white"
           />
-        </div>
+        </FormField>
 
-        {/* DNI */}
-        <div className="space-y-2">
-          <Label>DNI</Label>
-
+        <FormField label="DNI" error={errors.dni}>
           <Input
             placeholder="Ingrese el DNI"
             value={form.dni}
-            onChange={(e) =>
-              setForm({
-                ...form,
-                dni: e.target.value,
-              })
-            }
+            onChange={(e) => updateField("dni", e.target.value)}
             className="h-11 border-white/10 bg-white/5 text-white"
           />
-        </div>
+        </FormField>
 
-        {/* Email */}
-        <div className="space-y-2">
-          <Label>Email</Label>
-
+        <FormField label="Teléfono" error={errors.phone}>
+          <Input
+            type="tel"
+            placeholder="Ej: 2994123456"
+            value={form.phone}
+            onChange={(e) => updateField("phone", e.target.value)}
+            className="h-11 border-white/10 bg-white/5 text-white"
+          />
+        </FormField>
+        
+        <FormField label="Email" error={errors.email}>
           <Input
             type="email"
             placeholder="correo@empresa.com"
             value={form.email}
-            onChange={(e) =>
-              setForm({
-                ...form,
-                email: e.target.value,
-              })
-            }
+            onChange={(e) => updateField("email", e.target.value)}
             className="h-11 border-white/10 bg-white/5 text-white"
           />
-        </div>
+        </FormField>
 
-        {/* Password */}
-        <div className="space-y-2">
-          <Label>Contraseña temporal</Label>
 
-          <Input
-            type="password"
-            placeholder="********"
-            value={form.password}
-            onChange={(e) =>
-              setForm({
-                ...form,
-                password: e.target.value,
-              })
-            }
-            className="h-11 border-white/10 bg-white/5 text-white"
-          />
-        </div>
+        {mode === "create" && (
+          <FormField label="Contraseña temporal" error={errors.password}>
+            <Input
+              type="password"
+              placeholder="********"
+              value={form.password}
+              onChange={(e) => updateField("password", e.target.value)}
+              className="h-11 border-white/10 bg-white/5 text-white"
+            />
+          </FormField>
+        )}
 
-        {/* Rol */}
-        <div className="space-y-2">
-          <Label>Rol</Label>
-
-          <Select>
-            <SelectTrigger>
+        <FormField label="Rol" error={errors.role}>
+          <Select
+            value={form.role}
+            onValueChange={(value) => updateField("role", value as StaffRole)}
+          >
+            <SelectTrigger className="w-full border-white/10 bg-white/5 text-white">
               <SelectValue placeholder="Seleccione un rol" />
             </SelectTrigger>
 
@@ -125,17 +128,38 @@ export function StaffForm({
               ))}
             </SelectContent>
           </Select>
-        </div>
+        </FormField>
 
-        {error && <p className="text-sm text-red-400">{error}</p>}
+        {error && (
+          <p className="rounded-lg bg-red-500/10 p-3 text-sm text-red-400">
+            {error}
+          </p>
+        )}
 
+        {/* Botón que abre el diálogo */}
         <Button
-          onClick={handleSubmit}
+          onClick={() => setOpenConfirm(true)}
           disabled={loading}
           className="mt-4 h-12 w-full rounded-xl bg-[#F5A300] font-semibold text-[#0D1B2A] hover:bg-[#e89b00]"
         >
-          {loading ? "Creando empleado..." : "Crear empleado"}
+          {loading ? "Guardando..." : submitLabel}
         </Button>
+
+        {/* ConfirmDialog */}
+        <ConfirmDialog
+          open={openConfirm}
+          onOpenChange={setOpenConfirm}
+          title={mode === "create" ? "¿Crear nuevo empleado?" : "¿Guardar cambios?"}
+          description={
+            mode === "create"
+              ? "Se creará un nuevo registro de empleado en el sistema."
+              : "Se guardarán los cambios realizados en la información del empleado."
+          }
+          confirmText={submitLabel}
+          cancelText="Cancelar"
+          loading={loading}
+          onConfirm={handleSubmit}
+        />
       </div>
     </section>
   );
