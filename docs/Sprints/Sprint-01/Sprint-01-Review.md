@@ -2,7 +2,6 @@
 
 **Cliente:** Canarias S.R.L.
 **Fecha:** 05/06/2026
-**Participantes:** Completar
 
 ---
 

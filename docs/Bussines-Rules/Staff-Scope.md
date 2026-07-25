@@ -76,6 +76,32 @@ garantizar aislamiento operativo entre sociedades.
 
 ---
 
+## BR-STAFF-SCOPE-005
+
+La creación de empleados deberá respetar la jerarquía organizacional.
+
+SUPER_ADMIN
+
+- Gerentes
+- Administradores
+- Vendedores
+- Cobradores
+
+MANAGER
+
+- Administradores
+- Vendedores
+- Cobradores
+
+ADMIN
+
+- Vendedores
+- Cobradores
+
+No se permitirá crear usuarios con permisos superiores al rol del creador.
+
+---
+
 # Alcance Operativo
 
 El sistema deberá filtrar información considerando:

@@ -1,137 +1,263 @@
 # Canarias Equipamientos
 
-Canarias System es la plataforma de gestión comercial y financiera para Canarias Equipamientos. El objetivo del proyecto es centralizar la gestión de ventas financiadas, cobranzas, stock, clientes, cajas y reportes dentro de un sistema modular y seguro.
+Canarias System es la plataforma de gestión comercial y financiera desarrollada para Canarias Equipamientos. El objetivo del proyecto es centralizar la gestión de ventas financiadas, cobranzas, clientes, empleados, sociedades, stock, cajas y reportes dentro de una solución moderna, modular y segura.
 
-Este repositorio es un monorepo que incluye:
+Este repositorio se encuentra organizado como un monorepo e incluye:
 
 - `backend/` — API REST construida con NestJS y TypeORM.
-- `canarias-frontend/` — UI con Next.js, React y Tailwind.
-- `database/` — estructura y scripts de base de datos.
-- `docs/` — documentación técnica, de arquitectura y de sprint.
-- `devops/` — archivos de soporte para despliegue y entornos.
+- `canarias-frontend/` — Aplicación web desarrollada con Next.js, React y Tailwind CSS.
+- `database/` — Scripts, modelos y documentación de base de datos.
+- `docs/` — Documentación técnica, funcional, arquitectura y sprints.
+- `devops/` — Configuración de despliegues y entornos.
 
 ---
 
-## Qué es Canarias System
+# ¿Qué es Canarias System?
 
-Canarias System es una solución empresarial para la gestión operativa de Canarias, diseñada para soportar:
+Canarias System es una solución empresarial diseñada para digitalizar la operatoria completa de Canarias Equipamientos, permitiendo administrar de forma integrada:
 
-- Autenticación segura con JWT.
-- Control de roles y permisos.
-- Gestión de sociedades múltiples.
-- Dashboards de ventas, cobranzas y operaciones.
-- Una arquitectura preparada para crecer en futuras etapas.
+- Ventas financiadas.
+- Clientes.
+- Empleados.
+- Sociedades.
+- Zonas operativas.
+- Productos.
+- Cuotas.
+- Cobranzas.
+- Hojas de ruta.
+- Reportes operativos y financieros.
 
----
-
-## Tecnologías utilizadas
-
-- `Node.js` + `NestJS` (backend)
-- `React` + `Next.js` (frontend)
-- `TypeScript`
-- `PostgreSQL`
-- `TypeORM`
-- `JWT` para autenticación
-- `TailwindCSS` para estilos
-- `Zustand` para estado global
-- `Axios` para consumo de API
-- `Docker` + `Docker Compose` para entornos locales
-- `pnpm` como gestor de paquetes
+La arquitectura del sistema fue diseñada para acompañar el crecimiento del negocio mediante módulos independientes, reglas de negocio documentadas y una estructura preparada para futuras ampliaciones.
 
 ---
 
-## Cómo levantar el frontend
+# Tecnologías utilizadas
 
-1. Instalar dependencias en la raíz del repositorio:
+## Backend
+
+- Node.js
+- NestJS
+- TypeScript
+- TypeORM
+- PostgreSQL
+- JWT Authentication
+
+## Frontend
+
+- React
+- Next.js
+- TypeScript
+- TailwindCSS
+- Zustand
+- Axios
+
+## Infraestructura
+
+- Docker
+- Docker Compose
+- pnpm
+
+---
+
+# Cómo levantar el Frontend
+
+1. Instalar las dependencias desde la raíz del proyecto:
 
 ```bash
 pnpm install
 ```
 
-2. Iniciar el frontend:
+2. Iniciar la aplicación:
 
 ```bash
 cd canarias-frontend
 pnpm run dev
 ```
 
-3. Abrir el navegador en `http://localhost:3000`.
+3. Abrir el navegador en:
+
+```
+http://localhost:3000
+```
 
 ---
 
-## Cómo levantar el backend
+# Cómo levantar el Backend
 
-1. Desde la raíz del repositorio, después de instalar dependencias:
+Desde la raíz del proyecto:
 
 ```bash
 cd backend
 pnpm run start:dev
 ```
 
-2. El backend se inicia por defecto en `http://localhost:3001`.
+El backend quedará disponible en:
 
-3. Los endpoints de API se exponen bajo `http://localhost:3001/api/v1`.
+```
+http://localhost:3001
+```
 
----
+Los endpoints REST se exponen bajo:
 
-## Variables de entorno
-
-### Backend
-
-- `NODE_ENV` — entorno de ejecución (`development`, `production`, `test`).
-- `PORT` — puerto del backend (por defecto `3001`).
-- `FRONTEND_URL` — URL del frontend permitido.
-- `DB_HOST` — host de PostgreSQL.
-- `DB_PORT` — puerto de PostgreSQL (`5432`).
-- `DB_NAME` — nombre de la base de datos.
-- `DB_USER` — usuario de la base de datos.
-- `DB_PASS` — contraseña de la base de datos.
-- `JWT_SECRET` — secreto de firma de JWT.
-- `JWT_EXPIRATION` — tiempo de vida del access token.
-- `JWT_REFRESH_SECRET` — secreto de firma del refresh token.
-- `JWT_REFRESH_EXPIRATION` — tiempo de vida del refresh token.
-- `MAIL_HOST` — servidor SMTP.
-- `MAIL_PORT` — puerto SMTP.
-- `MAIL_USER` — usuario SMTP.
-- `MAIL_PASS` — contraseña SMTP.
-
-### Frontend
-
-- `NEXT_PUBLIC_API_URL` — URL base del API backend.
-
-> Recomendación: almacenar estos valores en un archivo `.env` local en cada carpeta, sin subirlos a control de versiones.
-
----
-
-## Estructura general
-
-```text
-CanariasEquipamientos/
-├── backend/             # API REST NestJS
-├── canarias-frontend/   # Aplicación Next.js
-├── database/            # Scripts y configuración de base de datos
-├── docs/                # Documentación técnica y de sprint
-├── devops/              # Soporte para despliegue y entornos
-├── docker-compose.yml   # Orquestación local Docker
-└── workflow/            # CI/CD y pipelines
+```
+http://localhost:3001/api/v1
 ```
 
 ---
 
-## Documentación y cierre de Sprint 1
+# Variables de Entorno
 
-- `CHANGELOG.md` — registro de lo construido en esta primera etapa.
-- `docs/Architecture/` — arquitectura frontend, backend y base de datos.
-- `docs/Sprints/Sprint-01/` — documentación de la reunión, captura de avances y revisión del sprint.
-- `docs/Devops/Environments.md` — variables de entorno y configuración local.
+## Backend
+
+Variables principales:
+
+- NODE_ENV
+- PORT
+- FRONTEND_URL
+- DB_HOST
+- DB_PORT
+- DB_NAME
+- DB_USER
+- DB_PASS
+- JWT_SECRET
+- JWT_EXPIRATION
+- JWT_REFRESH_SECRET
+- JWT_REFRESH_EXPIRATION
+- MAIL_HOST
+- MAIL_PORT
+- MAIL_USER
+- MAIL_PASS
+
+## Frontend
+
+Variables principales:
+
+- NEXT_PUBLIC_API_URL
+
+> Se recomienda almacenar todas las variables mediante archivos `.env` locales o utilizando los mecanismos de configuración del proveedor de despliegue (Render, Docker, etc.).
 
 ---
 
-## Cómo arrancar todo con Docker Compose
+# Estructura General
+
+```text
+CanariasEquipamientos/
+├── backend/               # API REST NestJS
+├── canarias-frontend/     # Aplicación Next.js
+├── database/              # Base de datos y scripts
+├── docs/                  # Documentación técnica y funcional
+├── devops/                # Configuración de despliegue
+├── docker-compose.yml     # Entorno local Docker
+├── CHANGELOG.md           # Historial de versiones
+└── workflow/              # CI/CD y pipelines
+```
+
+---
+
+# Estado Actual del Proyecto
+
+Actualmente el sistema dispone de funcionalidades operativas para:
+
+## Seguridad
+
+- Autenticación mediante JWT.
+- Refresh Tokens.
+- Protección de rutas.
+- Control de permisos por rol.
+
+## Organización
+
+- Gestión de sociedades.
+- Gestión de zonas.
+- Gestión de empleados.
+- Jerarquía de creación de usuarios según rol.
+- Separación operativa por sociedad.
+
+## Comercial
+
+- Gestión de clientes.
+- Registro de ventas.
+- Validación administrativa.
+- Flujo comercial por estados.
+- Gestión inicial de cuotas.
+
+## Dashboards
+
+- Dashboard Super Administrador.
+- Dashboard Gerente.
+- Dashboard Administración.
+- Dashboard Vendedor.
+- Dashboard Cobrador.
+
+## Arquitectura
+
+- Backend modular.
+- Frontend basado en componentes.
+- Reglas de negocio documentadas.
+- Arquitectura preparada para la incorporación del dominio completo de cobranzas.
+
+---
+
+# Documentación del Proyecto
+
+Toda la documentación funcional y técnica se encuentra organizada dentro del directorio `docs/`.
+
+Incluye:
+
+- Arquitectura del sistema.
+- Reglas de negocio.
+- Flujo operativo.
+- Documentación DevOps.
+- Documentación de cada Sprint.
+- Revisiones funcionales.
+- Validaciones realizadas junto al cliente.
+- Diagramas técnicos y documentación de soporte.
+
+## Documentos principales
+
+- `CHANGELOG.md` — Historial de versiones y evolución del proyecto.
+- `docs/Architecture/` — Arquitectura del sistema.
+- `docs/BusinessRules/` — Reglas de negocio por módulo.
+- `docs/BusinessFlow/` — Flujo operativo del sistema.
+- `docs/Sprints/` — Documentación completa de cada Sprint (planificación, review y validación).
+- `docs/DevOps/` — Configuración de entornos y despliegues.
+
+---
+
+# Ejecución con Docker
+
+Para levantar el entorno completo:
 
 ```bash
 docker compose up --build
 ```
 
-Esto arranca el backend, frontend y base de datos en un entorno local consistente.
+Este comando inicia:
 
+- Backend.
+- Frontend.
+- Base de datos.
+- Servicios necesarios para el desarrollo local.
+
+---
+
+# Próximas Etapas
+
+El roadmap del proyecto contempla la incorporación de:
+
+- Flujo completo de cobranzas.
+- Registro de pagos.
+- Hojas de ruta.
+- Liquidaciones de cobradores.
+- Configuración financiera avanzada.
+- Reportes operativos y gerenciales.
+- Exportación de información en PDF y Excel.
+- Auditoría completa del sistema.
+
+---
+
+# Licencia
+
+Proyecto desarrollado por **Infinity Software** para **Canarias Equipamientos**.
+
+Todos los derechos reservados.

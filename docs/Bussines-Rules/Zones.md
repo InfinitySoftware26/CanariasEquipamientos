@@ -16,11 +16,9 @@ Las zonas pertenecen a una sociedad.
 
 # Reglas de Zona
 
-
 ## BR-ZONE-001
 
 Toda zona debe pertenecer a una sociedad.
-
 
 ---
 
@@ -30,21 +28,17 @@ El nombre de una zona debe ser único dentro de una sociedad.
 
 No es necesario que sea único globalmente.
 
-
 Ejemplo:
 
 Sociedad A:
 
 Zona Norte
 
-
 Sociedad B:
 
 Zona Norte
 
-
 Permitido.
-
 
 ---
 
@@ -52,33 +46,33 @@ Permitido.
 
 Una zona puede estar activa o inactiva.
 
-
 ---
 
 ## BR-ZONE-004
 
 Una zona inactiva no debe utilizarse para nuevas operaciones.
 
+---
+
+## BR-ZONE-005
+
+Las zonas constituyen la unidad territorial utilizada para organizar los recorridos operativos de cobradores y futuras hojas de ruta.
 
 ---
 
 # Estados
 
-
 ## ACTIVE
 
 Zona habilitada.
-
 
 ## INACTIVE
 
 Zona deshabilitada.
 
-
 ---
 
 # Zona y Operaciones
-
 
 Las zonas permiten organizar:
 
@@ -86,11 +80,9 @@ Las zonas permiten organizar:
 - cobradores asignados
 - operaciones comerciales futuras
 
-
 ---
 
 # Eliminación
-
 
 Las zonas utilizan soft delete.
 
@@ -98,16 +90,13 @@ Eliminar una zona:
 
 NO elimina registros.
 
-
 Modifica:
 
 status = inactive
 
-
 ---
 
 # Validaciones
-
 
 Al asignar una zona:
 
@@ -116,7 +105,6 @@ El sistema debe validar:
 - sociedad existente
 - zona activa
 - nombre disponible
-
 
 ---
 
@@ -128,7 +116,6 @@ Registrar:
 - modificación
 - cambios de estado
 - usuario responsable
-
 
 ---
 
