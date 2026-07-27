@@ -67,7 +67,7 @@ export function SaleHeader({ sale }: SaleHeaderProps) {
           <p className="text-sm text-white/40">Total</p>
 
           <p className="mt-1 text-xl font-bold text-[#F5A300]">
-            ${sale.totalAmount.toLocaleString("es-AR")}
+            ${sale.totalAmount.toLocaleString()}
           </p>
         </div>
 
@@ -83,7 +83,7 @@ export function SaleHeader({ sale }: SaleHeaderProps) {
           <p className="text-sm text-white/40">Valor cuota</p>
 
           <p className="mt-1 text-xl font-semibold text-white">
-            ${sale.installmentAmount.toLocaleString("es-AR")}
+            ${sale.installmentAmount.toLocaleString()}
           </p>
         </div>
 
