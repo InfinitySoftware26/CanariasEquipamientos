@@ -41,6 +41,10 @@ interface StaffFormProps<T extends StaffFormData> {
   errors: StaffValidationErrors;
 
   mode: "create" | "edit";
+
+  title?: string;
+
+  submitLabel?: string;
 }
 
 export function StaffForm<T extends StaffFormData>({

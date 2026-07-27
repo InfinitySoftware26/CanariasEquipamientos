@@ -39,7 +39,7 @@ import { JwtPayload } from "../../../common/interfaces/jwt-payload.interface";
 @UseGuards(JwtAuthGuard, RolesGuard, SocietyGuard)
 @Controller("staff")
 export class StaffController {
-  constructor(private readonly staffService: StaffService) { }
+  constructor(private readonly staffService: StaffService) {}
 
   // ── GET /staff/me ──────────────────────────────────────────────────────────
   @Get("me")
@@ -154,8 +154,8 @@ export class StaffController {
     return this.staffService.changePassword(id, dto, user);
   }
 
-  // ── DELETE /staff/:id ──────────────────────────────────────────────────────
-  @Delete(":id")
+  // ── PATCH /staff/:id ──────────────────────────────────────────────────────
+  @Patch(":id")
   @Roles(StaffRole.SUPER_ADMIN, StaffRole.MANAGER, StaffRole.ADMIN)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: "Desactivar empleado — soft delete" })
