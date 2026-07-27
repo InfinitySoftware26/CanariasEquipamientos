@@ -41,7 +41,7 @@ hover:bg-white/10
           <div>
             <p className="text-xs text-white/40">Zona</p>
 
-            <p>{routeSheet.zoneId}</p>
+            <p>{routeSheet.zoneName}</p>
           </div>
         </div>
 
