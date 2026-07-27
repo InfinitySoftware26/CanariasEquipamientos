@@ -148,6 +148,62 @@ El cliente creado queda asociado a la venta.
 
 ---
 
+## BR-SALES-017
+
+La primera cuota deberá abonarse durante la entrega del producto.
+
+El cobro inicial forma parte del proceso de entrega y deberá registrarse antes del cierre administrativo.
+
+---
+
+## BR-SALES-018
+
+La venta únicamente podrá pasar al estado CLOSED cuando:
+
+- producto entregado;
+- documentación firmada;
+- primera cuota registrada;
+- administración confirme la operación.
+
+---
+
+## BR-SALES-019
+
+El cierre definitivo de una venta será responsabilidad exclusiva del área Administrativa.
+
+---
+
+## BR-SALES-020
+
+La comisión del vendedor será acreditada únicamente cuando la venta alcance el estado CLOSED.
+
+---
+
+## BR-SALES-021
+
+Toda venta deberá permitir configurar la modalidad de pago.
+
+Modalidades permitidas:
+
+- diaria
+- semanal
+- quincenal
+- mensual
+
+---
+
+## BR-SALES-022
+
+El detalle de la venta deberá mostrar:
+
+- nombre del cliente
+- dni del cliente
+- telefono del cliente
+- dirección del cliente;
+- referencia telefónica.
+
+---
+
 # Auditoría
 
 El sistema debe registrar:

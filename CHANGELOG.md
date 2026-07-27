@@ -264,3 +264,175 @@ Frontend pendiente para:
 ### Resultado
 
 Sprint 02 finaliza con autenticación multi-sociedad operativa, dashboards funcionales por perfil, preventa inicial implementada y validación del flujo comercial hasta visita ambiental.
+
+## [1.2.0] - Sprint 3 — 24/07/2026
+
+### Resumen
+
+Sprint orientado a consolidar la operación comercial del sistema, incorporando la administración completa de empleados y zonas, evolucionando el flujo de ventas y validando junto al cliente las reglas operativas que regirán las próximas etapas del proyecto.
+
+Durante esta etapa el foco estuvo puesto en:
+
+* implementar los módulos administrativos principales;
+* consolidar el flujo comercial entre los distintos perfiles;
+* fortalecer la seguridad mediante jerarquías de usuarios;
+* validar reglas de negocio junto al equipo operativo de Canarias.
+
+---
+
+### Añadido
+
+#### Gestión de Empleados
+
+Se desarrolló el módulo completo de administración de empleados.
+
+Capacidades:
+
+* alta de empleados;
+* edición de información;
+* activación y desactivación;
+* listado mediante tarjetas;
+* filtrado de empleados;
+* asignación de perfiles;
+* generación automática de credenciales.
+
+---
+
+#### Gestión de Zonas
+
+Se implementó el módulo de administración de zonas.
+
+Capacidades:
+
+* alta de zonas;
+* edición;
+* activación y desactivación;
+* visualización de zonas registradas;
+* asignacion y eliminacion de empleados a la zona;
+* preparación para futuras asignaciones de recorridos y cobradores.
+
+---
+
+#### Evolución del Flujo Comercial
+
+Se continuó la construcción del circuito operativo de ventas incorporando nuevas validaciones y transiciones entre perfiles.
+
+Durante la Sprint Review se realizó una demostración navegando entre los distintos roles del sistema para validar el comportamiento de cada etapa del proceso comercial.
+
+Estado alcanzado:
+
+Venta
+↓
+Validación administrativa
+↓
+Visita ambiental
+↓
+Entrega
+↓
+Cierre administrativo *(pendiente implementación final)*
+
+---
+
+### Seguridad Operativa
+
+Se incorporó un esquema jerárquico para la creacion y edicion de empleados.
+
+Jerarquía implementada:
+
+**SUPER_ADMIN**
+
+* Gerentes
+* Administradores
+* Vendedores
+* Cobradores
+
+↓
+
+**MANAGER**
+
+* Administradores
+* Vendedores
+* Cobradores
+
+↓
+
+**ADMIN**
+
+* Vendedores
+* Cobradores
+
+Con esta implementación ningún usuario puede generar perfiles con permisos superiores a los propios.
+
+---
+
+### Experiencia de Usuario
+
+Se definieron criterios comunes para toda la plataforma.
+
+Se incorporaron:
+
+* validaciones visuales en formularios;
+* mensajes de error consistentes;
+* confirmaciones para acciones críticas;
+* comportamiento unificado de interfaces administrativas.
+
+Estas definiciones fueron presentadas y validadas durante la Sprint Review.
+
+---
+
+### Definiciones Funcionales Registradas
+
+Durante la reunión quedaron confirmadas las siguientes reglas de negocio:
+
+* incorporar dirección y referencia telefónica dentro del detalle de venta;
+* permitir configurar frecuencia de pago:
+
+  * diaria;
+  * semanal;
+  * quincenal;
+  * mensual;
+* incorporar un historial comercial del cliente basado en su comportamiento de pago;
+* mostrar información resumida del cliente en la pantalla principal;
+* permitir búsquedas de clientes por domicilio;
+* confirmar que el cierre definitivo de la venta corresponde al área administrativa;
+* acreditar la comisión del vendedor únicamente cuando la venta haya sido cerrada administrativamente.
+
+---
+
+### Solicitudes Registradas
+
+Quedaron registradas para próximas iteraciones:
+
+* tablero resumen de clientes con indicadores comerciales;
+* historial de comportamiento de pagos;
+* evaluación crediticia del cliente;
+* reportes gerenciales mensuales;
+* indicadores de cobranzas;
+* estadísticas comerciales y financieras.
+
+---
+
+### Pendientes para Sprint 04
+
+* completar validación de visita ambiental;
+* finalizar cierre administrativo de ventas;
+* registrar primera cuota durante la entrega;
+* iniciar desarrollo del dominio completo de cobranzas;
+* implementar modalidades de pago;
+* comenzar historial comercial de clientes.
+
+---
+
+### Documentación Actualizada
+
+* Sprint 03.
+* Acta de Sprint Review.
+* Reglas operativas del flujo comercial.
+* Definiciones funcionales relevadas con el cliente.
+
+---
+
+### Resultado
+
+Sprint 03 finaliza con los módulos de Empleados y Zonas operativos, una evolución significativa del flujo comercial y la validación conjunta de las principales reglas de negocio.
+Durante la revisión funcional quedó identificado que la validación definitiva de la visita ambiental y el cierre administrativo de la venta permanecen pendientes de implementación, por lo que su finalización fue incorporada al alcance del Sprint 04.
