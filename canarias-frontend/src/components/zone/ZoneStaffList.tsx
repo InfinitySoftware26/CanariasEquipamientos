@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { ZoneStaff } from "@/types/zones/staff-zone.type";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { DangerButton } from "@/components/button/DangerButton";
 
 interface Props {
   staff: ZoneStaff[];
@@ -59,25 +60,13 @@ export function ZoneStaffList({ staff, onRemove }: Props) {
               <p className="text-xs text-white/40">{employee.email}</p>
             </div>
 
-            <button
+            <DangerButton
               type="button"
               onClick={() => setSelectedStaff(employee)}
-              className="
-                inline-flex
-                items-center
-                gap-2
-                rounded-xl
-                border
-                border-red-500/40
-                px-4
-                py-2
-                text-red-400
-                transition
-                hover:bg-red-500/10
-              "
+              className="inline-flex px-4"
             >
               Quitar
-            </button>
+            </DangerButton>
           </article>
         ))}
       </div>

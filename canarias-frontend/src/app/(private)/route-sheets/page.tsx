@@ -13,6 +13,8 @@ import {
 import { RouteSheetPageHeader } from "@/components/route-sheets/RouteSheetPageHeader";
 import { RouteSheetStats } from "@/components/route-sheets/RouteSheetStats";
 import { RouteSheetTable } from "@/components/route-sheets/RouteSheetTable";
+import { AddButtonLink } from "@/components/button/AddButtonLink";
+import { Plus } from "lucide-react";
 
 import { useRouteSheets } from "@/hooks/route-sheets/useRouteSheets";
 
@@ -55,30 +57,10 @@ export default function RouteSheetsPage() {
         title="Hojas de Ruta"
         description="Administración de recorridos"
         action={
-          <button
-            onClick={() => router.push("/route-sheets/new")}
-            className="
-    inline-flex
-    items-center
-    justify-center
-    rounded-2xl
-    border
-    border-sky-500/30
-    bg-sky-600/20
-    px-6
-    py-3
-    font-semibold
-    text-sky-300
-    transition-all
-    duration-200
-    hover:bg-sky-600/30
-    hover:border-sky-400/50
-    disabled:opacity-50
-    disabled:cursor-not-allowed
-            "
-          >
+          <AddButtonLink href="/route-sheets/new">
+            <Plus className="mr-2 h-5 w-5" />
             Nueva hoja
-          </button>
+          </AddButtonLink>
         }
       />
 

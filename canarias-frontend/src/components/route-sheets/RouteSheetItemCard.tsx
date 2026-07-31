@@ -1,6 +1,7 @@
 "use client";
 
 import { RouteSheetItem } from "@/types/rotue-sheets/routeSheets.types";
+import { SaveButton } from "@/components/button/SaveButton";
 
 interface Props {
   item: RouteSheetItem;
@@ -52,11 +53,9 @@ text-xs
       )}
 
       {item.result === "PENDING" && (
-        <button onClick={onAction}>
-          {item.itemType === "DELIVERY"
-            ? "Confirmar entrega"
-            : "Registrar cobro"}
-        </button>
+        <SaveButton onClick={onAction} size="sm" className="inline-flex px-3 py-2">
+          {item.itemType === "DELIVERY" ? "Confirmar entrega" : "Registrar cobro"}
+        </SaveButton>
       )}
     </article>
   );

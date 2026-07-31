@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Loader2, Calendar, MapPin, User } from "lucide-react";
+import { SaveButton } from "@/components/button/SaveButton";
 import { CreateRouteSheetPayload } from "@/types/rotue-sheets/createRouteSheets.type";
 
 interface Option {
@@ -184,27 +185,14 @@ export function RouteSheetCreateForm({
           pt-3
         "
       >
-        <button
+        <SaveButton
           type="submit"
           disabled={loading}
-          className="
-            flex
-            items-center
-            gap-2
-            rounded-2xl
-            bg-cyan-600
-            px-6
-            py-3
-            font-medium
-            transition
-            hover:bg-cyan-500
-            disabled:cursor-not-allowed
-            disabled:opacity-50
-          "
+          className="flex items-center gap-2 px-6 py-3"
         >
           {loading && <Loader2 size={18} className="animate-spin" />}
           Crear hoja de ruta
-        </button>
+        </SaveButton>
       </div>
     </form>
   );

@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { Plus } from "lucide-react";
 import { useZones } from "@/hooks/zones/useZones";
 import { ZoneCard } from "@/components/zone/ZoneCard";
+import { AddButtonLink } from "@/components/button/AddButtonLink";
 
 export default function ZonesPage() {
   const { zones, loading, error } = useZones();
@@ -19,28 +19,10 @@ export default function ZonesPage() {
           </p>
         </div>
 
-        <Link
-          href="/zones/new"
-          className="
-          inline-flex
-          items-center
-          gap-2
-          rounded-2xl
-          bg-[#F5A300]
-          px-5
-          py-3
-          font-semibold
-          text-[#0F172A]
-          transition-all
-          duration-200
-          hover:bg-[#E09400]
-          hover:shadow-lg
-          hover:shadow-[#F5A300]/20
-          "
-        >
-          <Plus size={18} />
-          Nueva zona
-        </Link>
+        <AddButtonLink href="/zones/new">
+          <Plus className="mr-2 h-5 w-5" />
+          Nueva Zona
+        </AddButtonLink>
       </div>
 
       {loading && (

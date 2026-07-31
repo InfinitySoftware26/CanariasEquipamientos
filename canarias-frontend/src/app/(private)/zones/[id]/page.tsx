@@ -5,6 +5,9 @@ import { useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { Pencil, Trash2, Users } from "lucide-react";
+import { AddButton } from "@/components/button/AddButton";
+import { DangerButton } from "@/components/button/DangerButton";
+import { EditButton } from "@/components/button/EditButton";
 
 import { useZone } from "@/hooks/zones/useZone";
 import { useZoneStaff } from "@/hooks/zones/useZoneStaff";
@@ -106,9 +109,7 @@ export default function ZoneDetailPage() {
           >
             <div>
               <div className="flex items-center gap-3">
-                <h1 className="text-3xl font-bold text-white">
-                  {zone.name}
-                </h1>
+                <h1 className="text-3xl font-bold text-white">{zone.name}</h1>
 
                 <ZoneStatusBadge status={zone.status} />
               </div>
@@ -119,50 +120,22 @@ export default function ZoneDetailPage() {
             </div>
 
             <div className="flex gap-3">
-              <Link
-                href={`/zones/${zone.zoneId}/edit`}
-                className="
-                  inline-flex
-                  items-center
-                  gap-2
-                  rounded-xl
-                  border
-                  border-[#F5A300]/40
-                  px-4
-                  py-2
-                  text-[#F5A300]
-                  transition
-                  hover:bg-[#F5A300]/10
-                "
-              >
-                <Pencil size={16} />
-                Editar
-              </Link>
+              <EditButton asChild className="inline-flex gap-2 px-4">
+                <Link href={`/zones/${zone.zoneId}/edit`}>
+                  <Pencil size={16} />
+                  Editar
+                </Link>
+              </EditButton>
 
-              <button
+              <DangerButton
                 onClick={() => setOpenDeleteConfirm(true)}
                 disabled={deleting}
-                className="
-                  inline-flex
-                  items-center
-                  gap-2
-                  rounded-xl
-                  border
-                  border-red-500/40
-                  px-4
-                  py-2
-                  text-red-400
-                  transition
-                  hover:bg-red-500/10
-                  disabled:opacity-50
-                "
+                className="inline-flex gap-2 px-4"
               >
                 <Trash2 size={16} />
 
-                {deleting
-                  ? "Desactivando..."
-                  : "Desactivar"}
-              </button>
+                {deleting ? "Desactivando..." : "Desactivar"}
+              </DangerButton>
             </div>
           </div>
         </div>
@@ -180,32 +153,15 @@ export default function ZoneDetailPage() {
             <div className="flex items-center gap-3">
               <Users />
 
-              <h2 className="text-xl font-semibold">
-                Personal asignado
-              </h2>
+              <h2 className="text-xl font-semibold">Personal asignado</h2>
             </div>
 
-            <button
+            <AddButton
               onClick={() => setOpenAssign(true)}
-              className="
-                inline-flex
-                items-center
-                gap-2
-                rounded-2xl
-                bg-[#F5A300]
-                px-5
-                py-3
-                font-semibold
-                text-[#0F172A]
-                transition-all
-                duration-200
-                hover:bg-[#E09400]
-                hover:shadow-lg
-                hover:shadow-[#F5A300]/20
-              "
+              className="rounded-2xl px-5 py-3 font-semibold text-[#0F172A] hover:bg-[#E09400] hover:shadow-lg hover:shadow-[#F5A300]/20"
             >
               Asignar personal
-            </button>
+            </AddButton>
           </div>
 
           {loadingStaff ? (
@@ -213,13 +169,10 @@ export default function ZoneDetailPage() {
               Cargando personal...
             </div>
           ) : (
-            <ZoneStaffList
-              staff={staff}
-              onRemove={removeStaff}
-            />
+            <ZoneStaffList staff={staff} onRemove={removeStaff} />
           )}
         </div>
-                {deleteError && (
+        {deleteError && (
           <div
             className="
               rounded-xl

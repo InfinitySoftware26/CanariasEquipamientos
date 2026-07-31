@@ -6,6 +6,8 @@ import {
   RouteSheetItem,
   RouteSheetItemResult,
 } from "@/types/rotue-sheets/routeSheets.types";
+import { CancelButton } from "@/components/button/CancelButton";
+import { SaveButton } from "@/components/button/SaveButton";
 
 interface Props {
   item: RouteSheetItem | null;
@@ -111,19 +113,9 @@ flex
 gap-3
 "
         >
-          <button
-            onClick={onClose}
-            className="
-flex-1
-rounded-xl
-bg-white/10
-py-3
-"
-          >
-            Cancelar
-          </button>
+          <CancelButton onClick={onClose} className="flex-1 py-3" />
 
-          <button
+          <SaveButton
             onClick={() => {
               onSubmit({
                 result,
@@ -133,15 +125,10 @@ py-3
                 notes: notes || undefined,
               });
             }}
-            className="
-flex-1
-rounded-xl
-bg-green-600
-py-3
-"
+            className="flex-1 py-3 bg-green-600 hover:bg-emerald-500"
           >
             Guardar
-          </button>
+          </SaveButton>
         </div>
       </div>
     </div>
