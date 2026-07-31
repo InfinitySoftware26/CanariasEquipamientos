@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { Zone } from "@/types/zones/zone.type";
+import { SaveButton } from "@/components/button/SaveButton";
 
 interface Props {
   initialValues?: Partial<Zone>;
@@ -64,29 +65,9 @@ export function ZoneForm({ initialValues, loading, onSubmit }: Props) {
         />
       </div>
 
-      <button
-        disabled={loading}
-        className="
-    inline-flex
-    items-center
-    justify-center
-    rounded-2xl
-    bg-[#F5A300]
-    px-6
-    py-3
-    font-semibold
-    text-[#0F172A]
-    transition-all
-    duration-200
-    hover:bg-[#E09400]
-    hover:shadow-lg
-    hover:shadow-[#F5A300]/20
-    disabled:cursor-not-allowed
-    disabled:opacity-50
-  "
-      >
+      <SaveButton disabled={loading} className="w-full">
         {loading ? "Guardando..." : "Guardar zona"}
-      </button>
+      </SaveButton>
     </form>
   );
 }

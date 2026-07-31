@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { CreateStaffPayload } from "@/types/staff/createStaff.type";
 
-import { Button } from "@/components/ui/button";
+import { SaveButton } from "@/components/button/SaveButton";
 import { Input } from "@/components/ui/input";
 import { FormField } from "@/components/ui/formField";
 
@@ -148,13 +148,13 @@ export function StaffForm<T extends StaffFormData>({
           </p>
         )}
 
-        <Button
+        <SaveButton
           onClick={() => setOpenConfirm(true)}
           disabled={loading}
-          className="mt-4 h-12 w-full rounded-xl bg-[#F5A300] font-semibold text-[#0D1B2A] hover:bg-[#e89b00]"
+          className="mt-4 w-full"
         >
           {loading ? "Guardando..." : submitLabel}
-        </Button>
+        </SaveButton>
 
         <ConfirmDialog
           open={openConfirm}

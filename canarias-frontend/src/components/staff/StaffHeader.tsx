@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { UserPlus } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { AddButton } from "@/components/button/AddButton";
 
 export function StaffHeader() {
   const router = useRouter();
@@ -17,20 +17,13 @@ export function StaffHeader() {
         </p>
       </div>
 
-      <Button
-        size="lg"
+      <AddButton
         onClick={() => router.push("/staff/create")}
-        className="
-          bg-[#F5A300]
-          text-[#0D1B2A]
-          hover:bg-[#ffb82c]
-          font-semibold
-          px-6
-        "
+        className="font-semibold px-6"
       >
         <UserPlus className="mr-2 h-5 w-5" />
         Agregar empleado
-      </Button>
+      </AddButton>
     </div>
   );
 }
