@@ -1,5 +1,5 @@
 import {
-  IsUUID, IsNumber, IsPositive, IsDateString, IsOptional,
+  IsUUID, IsNumber, IsOptional,
   IsString, IsArray, ValidateNested, IsIn, IsEnum,
 } from 'class-validator';
 import { Type } from 'class-transformer';
@@ -12,10 +12,6 @@ export class CreateSaleDto {
   @IsUUID()
   clientId!: string;
 
-  @ApiProperty({ example: '2026-06-13T10:00:00Z' })
-  @IsDateString()
-  saleDate!: string;
-
   @ApiProperty({ example: 3, description: 'Cantidad de cuotas: 3, 6 o 9' })
   @IsNumber()
   @IsIn([3, 6, 9])
@@ -24,10 +20,6 @@ export class CreateSaleDto {
   @ApiProperty({ enum: PaymentFrequency, example: PaymentFrequency.MONTHLY })
   @IsEnum(PaymentFrequency)
   paymentFrequency!: PaymentFrequency;
-
-  @ApiProperty({ example: '2026-07-01', description: 'Fecha del primer vencimiento (YYYY-MM-DD)' })
-  @IsDateString()
-  firstDueDate!: string;
 
   @ApiPropertyOptional({ description: 'Observaciones opcionales' })
   @IsOptional()

@@ -35,10 +35,16 @@ import { JwtPayload } from "../../../common/interfaces/jwt-payload.interface";
 @UseGuards(JwtAuthGuard, RolesGuard, SocietyGuard)
 @Controller("zones")
 export class ZonesController {
-  constructor(private readonly zonesService: ZonesService) {}
+  constructor(private readonly zonesService: ZonesService) { }
 
   @Get()
-  @Roles(StaffRole.SUPER_ADMIN, StaffRole.MANAGER, StaffRole.ADMIN)
+  @Roles(
+    StaffRole.SUPER_ADMIN,
+    StaffRole.MANAGER,
+    StaffRole.ADMIN,
+    StaffRole.SELLER,
+    StaffRole.COLLECTOR,
+  )
   @ApiOperation({ summary: "Listar zonas de la sociedad" })
   @ApiResponse({ status: 200, description: "Lista de zonas" })
   findAll(@CurrentUser() user: JwtPayload) {
@@ -46,7 +52,12 @@ export class ZonesController {
   }
 
   @Get(":id")
-  @Roles(StaffRole.SUPER_ADMIN, StaffRole.MANAGER, StaffRole.ADMIN)
+  @Roles(
+    StaffRole.SUPER_ADMIN,
+    StaffRole.MANAGER,
+    StaffRole.ADMIN,
+    StaffRole.SELLER,
+  )
   @ApiOperation({ summary: "Obtener zona por ID" })
   @ApiParam({ name: "id", description: "UUID de la zona" })
   findOne(

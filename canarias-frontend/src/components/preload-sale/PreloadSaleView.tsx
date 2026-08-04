@@ -6,6 +6,7 @@ import { StepClientData } from "./StepClientData";
 import { StepSale } from "./StepSale";
 import { createPreloadClient } from "@/services/client.service";
 import { Client } from "@/types/cretateClient.type";
+import { InfoDialog } from "@/components/ui/info-dialog";
 
 export function PreloadSaleView({
   step,
@@ -19,6 +20,10 @@ export function PreloadSaleView({
   handleSubmit,
   goToSaleStep,
   searched,
+  zones,
+  infoOpen,
+  infoMessage,
+  closeInfo,
 }: PreloadSaleViewProps) {
   const handleGoToSaleStep = async () => {
     try {
@@ -32,6 +37,13 @@ export function PreloadSaleView({
           documentNumber: form.documentNumber,
           phone: form.phone,
           address: form.address,
+          zoneId: form.zoneId,
+          nameReference1: form.nameReference1,
+          telReference1: form.telReference1,
+          addressReference1: form.addressReference1,
+          nameReference2: form.nameReference2,
+          telReference2: form.telReference2,
+          addressReference2: form.addressReference2,
         });
 
         clientId = created.clientId;
@@ -62,7 +74,7 @@ export function PreloadSaleView({
 
       {step === 2 && (
         <>
-          <StepClientData form={form} setForm={setForm} />
+          <StepClientData form={form} setForm={setForm} zones={zones} />
 
           <button
             onClick={handleGoToSaleStep}
@@ -72,6 +84,14 @@ export function PreloadSaleView({
           </button>
         </>
       )}
+
+      <InfoDialog
+        open={infoOpen}
+        onOpenChange={closeInfo}
+        title={infoMessage?.title ?? "Información"}
+        description={infoMessage?.description ?? ""}
+        actionText={infoMessage?.actionText ?? "Aceptar"}
+      />
 
       {step === 3 && (
         <StepSale

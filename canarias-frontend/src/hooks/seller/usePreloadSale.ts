@@ -12,6 +12,8 @@ import {
 import { createSale } from "@/services/sales.service";
 import { Product } from "@/types/preload-sale/preload.type";
 import { Client } from "@/types/cretateClient.type";
+import { useZones } from "@/hooks/zones/useZones";
+import { useInfoDialog } from "@/hooks/ui/useConfirmDialog";
 
 const initialForm: PreloadFormData = {
   name: "",
@@ -21,11 +23,17 @@ const initialForm: PreloadFormData = {
   address: "",
   locality: "",
   phone: "",
+  zoneId: "",
   productId: "",
   quantity: 1,
   installmentsCount: 3,
   paymentFrequency: "monthly",
-  firstDueDate: "",
+  nameReference1: "",
+  telReference1: "",
+  addressReference1: "",
+  nameReference2: "",
+  telReference2: "",
+  addressReference2: "",
   ref1Phone: "",
   ref1Relationship: "",
   ref1Address: "",
@@ -49,6 +57,16 @@ export function usePreloadSale() {
   const [searched, setSearched] = useState(false);
   const [clientFound, setClientFound] = useState(false);
   const [existingClient, setExistingClient] = useState<Client | null>(null);
+
+  const { zones, loading: zonesLoading, error: zonesError } = useZones();
+  const activeZones = zones.filter((zone) => zone.status === "active");
+
+  const {
+    open: infoOpen,
+    message: infoMessage,
+    openInfo,
+    closeInfo,
+  } = useInfoDialog();
 
   const loadedRef = useRef(false);
 
@@ -95,10 +113,21 @@ export function usePreloadSale() {
       if (!client) {
         setClientFound(false);
         setStep(2);
+        openInfo({
+          title: "Cliente no registrado",
+          description:
+            "El cliente no se encuentra registrado, se procederá a la solicitud de datos para crear el mismo.",
+          actionText: "Continuar",
+        });
         return;
       }
       console.log("Encontrado, seteando true");
       setClientFound(true);
+      openInfo({
+        title: "Cliente seleccionado",
+        description: `Se utilizará al cliente ${client.name ?? ""} ${client.surname ?? ""} (DNI ${client.documentNumber ?? "-"}) en esta venta.`,
+        actionText: "Continuar",
+      });
       setExistingClient(client);
 
       setForm((prev) => ({
@@ -112,6 +141,7 @@ export function usePreloadSale() {
         documentNumber: client.documentNumber ?? prev.documentNumber,
 
         address: client.address ?? "",
+        zoneId: client.zoneId ?? "",
 
         phone: client.phone ?? "",
       }));
@@ -164,6 +194,13 @@ export function usePreloadSale() {
             documentNumber: form.documentNumber,
             address: form.address,
             phone: form.phone,
+            zoneId: form.zoneId,
+            nameReference1: form.nameReference1,
+            telReference1: form.telReference1,
+            addressReference1: form.addressReference1,
+            nameReference2: form.nameReference2,
+            telReference2: form.telReference2,
+            addressReference2: form.addressReference2,
           });
         } catch (err) {
           console.warn("El cliente ya existe. Reintentando búsqueda...");
@@ -210,10 +247,8 @@ export function usePreloadSale() {
 
       await createSale({
         clientId: finalClientId, // 🔥 SIEMPRE STRING
-        saleDate: new Date().toISOString(),
         installmentsCount: form.installmentsCount,
         paymentFrequency: form.paymentFrequency,
-        firstDueDate: form.firstDueDate,
         observation: `Localidad: ${form.locality}`,
         products: [
           {
@@ -250,6 +285,14 @@ export function usePreloadSale() {
     error,
     searched,
     clientFound,
+
+    zones: activeZones,
+    zonesLoading,
+    zonesError,
+
+    infoOpen,
+    infoMessage,
+    closeInfo,
 
     handleSearchClient,
     handleSubmit,

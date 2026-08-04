@@ -42,7 +42,7 @@ export class SalesService {
     @InjectRepository(Installment)
     private readonly installmentRepo: Repository<Installment>,
     private readonly financingConfigService: FinancingConfigService,
-  ) {}
+  ) { }
 
   // ─── QUERIES ──────────────────────────────────────────────────────────────
 
@@ -143,6 +143,13 @@ export class SalesService {
     // sin los intereses de financiación que paga el cliente.
     const sellerCommission = Math.round(totalAmount * SELLER_COMMISSION_RATE * 100) / 100;
 
+    const saleDate = new Date();
+    const dueDates = this.calculateDueDates(
+      saleDate,
+      dto.installmentsCount,
+      dto.paymentFrequency,
+    );
+
     const sale = await this.salesRepo.create({
       clientId: dto.clientId,
       staffId,
@@ -153,8 +160,8 @@ export class SalesService {
       installmentAmount,
       installmentsCount: dto.installmentsCount,
       paymentFrequency: dto.paymentFrequency,
-      firstDueDate: new Date(dto.firstDueDate),
-      saleDate: new Date(dto.saleDate),
+      firstDueDate: dueDates[0],
+      saleDate,
       observation: dto.observation,
       status: SaleStatus.PENDING_ADMIN_VALIDATION,
     });
@@ -169,12 +176,6 @@ export class SalesService {
           subtotal: p.unitPrice * p.quantity,
         })),
       ),
-    );
-
-    const dueDates = this.calculateDueDates(
-      new Date(dto.firstDueDate),
-      dto.installmentsCount,
-      dto.paymentFrequency,
     );
 
     await Promise.all(
