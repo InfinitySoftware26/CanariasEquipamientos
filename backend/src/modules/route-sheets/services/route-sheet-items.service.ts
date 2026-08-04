@@ -15,6 +15,8 @@ import { RouteSheetItemResult } from '../../../common/enums/route-sheet-item-res
 import { StaffRole } from '../../../common/enums/staff-role.enum';
 import { SalesService } from '../../sales/services/sales.service';
 import { InstallmentsService } from '../../installments/services/installments.service';
+import { PaymentsService } from '../../payments/services/payments.service';
+import { FailedVisitsService } from '../../failed-visits/services/failed-visits.service';
 import { JwtPayload } from '../../auth/interfaces/jwt-payload.interface';
 
 @Injectable()
@@ -26,6 +28,8 @@ export class RouteSheetItemsService {
     private readonly routeSheetsRepo: IRouteSheetsRepository,
     private readonly salesService: SalesService,
     private readonly installmentsService: InstallmentsService,
+    private readonly paymentsService: PaymentsService,
+    private readonly failedVisitsService: FailedVisitsService,
   ) {}
 
   findByRouteSheet(routeSheetId: string): Promise<RouteSheetItem[]> {
@@ -51,7 +55,24 @@ export class RouteSheetItemsService {
       if (!dto.collectedAmount) {
         throw new BadRequestException('collectedAmount es requerido para registrar el cobro de una cuota');
       }
-      await this.installmentsService.payInstallment(item.installmentId, dto.collectedAmount);
+      await this.paymentsService.registerFromCollection({
+        societyId: user.societyId,
+        staffId: user.sub,
+        installmentId: item.installmentId,
+        routeSheetItemId: item.itemId,
+        amount: dto.collectedAmount,
+      });
+    }
+
+    if (item.itemType === RouteSheetItemType.INSTALLMENT && dto.result === RouteSheetItemResult.FAILED) {
+      await this.failedVisitsService.record({
+        routeSheetItemId: item.itemId,
+        clientId: item.clientId,
+        installmentId: item.installmentId,
+        staffId: user.sub,
+        societyId: user.societyId,
+        notes: dto.notes,
+      });
     }
 
     if (item.itemType === RouteSheetItemType.DELIVERY && dto.result === RouteSheetItemResult.COMPLETED) {

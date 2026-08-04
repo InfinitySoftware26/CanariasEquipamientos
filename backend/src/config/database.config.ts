@@ -1,5 +1,6 @@
 import { ConfigService } from "@nestjs/config";
 import { TypeOrmModuleOptions } from "@nestjs/typeorm";
+import { resolveDatabaseSsl } from "./database-ssl.util";
 
 export const getDatabaseConfig = (
   configService: ConfigService,
@@ -8,10 +9,12 @@ export const getDatabaseConfig = (
   const dbSync = configService.get<string>("DB_SYNC") === "true";
   const runMigrations =
     configService.get<string>("DB_RUN_MIGRATIONS") === "true";
+  const dbHost = configService.get<string>("DB_HOST");
+  const dbSsl = resolveDatabaseSsl(dbHost, configService.get<string>("DB_SSL"));
 
   return {
     type: "postgres",
-    host: configService.get<string>("DB_HOST"),
+    host: dbHost,
     port: configService.get<number>("DB_PORT"),
     database: configService.get<string>("DB_NAME"),
     username: configService.get<string>("DB_USER"),
@@ -22,5 +25,6 @@ export const getDatabaseConfig = (
     entities: [__dirname + "/../**/*.entity{.ts,.js}"],
     migrations: [__dirname + "/../database/migrations/*{.ts,.js}"],
     autoLoadEntities: true,
+    ssl: dbSsl ? { rejectUnauthorized: false } : false,
   };
 };

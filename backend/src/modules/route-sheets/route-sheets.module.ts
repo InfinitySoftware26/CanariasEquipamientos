@@ -16,6 +16,8 @@ import { Installment } from '../installments/entities/installment.entity';
 import { Sale } from '../sales/entities/sale.entity';
 import { SalesModule } from '../sales/sales.module';
 import { InstallmentsModule } from '../installments/installments.module';
+import { PaymentsModule } from '../payments/payments.module';
+import { FailedVisitsModule } from '../failed-visits/failed-visits.module';
 import { ROUTE_SHEETS_REPOSITORY } from './interfaces/route-sheets-repository.interface';
 import { ROUTE_SHEET_ITEMS_REPOSITORY } from './interfaces/route-sheet-items-repository.interface';
 
@@ -24,6 +26,8 @@ import { ROUTE_SHEET_ITEMS_REPOSITORY } from './interfaces/route-sheet-items-rep
     TypeOrmModule.forFeature([RouteSheet, RouteSheetItem, Zone, StaffZone, Staff, Client, Installment, Sale]),
     SalesModule,
     InstallmentsModule,
+    PaymentsModule,
+    FailedVisitsModule,
   ],
   controllers: [RouteSheetsController, RouteSheetItemsController],
   providers: [

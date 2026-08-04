@@ -19,7 +19,15 @@ import { RouteSheetsModule } from "./modules/route-sheets/route-sheets.module";
 import { ClosuresModule } from "./modules/closures/closures.module";
 import { SettlementsModule } from "./modules/settlements/settlements.module";
 import { CashboxModule } from "./modules/cashbox/cashbox.module";
+import { CashMovementsModule } from "./modules/cash-movements/cash-movements.module";
+import { SupplierInvoicesModule } from "./modules/supplier-invoices/supplier-invoices.module";
+import { SupplierPaymentsModule } from "./modules/supplier-payments/supplier-payments.module";
+import { ReceiptsModule } from "./modules/receipts/receipts.module";
+import { FailedVisitsModule } from "./modules/failed-visits/failed-visits.module";
+import { ReportsModule } from "./modules/reports/reports.module";
 import { NotificationsModule } from "./modules/notifications/notifications.module";
+import { NotificationDeliveriesModule } from "./modules/notification-deliveries/notification-deliveries.module";
+import { UserConfigurationsModule } from "./modules/user-configurations/user-configurations.module";
 import { HealthModule } from "@modules/health/health.module";
 import { JwtAuthGuard } from "@common/guards";
 
@@ -44,11 +52,19 @@ import { JwtAuthGuard } from "@common/guards";
     SalesModule,
     InstallmentsModule,
     PaymentsModule,
+    FailedVisitsModule,
     RouteSheetsModule,
     ClosuresModule,
     SettlementsModule,
     CashboxModule,
+    CashMovementsModule,
+    SupplierInvoicesModule,
+    SupplierPaymentsModule,
+    ReceiptsModule,
+    ReportsModule,
     NotificationsModule,
+    NotificationDeliveriesModule,
+    UserConfigurationsModule,
     HealthModule,
   ],
   providers: [

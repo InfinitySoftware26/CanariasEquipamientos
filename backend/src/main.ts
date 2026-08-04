@@ -62,6 +62,10 @@ async function bootstrap() {
       .addTag('zones').addTag('products').addTag('suppliers').addTag('sales')
       .addTag('installments').addTag('payments').addTag('route-sheets')
       .addTag('closures').addTag('cashbox').addTag('notifications')
+      .addTag('failed-visits').addTag('cash-movements').addTag('supplier-invoices')
+      .addTag('supplier-payments')
+      .addTag('receipts').addTag('reports').addTag('notification-deliveries')
+      .addTag('user-configurations')
       .build();
     SwaggerModule.setup('api/docs', app, SwaggerModule.createDocument(app, swaggerConfig), {
       swaggerOptions: { persistAuthorization: true },

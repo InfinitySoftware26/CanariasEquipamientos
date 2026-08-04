@@ -22,6 +22,10 @@ export class InstallmentsService {
     return this.installmentsRepo.findOverdue(societyId);
   }
 
+  findPendingBySociety(societyId: string): Promise<Installment[]> {
+    return this.installmentsRepo.findPendingBySociety(societyId);
+  }
+
   async findById(id: string): Promise<Installment> {
     const inst = await this.installmentsRepo.findById(id);
     if (!inst) throw new NotFoundException(`Cuota ${id} no encontrada`);

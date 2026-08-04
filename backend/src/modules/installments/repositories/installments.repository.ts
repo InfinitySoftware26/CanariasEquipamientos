@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { LessThan, Repository } from 'typeorm';
+import { In, LessThan, Repository } from 'typeorm';
 import { Installment } from '../entities/installment.entity';
 import { IInstallmentsRepository } from '../interfaces/installments-repository.interface';
 import { InstallmentStatus } from '../../../common/enums/installment-status.enum';
@@ -26,6 +26,16 @@ export class InstallmentsRepository implements IInstallmentsRepository {
         societyId,
         status: InstallmentStatus.OVERDUE,
         dueDate: LessThan(new Date()),
+      },
+      order: { dueDate: 'ASC' },
+    });
+  }
+
+  findPendingBySociety(societyId: string): Promise<Installment[]> {
+    return this.repo.find({
+      where: {
+        societyId,
+        status: In([InstallmentStatus.PENDING, InstallmentStatus.OVERDUE, InstallmentStatus.PARTIAL]),
       },
       order: { dueDate: 'ASC' },
     });

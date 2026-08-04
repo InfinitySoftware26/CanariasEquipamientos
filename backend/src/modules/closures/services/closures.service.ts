@@ -11,6 +11,10 @@ import { RouteSheetItemResult } from '../../../common/enums/route-sheet-item-res
 import { RouteSheet } from '../../route-sheets/entities/route-sheet.entity';
 import { RouteSheetItem } from '../../route-sheets/entities/route-sheet-item.entity';
 import { JwtPayload } from '../../auth/interfaces/jwt-payload.interface';
+import { StaffService } from '../../staff/services/staff.service';
+import { NotificationsService } from '../../notifications/services/notifications.service';
+import { StaffRole } from '../../../common/enums/staff-role.enum';
+import { NotificationType } from '../../../common/enums/notification-type.enum';
 
 @Injectable()
 export class ClosuresService {
@@ -19,6 +23,8 @@ export class ClosuresService {
     private readonly closuresRepo: IClosuresRepository,
     @InjectRepository(RouteSheet) private readonly routeSheetRepo: Repository<RouteSheet>,
     @InjectRepository(RouteSheetItem) private readonly routeSheetItemRepo: Repository<RouteSheetItem>,
+    private readonly staffService: StaffService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   findBySociety(societyId: string, filters?: ClosureFilters): Promise<DailyClosure[]> {
@@ -41,13 +47,33 @@ export class ClosuresService {
       throw new ConflictException('Ya existe un cierre para este cobrador en esta fecha');
     }
 
-    return this.closuresRepo.create({
+    const closure = await this.closuresRepo.create({
       staffId: user.sub,
       societyId: user.societyId,
       closingDate: new Date(dto.closingDate),
       totalCollected: dto.totalCollected,
       notes: dto.notes,
       status: DailyClosureStatus.PENDING,
+    });
+
+    await this.notifyValidators(closure);
+
+    return closure;
+  }
+
+  private async notifyValidators(closure: DailyClosure): Promise<void> {
+    const staff = await this.staffService.findAll(closure.societyId);
+    const validators = staff.filter(s => s.role === StaffRole.ADMIN || s.role === StaffRole.MANAGER);
+    if (!validators.length) return;
+
+    await this.notificationsService.notify({
+      societyId: closure.societyId,
+      type: NotificationType.CLOSURE,
+      title: 'Cierre diario pendiente de validación',
+      message: `Se declaró un cierre diario por $${closure.totalCollected} que requiere validación.`,
+      recipientStaffIds: validators.map(v => v.staffId),
+      relatedEntityType: 'daily_closure',
+      relatedEntityId: closure.closureId,
     });
   }
 
