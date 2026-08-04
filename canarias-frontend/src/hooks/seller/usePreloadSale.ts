@@ -28,15 +28,12 @@ const initialForm: PreloadFormData = {
   quantity: 1,
   installmentsCount: 3,
   paymentFrequency: "monthly",
-
   nameReference1: "",
   telReference1: "",
   addressReference1: "",
-
   nameReference2: "",
   telReference2: "",
   addressReference2: "",
-
   ref1Phone: "",
   ref1Relationship: "",
   ref1Address: "",
@@ -62,16 +59,7 @@ export function usePreloadSale() {
   const [clientFound, setClientFound] = useState(false);
   const [existingClient, setExistingClient] = useState<Client | null>(null);
 
-  // ---------------- CLIENT CONFIRMATION ----------------
-
-  const [clientConfirmOpen, setClientConfirmOpen] = useState(false);
-
-  const [clientConfirmType, setClientConfirmType] = useState<
-    "existing" | "new" | null
-  >(null);
-
   const { zones, loading: zonesLoading, error: zonesError } = useZones();
-
   const activeZones = zones.filter((zone) => zone.status === "active");
 
   const {
@@ -83,6 +71,12 @@ export function usePreloadSale() {
 
   const loadedRef = useRef(false);
   const submittingRef = useRef(false);
+
+  const [clientConfirmOpen, setClientConfirmOpen] = useState(false);
+
+  const [clientConfirmType, setClientConfirmType] = useState<
+    "existing" | "new" | null
+  >(null);
 
   // ---------------- PRODUCTS ----------------
 
@@ -122,9 +116,7 @@ export function usePreloadSale() {
       setLoading(true);
       setError(null);
 
-      const client = await searchClientByDocument(
-        form.documentNumber,
-      );
+      const client = await searchClientByDocument(form.documentNumber);
 
       setSearched(true);
 
@@ -132,17 +124,24 @@ export function usePreloadSale() {
 
       if (!client) {
         setClientFound(false);
-        setExistingClient(null);
-
-        setClientConfirmType("new");
-        setClientConfirmOpen(true);
-
+        setStep(2);
+        openInfo({
+          title: "Cliente no registrado",
+          description:
+            "El cliente no se encuentra registrado, se procederá a la solicitud de datos para crear el mismo.",
+          actionText: "Continuar",
+        });
         return;
       }
 
       // ---------------- CLIENT FOUND ----------------
 
       setClientFound(true);
+      openInfo({
+        title: "Cliente seleccionado",
+        description: `Se utilizará al cliente ${client.name ?? ""} ${client.surname ?? ""} (DNI ${client.documentNumber ?? "-"}) en esta venta.`,
+        actionText: "Continuar",
+      });
       setExistingClient(client);
 
       setForm((prev) => ({
@@ -153,8 +152,7 @@ export function usePreloadSale() {
         name: client.name ?? "",
         surname: client.surname ?? "",
 
-        documentNumber:
-          client.documentNumber ?? prev.documentNumber,
+        documentNumber: client.documentNumber ?? prev.documentNumber,
 
         address: client.address ?? "",
         zoneId: client.zoneId ?? "",
@@ -175,17 +173,17 @@ export function usePreloadSale() {
   // ---------------- CLIENT CONFIRMATION ----------------
 
   function confirmClientSelection() {
-  if (clientConfirmType === "new") {
-    setStep(2);
-  }
+    if (clientConfirmType === "new") {
+      setStep(2);
+    }
 
-  if (clientConfirmType === "existing") {
-    setStep(3);
-  }
+    if (clientConfirmType === "existing") {
+      setStep(3);
+    }
 
-  setClientConfirmOpen(false);
-  setClientConfirmType(null);
-}
+    setClientConfirmOpen(false);
+    setClientConfirmType(null);
+  }
   // ---------------- SALE STEP ----------------
 
   function goToSaleStep() {
@@ -212,8 +210,7 @@ export function usePreloadSale() {
         document: form.documentNumber,
       });
 
-      let finalClientId =
-        existingClient?.clientId ?? form.clientId;
+      let finalClientId = existingClient?.clientId ?? form.clientId;
 
       // ---------------- CREATE CLIENT IF NEEDED ----------------
 
@@ -228,23 +225,17 @@ export function usePreloadSale() {
             address: form.address,
             phone: form.phone,
             zoneId: form.zoneId,
-
             nameReference1: form.nameReference1,
             telReference1: form.telReference1,
             addressReference1: form.addressReference1,
-
             nameReference2: form.nameReference2,
             telReference2: form.telReference2,
             addressReference2: form.addressReference2,
           });
         } catch (err) {
-          console.warn(
-            "El cliente ya existe. Reintentando búsqueda...",
-          );
+          console.warn("El cliente ya existe. Reintentando búsqueda...");
 
-          client = await searchClientByDocument(
-            form.documentNumber,
-          );
+          client = await searchClientByDocument(form.documentNumber);
 
           setSearched(true);
 
@@ -264,8 +255,7 @@ export function usePreloadSale() {
           name: client.name ?? prev.name,
           surname: client.surname ?? prev.surname,
 
-          documentNumber:
-            client.documentNumber ?? prev.documentNumber,
+          documentNumber: client.documentNumber ?? prev.documentNumber,
 
           address: client.address ?? prev.address,
           phone: client.phone ?? prev.phone,
@@ -297,12 +287,10 @@ export function usePreloadSale() {
       // ---------------- CREATE SALE ----------------
 
       await createSale({
-        clientId: finalClientId,
-
+        clientId: finalClientId, // 🔥 SIEMPRE STRING
         installmentsCount: form.installmentsCount,
 
         paymentFrequency: form.paymentFrequency,
-
         observation: `Localidad: ${form.locality}`,
 
         products: [
@@ -338,25 +326,18 @@ export function usePreloadSale() {
     searched,
     clientFound,
 
-    zones: activeZones,
-    zonesLoading,
-    zonesError,
-
-    // ---------------- INFO DIALOG ----------------
-
-    infoOpen,
-    infoMessage,
-    openInfo,
-    closeInfo,
-
-    // ---------------- CLIENT CONFIRM DIALOG ----------------
-
     clientConfirmOpen,
     setClientConfirmOpen,
     clientConfirmType,
     confirmClientSelection,
 
-    // ---------------- ACTIONS ----------------
+    zones: activeZones,
+    zonesLoading,
+    zonesError,
+
+    infoOpen,
+    infoMessage,
+    closeInfo,
 
     handleSearchClient,
     handleSubmit,

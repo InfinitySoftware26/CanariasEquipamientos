@@ -84,8 +84,7 @@ export function PreloadSaleView({
 
           <button
             onClick={handleGoToSaleStep}
-            className="w-full rounded-xl bg-[#F5A300] py-2 font-semibold text-[#0D1B2A]"
-          >
+            className="w-full rounded-xl bg-[#F5A300] py-2 font-semibold text-[#0D1B2A]">
             Continuar a la venta
           </button>
         </>

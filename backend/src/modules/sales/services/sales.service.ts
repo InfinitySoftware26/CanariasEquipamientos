@@ -60,7 +60,7 @@ export class SalesService {
     @InjectRepository(Installment)
     private readonly installmentRepo: Repository<Installment>,
     private readonly financingConfigService: FinancingConfigService,
-  ) { }
+  ) {}
 
   // ─── QUERIES ──────────────────────────────────────────────────────────────
 
@@ -98,7 +98,7 @@ export class SalesService {
     const totalCommission =
       Math.round(
         closedSales.reduce((sum, s) => sum + Number(s.sellerCommission), 0) *
-        100,
+          100,
       ) / 100;
     const averageCommission = closedSales.length
       ? Math.round((totalCommission / closedSales.length) * 100) / 100
@@ -232,6 +232,24 @@ export class SalesService {
     //     })),
     //   ),
     // );
+    await Promise.all(
+      dueDates.map((dueDate, i) =>
+        this.installmentRepo.save(
+          this.installmentRepo.create({
+            saleId: sale.saleId,
+            clientId: dto.clientId,
+            societyId,
+            installmentNumber: i + 1,
+            amount: installmentAmount,
+            paidAmount: 0,
+            remainingAmount: installmentAmount,
+            dueDate,
+            paymentFrequency: dto.paymentFrequency,
+            status: InstallmentStatus.PENDING,
+          }),
+        ),
+      ),
+    );
 
     await this.historyRepo.create({
       saleId: sale.saleId,
@@ -523,8 +541,7 @@ export class SalesService {
       snapshot: {
         previousStatus: sale.status,
         newStatus: SaleStatus.CLOSED,
-        deliveryDate:
-          dto.deliveryDate ?? sale.deliveryDate ?? null,
+        deliveryDate: dto.deliveryDate ?? sale.deliveryDate ?? null,
       } as object,
       performedBy: staffId,
       performedByName: name,
