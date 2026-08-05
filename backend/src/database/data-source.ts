@@ -1,9 +1,8 @@
 import { DataSource } from "typeorm";
 import * as dotenv from "dotenv";
+import { resolveDatabaseSsl } from "../config/database-ssl.util";
 
 dotenv.config();
-
-const isProduction = process.env.NODE_ENV === "production";
 
 export default new DataSource({
   type: "postgres",
@@ -18,7 +17,7 @@ export default new DataSource({
   entities: ["src/**/*.entity.ts"],
   migrations: ["src/database/migrations/*.ts"],
 
-  ssl: isProduction
+  ssl: resolveDatabaseSsl(process.env.DB_HOST, process.env.DB_SSL)
     ? {
         rejectUnauthorized: false,
       }

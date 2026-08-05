@@ -7,9 +7,15 @@ import { DailyClosure } from './entities/daily-closure.entity';
 import { RouteSheet } from '../route-sheets/entities/route-sheet.entity';
 import { RouteSheetItem } from '../route-sheets/entities/route-sheet-item.entity';
 import { CLOSURES_REPOSITORY } from './interfaces/closures-repository.interface';
+import { StaffModule } from '../staff/staff.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([DailyClosure, RouteSheet, RouteSheetItem])],
+  imports: [
+    TypeOrmModule.forFeature([DailyClosure, RouteSheet, RouteSheetItem]),
+    StaffModule,
+    NotificationsModule,
+  ],
   controllers: [ClosuresController],
   providers: [
     ClosuresService,
