@@ -1,28 +1,44 @@
 import {
-  Injectable, Inject, BadRequestException,
-  NotFoundException, ForbiddenException,
-} from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { ISalesRepository, SALES_REPOSITORY } from '../interfaces/sales-repository.interface';
-import { ISaleValidationsRepository, SALE_VALIDATIONS_REPOSITORY } from '../interfaces/sale-validations-repository.interface';
-import { IDeliveryAttemptsRepository, DELIVERY_ATTEMPTS_REPOSITORY } from '../interfaces/delivery-attempts-repository.interface';
-import { ISaleHistoryRepository, SALE_HISTORY_REPOSITORY } from '../interfaces/sale-history-repository.interface';
-import { CreateSaleDto } from '../dto/create-sale.dto';
-import { ValidateSaleDto } from '../dto/validate-sale.dto';
-import { FailDeliveryDto } from '../dto/fail-delivery.dto';
-import { Sale } from '../entities/sale.entity';
-import { SaleProduct } from '../entities/sale-product.entity';
-import { Installment } from '../../installments/entities/installment.entity';
-import { FinancingConfigService } from '../../financing-config/services/financing-config.service';
-import { SaleStatus } from '../../../common/enums/sale-status.enum';
-import { ValidationStep } from '../../../common/enums/validation-step.enum';
-import { ValidationStatus } from '../../../common/enums/validation-status.enum';
-import { PaymentFrequency } from '../../../common/enums/payment-frequency.enum';
-import { InstallmentStatus } from '../../../common/enums/installment-status.enum';
-import { StaffRole } from '../../../common/enums/staff-role.enum';
-import { CommissionPeriod } from '../../../common/enums/commission-period.enum';
-import { JwtPayload } from '../../auth/interfaces/jwt-payload.interface';
+  Injectable,
+  Inject,
+  BadRequestException,
+  NotFoundException,
+  ForbiddenException,
+} from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import {
+  ISalesRepository,
+  SALES_REPOSITORY,
+} from "../interfaces/sales-repository.interface";
+import {
+  ISaleValidationsRepository,
+  SALE_VALIDATIONS_REPOSITORY,
+} from "../interfaces/sale-validations-repository.interface";
+import {
+  IDeliveryAttemptsRepository,
+  DELIVERY_ATTEMPTS_REPOSITORY,
+} from "../interfaces/delivery-attempts-repository.interface";
+import {
+  ISaleHistoryRepository,
+  SALE_HISTORY_REPOSITORY,
+} from "../interfaces/sale-history-repository.interface";
+
+import { CreateSaleDto } from "../dto/create-sale.dto";
+import { ValidateSaleDto } from "../dto/validate-sale.dto";
+import { FailDeliveryDto } from "../dto/fail-delivery.dto";
+import { Sale } from "../entities/sale.entity";
+import { SaleProduct } from "../entities/sale-product.entity";
+import { Installment } from "../../installments/entities/installment.entity";
+import { FinancingConfigService } from "../../financing-config/services/financing-config.service";
+import { SaleStatus } from "../../../common/enums/sale-status.enum";
+import { ValidationStep } from "../../../common/enums/validation-step.enum";
+import { ValidationStatus } from "../../../common/enums/validation-status.enum";
+import { PaymentFrequency } from "../../../common/enums/payment-frequency.enum";
+import { InstallmentStatus } from "../../../common/enums/installment-status.enum";
+import { StaffRole } from "../../../common/enums/staff-role.enum";
+import { CommissionPeriod } from "../../../common/enums/commission-period.enum";
+import { JwtPayload } from "../../auth/interfaces/jwt-payload.interface";
 
 const SELLER_COMMISSION_RATE = 0.1;
 
@@ -42,7 +58,7 @@ export class SalesService {
     @InjectRepository(Installment)
     private readonly installmentRepo: Repository<Installment>,
     private readonly financingConfigService: FinancingConfigService,
-  ) { }
+  ) {}
 
   // ─── QUERIES ──────────────────────────────────────────────────────────────
 
@@ -69,12 +85,19 @@ export class SalesService {
     dateStr?: string,
   ) {
     const { from, to } = this.resolveCommissionPeriodRange(period, dateStr);
-    const sales = await this.salesRepo.findBySellerInRange(staffId, societyId, from, to);
+    const sales = await this.salesRepo.findBySellerInRange(
+      staffId,
+      societyId,
+      from,
+      to,
+    );
 
     const closedSales = sales.filter((s) => s.status === SaleStatus.CLOSED);
-    const totalCommission = Math.round(
-      closedSales.reduce((sum, s) => sum + Number(s.sellerCommission), 0) * 100,
-    ) / 100;
+    const totalCommission =
+      Math.round(
+        closedSales.reduce((sum, s) => sum + Number(s.sellerCommission), 0) *
+          100,
+      ) / 100;
     const averageCommission = closedSales.length
       ? Math.round((totalCommission / closedSales.length) * 100) / 100
       : 0;
@@ -118,7 +141,10 @@ export class SalesService {
   async createSale(dto: CreateSaleDto, user: JwtPayload): Promise<Sale> {
     const { staffId, societyId, name } = this.extractUser(user);
 
-    const totalAmount = dto.products.reduce((sum, p) => sum + p.unitPrice * p.quantity, 0);
+    const totalAmount = dto.products.reduce(
+      (sum, p) => sum + p.unitPrice * p.quantity,
+      0,
+    );
 
     const config = await this.financingConfigService.getConfigForProduct(
       societyId,
@@ -133,15 +159,18 @@ export class SalesService {
 
     let rate: number;
     if (dto.installmentsCount === 3) rate = Number(config.installments3Rate);
-    else if (dto.installmentsCount === 6) rate = Number(config.installments6Rate);
+    else if (dto.installmentsCount === 6)
+      rate = Number(config.installments6Rate);
     else rate = Number(config.installments9Rate);
 
     const totalWithInterest = Math.round(totalAmount * (1 + rate) * 100) / 100;
-    const installmentAmount = Math.round((totalWithInterest / dto.installmentsCount) * 100) / 100;
+    const installmentAmount =
+      Math.round((totalWithInterest / dto.installmentsCount) * 100) / 100;
 
     // Comisión del vendedor: se calcula sobre el valor del producto (totalAmount),
     // sin los intereses de financiación que paga el cliente.
-    const sellerCommission = Math.round(totalAmount * SELLER_COMMISSION_RATE * 100) / 100;
+    const sellerCommission =
+      Math.round(totalAmount * SELLER_COMMISSION_RATE * 100) / 100;
 
     const saleDate = new Date();
     const dueDates = this.calculateDueDates(
@@ -167,37 +196,44 @@ export class SalesService {
     });
 
     await Promise.all(
-      dto.products.map(p =>
-        this.saleProductRepo.save(this.saleProductRepo.create({
-          saleId: sale.saleId,
-          productId: p.productId,
-          quantity: p.quantity,
-          unitPrice: p.unitPrice,
-          subtotal: p.unitPrice * p.quantity,
-        })),
+      dto.products.map((p) =>
+        this.saleProductRepo.save(
+          this.saleProductRepo.create({
+            saleId: sale.saleId,
+            productId: p.productId,
+            quantity: p.quantity,
+            unitPrice: p.unitPrice,
+            subtotal: p.unitPrice * p.quantity,
+          }),
+        ),
       ),
     );
 
-    await Promise.all(
-      dueDates.map((dueDate, i) =>
-        this.installmentRepo.save(this.installmentRepo.create({
-          saleId: sale.saleId,
-          clientId: dto.clientId,
-          societyId,
-          installmentNumber: i + 1,
-          amount: installmentAmount,
-          paidAmount: 0,
-          remainingAmount: installmentAmount,
-          dueDate,
-          paymentFrequency: dto.paymentFrequency,
-          status: InstallmentStatus.PENDING,
-        })),
-      ),
-    );
+    // las cuotas no se generan al crear la venta,
+    // sino al aprobarla en la validación administrativa.
+    // Esto es para evitar generar cuotas de ventas que luego podrían ser rechazadas
+    // y no concretarse.
+
+    // await Promise.all(
+    //   dueDates.map((dueDate, i) =>
+    //     this.installmentRepo.save(this.installmentRepo.create({
+    //       saleId: sale.saleId,
+    //       clientId: dto.clientId,
+    //       societyId,
+    //       installmentNumber: i + 1,
+    //       amount: installmentAmount,
+    //       paidAmount: 0,
+    //       remainingAmount: installmentAmount,
+    //       dueDate,
+    //       paymentFrequency: dto.paymentFrequency,
+    //       status: InstallmentStatus.PENDING,
+    //     })),
+    //   ),
+    // );
 
     await this.historyRepo.create({
       saleId: sale.saleId,
-      action: 'SALE_CREATED',
+      action: "SALE_CREATED",
       snapshot: sale as unknown as object,
       performedBy: staffId,
       performedByName: name,
@@ -208,7 +244,11 @@ export class SalesService {
 
   // ─── VALIDACIÓN ADMIN ─────────────────────────────────────────────────────
 
-  async adminValidate(saleId: string, dto: ValidateSaleDto, user: JwtPayload): Promise<void> {
+  async adminValidate(
+    saleId: string,
+    dto: ValidateSaleDto,
+    user: JwtPayload,
+  ): Promise<void> {
     const { staffId, name } = this.extractUser(user);
     const sale = await this.findById(saleId);
 
@@ -218,9 +258,10 @@ export class SalesService {
       );
     }
 
-    const newStatus = dto.status === 'approved'
-      ? SaleStatus.PENDING_ENVIRONMENTAL_VISIT
-      : SaleStatus.REJECTED_ADMIN;
+    const newStatus =
+      dto.status === "approved"
+        ? SaleStatus.PENDING_ENVIRONMENTAL_VISIT
+        : SaleStatus.REJECTED_ADMIN;
 
     await this.salesRepo.updateStatus(saleId, newStatus);
 
@@ -228,15 +269,22 @@ export class SalesService {
       saleId,
       staffId,
       step: ValidationStep.ADMIN_VALIDATION,
-      status: dto.status === 'approved' ? ValidationStatus.APPROVED : ValidationStatus.REJECTED,
+      status:
+        dto.status === "approved"
+          ? ValidationStatus.APPROVED
+          : ValidationStatus.REJECTED,
       observations: dto.observations,
       validatedAt: new Date(),
     });
 
     await this.historyRepo.create({
       saleId,
-      action: dto.status === 'approved' ? 'ADMIN_APPROVED' : 'ADMIN_REJECTED',
-      snapshot: { previousStatus: sale.status, newStatus, observations: dto.observations } as object,
+      action: dto.status === "approved" ? "ADMIN_APPROVED" : "ADMIN_REJECTED",
+      snapshot: {
+        previousStatus: sale.status,
+        newStatus,
+        observations: dto.observations,
+      } as object,
       performedBy: staffId,
       performedByName: name,
     });
@@ -244,7 +292,11 @@ export class SalesService {
 
   // ─── VALIDACIÓN AMBIENTAL ─────────────────────────────────────────────────
 
-  async envValidate(saleId: string, dto: ValidateSaleDto, user: JwtPayload): Promise<void> {
+  async envValidate(
+    saleId: string,
+    dto: ValidateSaleDto,
+    user: JwtPayload,
+  ): Promise<void> {
     const { staffId, name } = this.extractUser(user);
     const sale = await this.findById(saleId);
 
@@ -254,28 +306,104 @@ export class SalesService {
       );
     }
 
-    const newStatus = dto.status === 'approved'
-      ? SaleStatus.PENDING_DELIVERY
-      : SaleStatus.ENVIRONMENTAL_REJECTED;
+    const newStatus =
+      dto.status === "approved"
+        ? SaleStatus.PENDING_DELIVERY
+        : SaleStatus.ENVIRONMENTAL_REJECTED;
 
     await this.salesRepo.updateStatus(saleId, newStatus);
+
+    // Al aprobar la visita ambiental, la venta queda pendiente de entrega.
+    // En este momento se genera el plan de cuotas para que la primera
+    // pueda cobrarse durante la entrega del producto.
+    if (dto.status === "approved") {
+      await this.generateInstallments(sale);
+    }
 
     await this.validationsRepo.create({
       saleId,
       staffId,
       step: ValidationStep.ENVIRONMENTAL_VISIT,
-      status: dto.status === 'approved' ? ValidationStatus.APPROVED : ValidationStatus.REJECTED,
+      status:
+        dto.status === "approved"
+          ? ValidationStatus.APPROVED
+          : ValidationStatus.REJECTED,
       observations: dto.observations,
       validatedAt: new Date(),
     });
 
     await this.historyRepo.create({
       saleId,
-      action: dto.status === 'approved' ? 'ENV_VISIT_APPROVED' : 'ENV_VISIT_REJECTED',
-      snapshot: { previousStatus: sale.status, newStatus, observations: dto.observations } as object,
+      action:
+        dto.status === "approved" ? "ENV_VISIT_APPROVED" : "ENV_VISIT_REJECTED",
+      snapshot: {
+        previousStatus: sale.status,
+        newStatus,
+        observations: dto.observations,
+      } as object,
       performedBy: staffId,
       performedByName: name,
     });
+  }
+
+  private async generateInstallments(sale: Sale): Promise<void> {
+    const existingInstallments = await this.installmentRepo.count({
+      where: {
+        saleId: sale.saleId,
+      },
+    });
+
+    if (existingInstallments > 0) {
+      return;
+    }
+
+    const installments: Partial<Installment>[] = [];
+
+    let dueDate = new Date(sale.firstDueDate);
+
+    for (let number = 1; number <= sale.installmentsCount; number++) {
+      installments.push({
+        saleId: sale.saleId,
+        clientId: sale.clientId,
+        societyId: sale.societyId,
+
+        installmentNumber: number,
+
+        amount: sale.installmentAmount,
+        paidAmount: 0,
+        remainingAmount: sale.installmentAmount,
+
+        dueDate: new Date(dueDate),
+
+        paymentFrequency: sale.paymentFrequency,
+
+        status: InstallmentStatus.PENDING,
+      });
+
+      switch (sale.paymentFrequency) {
+        case PaymentFrequency.DAILY:
+          dueDate.setDate(dueDate.getDate() + 1);
+          break;
+
+        case PaymentFrequency.WEEKLY:
+          dueDate.setDate(dueDate.getDate() + 7);
+          break;
+
+        case PaymentFrequency.BIWEEKLY:
+          dueDate.setDate(dueDate.getDate() + 15);
+          break;
+
+        case PaymentFrequency.MONTHLY:
+          dueDate.setMonth(dueDate.getMonth() + 1);
+          break;
+      }
+    }
+
+    await this.installmentRepo.save(
+      installments.map((installment) =>
+        this.installmentRepo.create(installment),
+      ),
+    );
   }
 
   // ─── ENTREGA ──────────────────────────────────────────────────────────────
@@ -295,15 +423,20 @@ export class SalesService {
       sale.assignedCollectorId &&
       sale.assignedCollectorId !== staffId
     ) {
-      throw new ForbiddenException('No eres el collector asignado a esta venta');
+      throw new ForbiddenException(
+        "No eres el collector asignado a esta venta",
+      );
     }
 
     await this.salesRepo.updateStatus(saleId, SaleStatus.DELIVERED);
 
     await this.historyRepo.create({
       saleId,
-      action: 'DELIVERED',
-      snapshot: { previousStatus: sale.status, newStatus: SaleStatus.DELIVERED } as object,
+      action: "DELIVERED",
+      snapshot: {
+        previousStatus: sale.status,
+        newStatus: SaleStatus.DELIVERED,
+      } as object,
       performedBy: staffId,
       performedByName: name,
     });
@@ -311,7 +444,11 @@ export class SalesService {
 
   // ─── ENTREGA FALLIDA ──────────────────────────────────────────────────────
 
-  async failDelivery(saleId: string, dto: FailDeliveryDto, user: JwtPayload): Promise<void> {
+  async failDelivery(
+    saleId: string,
+    dto: FailDeliveryDto,
+    user: JwtPayload,
+  ): Promise<void> {
     const { staffId, name, role } = this.extractUser(user);
     const sale = await this.findById(saleId);
 
@@ -326,7 +463,9 @@ export class SalesService {
       sale.assignedCollectorId &&
       sale.assignedCollectorId !== staffId
     ) {
-      throw new ForbiddenException('No eres el collector asignado a esta venta');
+      throw new ForbiddenException(
+        "No eres el collector asignado a esta venta",
+      );
     }
 
     const attemptCount = await this.deliveryAttemptsRepo.countBySale(saleId);
@@ -341,7 +480,7 @@ export class SalesService {
 
     await this.historyRepo.create({
       saleId,
-      action: 'DELIVERY_FAILED',
+      action: "DELIVERY_FAILED",
       snapshot: {
         attemptNumber: attemptCount + 1,
         reason: dto.reason,
@@ -367,8 +506,11 @@ export class SalesService {
 
     await this.historyRepo.create({
       saleId,
-      action: 'SALE_CLOSED',
-      snapshot: { previousStatus: sale.status, newStatus: SaleStatus.CLOSED } as object,
+      action: "SALE_CLOSED",
+      snapshot: {
+        previousStatus: sale.status,
+        newStatus: SaleStatus.CLOSED,
+      } as object,
       performedBy: staffId,
       performedByName: name,
     });
@@ -376,14 +518,23 @@ export class SalesService {
 
   // ─── OBSERVACIÓN ─────────────────────────────────────────────────────────
 
-  async updateObservation(saleId: string, observation: string | undefined): Promise<void> {
+  async updateObservation(
+    saleId: string,
+    observation: string | undefined,
+  ): Promise<void> {
     await this.findById(saleId);
-    await this.salesRepo.update(saleId, { observation: observation ?? null as any });
+    await this.salesRepo.update(saleId, {
+      observation: observation ?? (null as any),
+    });
   }
 
   // ─── REASIGNAR COLLECTOR ──────────────────────────────────────────────────
 
-  async assignCollector(saleId: string, collectorId: string, user: JwtPayload): Promise<void> {
+  async assignCollector(
+    saleId: string,
+    collectorId: string,
+    user: JwtPayload,
+  ): Promise<void> {
     const { staffId, name } = this.extractUser(user);
     const sale = await this.findById(saleId);
 
@@ -392,7 +543,7 @@ export class SalesService {
 
     await this.historyRepo.create({
       saleId,
-      action: 'COLLECTOR_REASSIGNED',
+      action: "COLLECTOR_REASSIGNED",
       snapshot: { previousCollectorId, newCollectorId: collectorId } as object,
       performedBy: staffId,
       performedByName: name,
@@ -416,7 +567,7 @@ export class SalesService {
   ): { from: Date; to: Date } {
     const anchor = dateStr ? new Date(dateStr) : new Date();
     if (isNaN(anchor.getTime())) {
-      throw new BadRequestException('Fecha inválida');
+      throw new BadRequestException("Fecha inválida");
     }
 
     let from: Date;
@@ -430,30 +581,68 @@ export class SalesService {
 
       case CommissionPeriod.MONTH:
         from = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
-        to = new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0, 23, 59, 59, 999);
+        to = new Date(
+          anchor.getFullYear(),
+          anchor.getMonth() + 1,
+          0,
+          23,
+          59,
+          59,
+          999,
+        );
         break;
 
       case CommissionPeriod.WEEK: {
         const day = anchor.getDay();
         const diffToMonday = day === 0 ? -6 : 1 - day;
-        from = new Date(anchor.getFullYear(), anchor.getMonth(), anchor.getDate() + diffToMonday);
-        to = new Date(from.getFullYear(), from.getMonth(), from.getDate() + 6, 23, 59, 59, 999);
+        from = new Date(
+          anchor.getFullYear(),
+          anchor.getMonth(),
+          anchor.getDate() + diffToMonday,
+        );
+        to = new Date(
+          from.getFullYear(),
+          from.getMonth(),
+          from.getDate() + 6,
+          23,
+          59,
+          59,
+          999,
+        );
         break;
       }
 
       case CommissionPeriod.DAY:
-        from = new Date(anchor.getFullYear(), anchor.getMonth(), anchor.getDate());
-        to = new Date(anchor.getFullYear(), anchor.getMonth(), anchor.getDate(), 23, 59, 59, 999);
+        from = new Date(
+          anchor.getFullYear(),
+          anchor.getMonth(),
+          anchor.getDate(),
+        );
+        to = new Date(
+          anchor.getFullYear(),
+          anchor.getMonth(),
+          anchor.getDate(),
+          23,
+          59,
+          59,
+          999,
+        );
         break;
 
       default:
-        throw new BadRequestException('period debe ser day, week, month o year');
+        throw new BadRequestException(
+          "period debe ser day, week, month o year",
+        );
     }
 
     return { from, to };
   }
 
-  private calculateDueDates(firstDueDate: Date, count: number, frequency: PaymentFrequency): Date[] {
+  private calculateDueDates(
+    firstDueDate: Date,
+    count: number,
+    frequency: PaymentFrequency,
+  ): Date[] {
     const dates: Date[] = [];
     for (let i = 0; i < count; i++) {
       const d = new Date(firstDueDate);
