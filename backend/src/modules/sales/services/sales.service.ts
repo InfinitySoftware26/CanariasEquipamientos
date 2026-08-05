@@ -232,25 +232,6 @@ export class SalesService {
     //     })),
     //   ),
     // );
-    await Promise.all(
-      dueDates.map((dueDate, i) =>
-        this.installmentRepo.save(
-          this.installmentRepo.create({
-            saleId: sale.saleId,
-            clientId: dto.clientId,
-            societyId,
-            installmentNumber: i + 1,
-            amount: installmentAmount,
-            paidAmount: 0,
-            remainingAmount: installmentAmount,
-            dueDate,
-            paymentFrequency: dto.paymentFrequency,
-            status: InstallmentStatus.PENDING,
-          }),
-        ),
-      ),
-    );
-
     await this.historyRepo.create({
       saleId: sale.saleId,
       action: "SALE_CREATED",
@@ -354,9 +335,12 @@ export class SalesService {
 
     await this.historyRepo.create({
       saleId,
-      action: "DELIVERY_CONFIRMED_BY_COLLECTOR",
+      action:
+        dto.status === "approved" ? "ENV_VISIT_APPROVED" : "ENV_VISIT_REJECTED",
       snapshot: {
-        confirmedAt: new Date(),
+        previousStatus: sale.status,
+        newStatus,
+        observations: dto.observations,
       } as object,
       performedBy: staffId,
       performedByName: name,
@@ -449,9 +433,10 @@ export class SalesService {
 
     await this.historyRepo.create({
       saleId,
-      action: "DELIVERY_CONFIRMED_BY_COLLECTOR",
+      action: "DELIVERED",
       snapshot: {
-        confirmedAt: new Date(),
+        previousStatus: sale.status,
+        newStatus: SaleStatus.DELIVERED,
       } as object,
       performedBy: staffId,
       performedByName: name,
