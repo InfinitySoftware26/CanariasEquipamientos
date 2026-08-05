@@ -2,9 +2,9 @@
 
 # Objetivo
 
-Documentar las reglas de negocio relacionadas al concepto de cuotas dentro del sistema.
+Documentar las reglas de negocio relacionadas con la generación, administración y seguimiento de las cuotas asociadas a una venta.
 
-Este documento define el comportamiento esperado de las cuotas generadas a partir de una venta que utiliza una modalidad de financiacion. La configuracion fnanciera pertenece a un modulo futuro.
+Este documento define el comportamiento esperado del módulo Installments, responsable de representar la deuda generada por una venta financiada.
 
 ---
 
@@ -12,7 +12,11 @@ Este documento define el comportamiento esperado de las cuotas generadas a parti
 
 Una cuota representa una obligación de pago asociada a una venta aprobada.
 
-Las cuotas serán utilizadas posteriormente para la gestión de cobranzas.
+El módulo Installments administra el plan de financiación de cada venta y constituye la fuente oficial de información para los procesos de cobranza.
+
+Las cuotas representan deuda pendiente.
+
+No representan pagos realizados.
 
 ---
 
@@ -26,7 +30,9 @@ Las cuotas no se generan al momento de crear una venta.
 
 ## BR-INSTALLMENT-002
 
-La generación de cuotas ocurre cuando una venta finaliza correctamente el proceso administrativo.
+La generación automática del plan de cuotas ocurre cuando la Administración coordina la entrega de una venta aprobada ambientalmente.
+
+En ese momento el sistema genera automáticamente todas las cuotas correspondientes a la venta, permitiendo que la primera cuota pueda ser cobrada durante el proceso de entrega.
 
 Flujo:
 
@@ -34,127 +40,159 @@ Venta creada
 
 ↓
 
-Validación telefonica desde administracion
+Validación administrativa
 
 ↓
 
-Visita ambiental por parte del cobrador
+Visita ambiental
 
 ↓
 
-Aprobación / Rechazo administracion
+Aprobación administrativa
 
 ↓
 
-Coordinacion entrega (en caso de aprobacion)
+Coordinación de entrega
 
 ↓
 
-Entrega de producto + firma de contrato
+Generación automática del plan de cuotas
+
+↓
+
+Entrega del producto
+
+↓
+
+Cobro de la primera cuota
 
 ↓
 
 Cierre administrativo
 
-↓
+---
 
-Generación de cuotas
+## BR-INSTALLMENT-003
 
+La generación del plan de cuotas deberá ejecutarse una única vez por venta.
+
+Una venta no podrá generar múltiples planes de cuotas.
 
 ---
 
 # Relación con Venta
 
-## BR-INSTALLMENT-003
-
-Toda cuota pertenece a una venta.
-
-
-Una venta tiene:
-
-- múltiples cuotas
-
-dependiendo de la configuración financiera futura.
-
----
-
-# Estados Futuros
-
-Las cuotas deberán contemplar estados operativos.
-
-Ejemplos:
-
-PENDING
-
-PAID
-
-OVERDUE
-
-CANCELLED
-
----
-
-# Cobranza
-
 ## BR-INSTALLMENT-004
 
-Las cuotas serán utilizadas como fuente para futuros procesos de cobranza.
+Toda cuota pertenece obligatoriamente a una única venta.
 
-El módulo de cobranzas podrá consultar:
+Una venta podrá poseer múltiples cuotas.
 
-- cuotas pendientes
-- vencimientos
-- pagos realizados
+La cantidad dependerá de la configuración financiera utilizada.
 
 ---
 
-# Restricciones
+# Estados
 
 ## BR-INSTALLMENT-005
 
-Una cuota no debe existir asociada a una venta rechazada.
+Cada cuota deberá mantener un estado operativo.
+
+Estados soportados:
+
+- PENDING
+- PARTIAL
+- PAID
+- OVERDUE
+- CANCELLED
 
 ---
 
 ## BR-INSTALLMENT-006
 
-Una cuota no debe modificarse manualmente fuera de procesos autorizados.
+El estado de una cuota únicamente podrá modificarse mediante procesos autorizados del sistema.
+
+No se permitirá modificar manualmente una cuota desde la base de datos o mediante procesos externos.
+
+---
+
+# Cobranza
+
+## BR-INSTALLMENT-007
+
+Las cuotas serán utilizadas como fuente oficial para los procesos de cobranza.
+
+El sistema deberá permitir consultar:
+
+- cuotas pendientes;
+- cuotas parcialmente abonadas;
+- cuotas vencidas;
+- cuotas canceladas;
+- historial de pagos asociados.
+
+---
+
+## BR-INSTALLMENT-008
+
+Una cuota podrá recibir uno o varios pagos hasta completar su importe.
+
+Su estado será actualizado automáticamente según el saldo pendiente.
+
+---
+
+# Restricciones
+
+## BR-INSTALLMENT-009
+
+No podrán existir cuotas asociadas a ventas rechazadas.
+
+---
+
+## BR-INSTALLMENT-010
+
+Una cuota no podrá eliminarse una vez generada.
+
+En caso de cancelación de la venta deberán utilizarse los procesos definidos por el negocio.
 
 ---
 
 # Auditoría
 
-Registrar:
+El sistema deberá registrar:
 
-- venta origen
-- fecha de generación
-- usuario/proceso creador
-- cambios realizados
-
+- venta origen;
+- cliente asociado;
+- fecha de generación;
+- usuario o proceso generador;
+- estado;
+- cambios realizados.
 
 ---
 
 # Alcance Actual
 
-Sprint 2:
+Sprint 03
 
-- definición de entidad cuota
-- relación venta-cuota
-- estados base
-- generacion de cuotas automaticas
-- preparación para futuras cobranzas
+Incluye:
 
+- generación automática del plan de cuotas;
+- relación venta-cuota;
+- estados básicos;
+- actualización automática del estado luego de cada pago;
+- integración con el módulo Payments;
+- preparación para futuras cobranzas.
 
-Fuera de alcance actual:
+Fuera de alcance:
 
-- configuración de financiación
-- planes de cuotas
-- cálculo de intereses
-- reglas avanzadas
-- generación automática completa
+- intereses;
+- refinanciaciones;
+- planes especiales;
+- recálculo de cuotas;
+- punitorios;
+- descuentos financieros.
 
 ---
 
 # Estado
 
-Documento vigente Sprint 02.
+Documento vigente Sprint 03.
