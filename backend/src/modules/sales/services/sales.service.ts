@@ -335,12 +335,9 @@ export class SalesService {
 
     await this.historyRepo.create({
       saleId,
-      action:
-        dto.status === "approved" ? "ENV_VISIT_APPROVED" : "ENV_VISIT_REJECTED",
+      action: "DELIVERY_CONFIRMED_BY_COLLECTOR",
       snapshot: {
-        previousStatus: sale.status,
-        newStatus,
-        observations: dto.observations,
+        confirmedAt: new Date(),
       } as object,
       performedBy: staffId,
       performedByName: name,
@@ -433,10 +430,9 @@ export class SalesService {
 
     await this.historyRepo.create({
       saleId,
-      action: "DELIVERED",
+      action: "DELIVERY_CONFIRMED_BY_COLLECTOR",
       snapshot: {
-        previousStatus: sale.status,
-        newStatus: SaleStatus.DELIVERED,
+        confirmedAt: new Date(),
       } as object,
       performedBy: staffId,
       performedByName: name,

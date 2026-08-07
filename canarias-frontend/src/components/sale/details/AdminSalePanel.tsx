@@ -342,7 +342,7 @@ export function AdminSalePanel({ sale, onRefresh }: Props) {
             </h3>
 
             <p className="text-sm text-white/70">
-              El cobrador confirmó la entrega. Si es necesario, podés modificar
+              El cobrador confirmó la entrega. Si fue necesario, podés modificar
               la fecha de entrega antes de cerrar definitivamente la venta.
             </p>
 
