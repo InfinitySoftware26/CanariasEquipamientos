@@ -50,7 +50,15 @@ export function CollectorSalePanel({ sale, onRefresh }: Props) {
 
   const canVisit = sale.status === "pending_environmental_visit";
 
-  const canDeliver = sale.status === "pending_delivery";
+  const canDeliver = sale.status === "pending_delivery" && !!sale.deliveryDate;
+
+  const [dniCopy, setDniCopy] = useState(false);
+
+  const [servicesCopy, setServicesCopy] = useState(false);
+
+  const [contractSigned, setContractSigned] = useState(false);
+
+  const canConfirmDelivery = dniCopy && servicesCopy && contractSigned;
 
   return (
     <section className="rounded-3xl border border-white/10 bg-[#111827] shadow-xl">
@@ -72,13 +80,48 @@ export function CollectorSalePanel({ sale, onRefresh }: Props) {
         )}
 
         {canDeliver && (
-          <button
-            disabled={loading}
-            onClick={confirmDelivery}
-            className="w-full rounded-xl bg-emerald-500 py-3 text-black"
-          >
-            Confirmar entrega
-          </button>
+          <div className="space-y-5">
+            <div className="rounded-2xl border border-white/10 p-5">
+              <p className="mb-4 font-semibold text-white">
+                Checklist de entrega
+              </p>
+
+              <label className="flex gap-3 text-white">
+                <input
+                  type="checkbox"
+                  checked={dniCopy}
+                  onChange={(e) => setDniCopy(e.target.checked)}
+                />
+                Fotocopia DNI
+              </label>
+
+              <label className="mt-3 flex gap-3 text-white">
+                <input
+                  type="checkbox"
+                  checked={servicesCopy}
+                  onChange={(e) => setServicesCopy(e.target.checked)}
+                />
+                Fotocopia servicio
+              </label>
+
+              <label className="mt-3 flex gap-3 text-white">
+                <input
+                  type="checkbox"
+                  checked={contractSigned}
+                  onChange={(e) => setContractSigned(e.target.checked)}
+                />
+                Contrato firmado
+              </label>
+            </div>
+
+            <button
+              disabled={loading || !canConfirmDelivery}
+              onClick={confirmDelivery}
+              className="w-full rounded-xl bg-emerald-500 py-3 text-black disabled:opacity-40"
+            >
+              Confirmar entrega
+            </button>
+          </div>
         )}
       </div>
     </section>

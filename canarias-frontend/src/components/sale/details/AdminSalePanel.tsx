@@ -10,6 +10,7 @@ import {
   assignCollector,
   closeSale,
   deliverSale,
+  scheduleDeliveryDate,
   updateSaleObservation,
 } from "@/services/sales.service";
 
@@ -34,6 +35,11 @@ export function AdminSalePanel({ sale, onRefresh }: Props) {
   const [selectedCollector, setSelectedCollector] = useState(
     sale.assignedCollectorId ?? "",
   );
+
+  const [deliveryDate, setDeliveryDate] = useState(
+    sale.deliveryDate?.split("T")[0] ?? "",
+  );
+  console.log("deliveryDate", deliveryDate);
 
   const badge = getSaleStatusLabel(sale.status);
 
@@ -107,6 +113,24 @@ export function AdminSalePanel({ sale, onRefresh }: Props) {
     }
   }
 
+  async function scheduleDelivery() {
+    if (!deliveryDate) {
+      alert("Seleccione una fecha de entrega.");
+
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      await scheduleDeliveryDate(sale.saleId, deliveryDate);
+
+      await onRefresh();
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function handleDelivery() {
     try {
       setLoading(true);
@@ -123,7 +147,11 @@ export function AdminSalePanel({ sale, onRefresh }: Props) {
     try {
       setLoading(true);
 
-      await closeSale(sale.saleId);
+      if (deliveryDate) {
+        await scheduleDeliveryDate(sale.saleId, deliveryDate);
+      }
+
+      await closeSale(sale.saleId, deliveryDate);
 
       await onRefresh();
     } finally {
@@ -268,31 +296,61 @@ export function AdminSalePanel({ sale, onRefresh }: Props) {
         )}
 
         {canDelivery && (
-          <div className="rounded-2xl border border-blue-500/20 bg-blue-500/10 p-5">
-            <h3 className="font-semibold text-blue-300">
-              Esperando acción del cobrador
-            </h3>
+          <div className="space-y-4 rounded-2xl border border-blue-500/20 bg-blue-500/10 p-5">
+            <h3 className="font-semibold text-blue-300">Coordinar entrega</h3>
 
-            <p className="mt-2 text-sm text-white/70">
-              El siguiente paso debe realizarlo el cobrador. Cuando confirme la
-              entrega podrás cerrar la venta.
+            <p className="text-sm text-white/70">
+              Seleccione la fecha y hora acordada con el cliente para realizar
+              la entrega.
             </p>
+
+            <input
+              type="date"
+              value={deliveryDate}
+              onChange={(e) => setDeliveryDate(e.target.value)}
+              className="w-full rounded-xl bg-[#0B1220] p-3 text-white"
+            />
+
+            <button
+              disabled={loading}
+              onClick={scheduleDelivery}
+              className="w-full rounded-xl bg-[#F5A300] py-3 font-semibold text-black"
+            >
+              Guardar coordinación
+            </button>
           </div>
         )}
 
         {canClose && (
           <div className="space-y-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-5">
-            <h3 className="font-semibold text-emerald-300">Último paso</h3>
+            <h3 className="font-semibold text-emerald-300">
+              Cierre administrativo
+            </h3>
 
             <p className="text-sm text-white/70">
-              El producto ya fue entregado correctamente. Cerrá la venta para
-              finalizar el proceso.
+              El cobrador confirmó la entrega. Si fue necesario, podés modificar
+              la fecha de entrega antes de cerrar definitivamente la venta.
             </p>
+
+            <input
+              type="date"
+              value={deliveryDate}
+              onChange={(e) => setDeliveryDate(e.target.value)}
+              className="w-full rounded-xl bg-[#0B1220] p-3 text-white"
+            />
+
+            <button
+              disabled={loading}
+              onClick={scheduleDelivery}
+              className="w-full rounded-xl border border-[#F5A300] py-3 font-semibold text-[#F5A300] hover:bg-[#F5A300]/10"
+            >
+              Actualizar fecha de entrega
+            </button>
 
             <button
               disabled={loading}
               onClick={handleClose}
-              className="w-full rounded-xl bg-emerald-500 py-3 font-semibold text-black"
+              className="w-full rounded-xl bg-[#F5A300] py-3 font-semibold text-black hover:bg-[#ffb82c]"
             >
               Cerrar venta
             </button>

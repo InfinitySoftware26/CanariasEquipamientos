@@ -39,6 +39,8 @@ import { InstallmentStatus } from "../../../common/enums/installment-status.enum
 import { StaffRole } from "../../../common/enums/staff-role.enum";
 import { CommissionPeriod } from "../../../common/enums/commission-period.enum";
 import { JwtPayload } from "../../auth/interfaces/jwt-payload.interface";
+import { CloseSaleDto } from "../dto/close-sale.dto";
+import { ScheduleDeliveryDto } from "../dto/schedule-delivery.dto";
 
 const SELLER_COMMISSION_RATE = 0.1;
 
@@ -334,12 +336,9 @@ export class SalesService {
 
     await this.historyRepo.create({
       saleId,
-      action:
-        dto.status === "approved" ? "ENV_VISIT_APPROVED" : "ENV_VISIT_REJECTED",
+      action: "DELIVERY_CONFIRMED_BY_COLLECTOR",
       snapshot: {
-        previousStatus: sale.status,
-        newStatus,
-        observations: dto.observations,
+        confirmedAt: new Date(),
       } as object,
       performedBy: staffId,
       performedByName: name,
@@ -432,10 +431,9 @@ export class SalesService {
 
     await this.historyRepo.create({
       saleId,
-      action: "DELIVERED",
+      action: "DELIVERY_CONFIRMED_BY_COLLECTOR",
       snapshot: {
-        previousStatus: sale.status,
-        newStatus: SaleStatus.DELIVERED,
+        confirmedAt: new Date(),
       } as object,
       performedBy: staffId,
       performedByName: name,
@@ -492,8 +490,13 @@ export class SalesService {
 
   // ─── CERRAR VENTA ─────────────────────────────────────────────────────────
 
-  async close(saleId: string, user: JwtPayload): Promise<void> {
+  async close(
+    saleId: string,
+    dto: CloseSaleDto,
+    user: JwtPayload,
+  ): Promise<void> {
     const { staffId, name } = this.extractUser(user);
+
     const sale = await this.findById(saleId);
 
     if (sale.status !== SaleStatus.DELIVERED) {
@@ -502,7 +505,17 @@ export class SalesService {
       );
     }
 
-    await this.salesRepo.updateStatus(saleId, SaleStatus.CLOSED);
+    const updateData: Partial<Sale> = {
+      status: SaleStatus.DELIVERED,
+    };
+
+    if (dto.deliveryDate) {
+      updateData.deliveryDate = new Date(dto.deliveryDate);
+    }
+
+    updateData.status = SaleStatus.CLOSED;
+
+    await this.salesRepo.update(saleId, updateData);
 
     await this.historyRepo.create({
       saleId,
@@ -510,6 +523,47 @@ export class SalesService {
       snapshot: {
         previousStatus: sale.status,
         newStatus: SaleStatus.CLOSED,
+        deliveryDate:
+          dto.deliveryDate ?? sale.deliveryDate?.toISOString() ?? null,
+      } as object,
+      performedBy: staffId,
+      performedByName: name,
+    });
+  }
+
+  async scheduleDelivery(
+    saleId: string,
+    dto: ScheduleDeliveryDto,
+    user: JwtPayload,
+  ): Promise<void> {
+    const { staffId, name } = this.extractUser(user);
+
+    const sale = await this.findById(saleId);
+
+    console.log("Estado actual:", sale.status);
+
+    console.log(dto);
+    console.log(dto.deliveryDate);
+    console.log(sale.status);
+
+    if (
+      sale.status !== SaleStatus.PENDING_DELIVERY &&
+      sale.status !== SaleStatus.DELIVERED
+    ) {
+      throw new BadRequestException(
+        "La venta debe estar pendiente de entrega o entregada.",
+      );
+    }
+
+    await this.salesRepo.update(saleId, {
+      deliveryDate: dto.deliveryDate,
+    });
+
+    await this.historyRepo.create({
+      saleId,
+      action: "DELIVERY_SCHEDULED",
+      snapshot: {
+        deliveryDate: dto.deliveryDate,
       } as object,
       performedBy: staffId,
       performedByName: name,

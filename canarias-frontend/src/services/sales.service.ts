@@ -67,7 +67,7 @@ export async function getSaleById(id: string) {
 
   const json = await res.json();
 
-  console.log("SALE DETAIL:", json);
+  // console.log("SALE DETAIL:", JSON.stringify(data, null, 2));
 
   if (!res.ok) {
     throw new Error(`Error obteniendo venta (${res.status})`);
@@ -175,19 +175,29 @@ export async function deliverSale(id: string) {
   }
 }
 
-export async function closeSale(id: string) {
+export async function closeSale(
+  saleId: string,
+  deliveryDate?: string,
+) {
   const token = useAuthStore.getState().accessToken;
 
-  const res = await apiFetch(`/sales/${id}/close`, {
+  const res = await apiFetch(`/sales/${saleId}/close`, {
     method: "PATCH",
     headers: {
       Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
     },
+    body: JSON.stringify({
+      deliveryDate,
+    }),
   });
 
   if (!res.ok) {
-    throw new Error("No se pudo cerrar la venta");
+    const error = await res.json();
+    throw new Error(error.message || "No se pudo cerrar la venta");
   }
+
+  return true;
 }
 
 export async function getSaleHistory(saleId: string) {
@@ -254,4 +264,28 @@ export async function updateSaleObservation(
   if (!res.ok) {
     throw new Error("No se pudo actualizar la observación");
   }
+}
+
+export async function scheduleDeliveryDate(
+  saleId: string,
+  deliveryDate: string,
+) {
+  const token = useAuthStore.getState().accessToken;
+
+  const res = await apiFetch(`/sales/${saleId}/schedule-delivery`, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      deliveryDate,
+    }),
+  });
+
+  if (!res.ok) {
+    throw new Error("No se pudo coordinar la entrega");
+  }
+
+  return true;
 }
