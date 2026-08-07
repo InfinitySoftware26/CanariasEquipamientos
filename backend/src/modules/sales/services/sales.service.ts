@@ -60,7 +60,7 @@ export class SalesService {
     @InjectRepository(Installment)
     private readonly installmentRepo: Repository<Installment>,
     private readonly financingConfigService: FinancingConfigService,
-  ) {}
+  ) { }
 
   // ─── QUERIES ──────────────────────────────────────────────────────────────
 
@@ -98,7 +98,7 @@ export class SalesService {
     const totalCommission =
       Math.round(
         closedSales.reduce((sum, s) => sum + Number(s.sellerCommission), 0) *
-          100,
+        100,
       ) / 100;
     const averageCommission = closedSales.length
       ? Math.round((totalCommission / closedSales.length) * 100) / 100
@@ -510,7 +510,7 @@ export class SalesService {
     };
 
     if (dto.deliveryDate) {
-      updateData.deliveryDate = new Date(dto.deliveryDate);
+      updateData.deliveryDate = dto.deliveryDate;
     }
 
     updateData.status = SaleStatus.CLOSED;
@@ -524,7 +524,7 @@ export class SalesService {
         previousStatus: sale.status,
         newStatus: SaleStatus.CLOSED,
         deliveryDate:
-          dto.deliveryDate ?? sale.deliveryDate?.toISOString() ?? null,
+          dto.deliveryDate ?? sale.deliveryDate ?? null,
       } as object,
       performedBy: staffId,
       performedByName: name,
