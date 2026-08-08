@@ -1,10 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-
 import { Sale } from "@/types/sales/sale.type";
 import { Collector } from "@/types/collector/collector.type";
-
 import {
   adminValidateSale,
   assignCollector,
@@ -13,12 +11,21 @@ import {
   scheduleDeliveryDate,
   updateSaleObservation,
 } from "@/services/sales.service";
-
 import { getCollectors } from "@/services/collectors/collectors.services";
-
 import { getSaleStatusLabel } from "@/lib/sales/getSalesStatusLabel";
-
 import { SaleStatusBadge } from "../SalesStatusBadge";
+import { AddButton } from "@/components/button/AddButton";
+import { DangerButton } from "@/components/button/DangerButton";
+import { SaveButton } from "@/components/button/SaveButton";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { EditButton } from "@/components/button/EditButton";
 
 interface Props {
   sale: Sale;
@@ -27,22 +34,18 @@ interface Props {
 
 export function AdminSalePanel({ sale, onRefresh }: Props) {
   const [loading, setLoading] = useState(false);
-
   const [observation, setObservation] = useState(sale.observation ?? "");
-
   const [collectors, setCollectors] = useState<Collector[]>([]);
-
+  const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
+  const [approveDialogOpen, setApproveDialogOpen] = useState(false);
+  const [closeDialogOpen, setCloseDialogOpen] = useState(false);
   const [selectedCollector, setSelectedCollector] = useState(
     sale.assignedCollectorId ?? "",
   );
-
   const [deliveryDate, setDeliveryDate] = useState(
     sale.deliveryDate?.split("T")[0] ?? "",
   );
-  console.log("deliveryDate", deliveryDate);
-
   const badge = getSaleStatusLabel(sale.status);
-
   useEffect(() => {
     async function loadCollectors() {
       try {
@@ -58,11 +61,8 @@ export function AdminSalePanel({ sale, onRefresh }: Props) {
   }, []);
 
   const canValidate = sale.status === "pending_admin_validation";
-
   const canAssign = sale.status === "pending_environmental_visit";
-
   const canDelivery = sale.status === "pending_delivery";
-
   const canClose = sale.status === "delivered";
 
   async function saveObservation() {
@@ -181,8 +181,8 @@ export function AdminSalePanel({ sale, onRefresh }: Props) {
 
           {sale.status === "pending_admin_validation" && (
             <p className="mt-2 text-white/80">
-              Revisá la información de la venta y decidí si la operación
-              continúa o debe rechazarse.
+              Revisá la información de la venta y luego de la comunicacion con
+              el cliente, decidí si la operación continúa o debe rechazarse.
             </p>
           )}
 
@@ -222,13 +222,9 @@ export function AdminSalePanel({ sale, onRefresh }: Props) {
           className="w-full rounded-2xl bg-[#0B1220] p-4 text-white"
         />
 
-        <button
-          disabled={loading}
-          onClick={saveObservation}
-          className="rounded-xl border border-white/10 px-5 py-2 text-white"
-        >
+        <SaveButton disabled={loading} onClick={saveObservation}>
           Guardar observación
-        </button>
+        </SaveButton>
 
         {canValidate && (
           <div className="space-y-3 rounded-2xl border border-white/10 p-5">
@@ -242,21 +238,26 @@ export function AdminSalePanel({ sale, onRefresh }: Props) {
             </p>
 
             <div className="flex gap-3">
-              <button
+              <DangerButton
                 disabled={loading}
-                onClick={() => validate("rejected")}
-                className="rounded-xl bg-red-500/20 px-5 py-2 text-red-300"
+                onClick={() => {
+                  if (!observation.trim()) {
+                    alert("Debe ingresar una observación para rechazar.");
+                    return;
+                  }
+
+                  setRejectDialogOpen(true);
+                }}
               >
                 Rechazar venta
-              </button>
+              </DangerButton>
 
-              <button
+              <AddButton
                 disabled={loading}
-                onClick={() => validate("approved")}
-                className="rounded-xl bg-[#F5A300] px-5 py-2 font-semibold text-black"
+                onClick={() => setApproveDialogOpen(true)}
               >
                 Aprobar venta
-              </button>
+              </AddButton>
             </div>
           </div>
         )}
@@ -271,27 +272,39 @@ export function AdminSalePanel({ sale, onRefresh }: Props) {
               Seleccioná quién realizará la visita ambiental y la entrega.
             </p>
 
-            <select
+            <Select
               value={selectedCollector}
-              onChange={(e) => setSelectedCollector(e.target.value)}
-              className="w-full rounded-xl bg-[#0B1220] p-3 text-white"
+              onValueChange={setSelectedCollector}
             >
-              <option value="">Seleccionar cobrador</option>
+              <SelectTrigger className="w-full border-white/10 bg-white/5 text-white">
+                <SelectValue placeholder="Seleccionar cobrador" />
+              </SelectTrigger>
 
-              {collectors.map((c) => (
-                <option key={c.staffId} value={c.staffId}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
+              <SelectContent>
+                {collectors.length === 0 ? (
+                  <SelectItem value="no-collectors" disabled>
+                    No hay cobradores disponibles
+                  </SelectItem>
+                ) : (
+                  collectors.map((collector) => (
+                    <SelectItem
+                      key={collector.staffId}
+                      value={collector.staffId}
+                    >
+                      {collector.name}
+                    </SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
 
-            <button
+            <AddButton
               disabled={loading}
               onClick={handleAssign}
-              className="w-full rounded-xl bg-[#F5A300] py-3 font-semibold text-black"
+              className="w-full"
             >
               Asignar cobrador
-            </button>
+            </AddButton>
           </div>
         )}
 
@@ -311,13 +324,13 @@ export function AdminSalePanel({ sale, onRefresh }: Props) {
               className="w-full rounded-xl bg-[#0B1220] p-3 text-white"
             />
 
-            <button
+            <AddButton
               disabled={loading}
               onClick={scheduleDelivery}
-              className="w-full rounded-xl bg-[#F5A300] py-3 font-semibold text-black"
+              className="w-full"
             >
               Guardar coordinación
-            </button>
+            </AddButton>
           </div>
         )}
 
@@ -339,24 +352,56 @@ export function AdminSalePanel({ sale, onRefresh }: Props) {
               className="w-full rounded-xl bg-[#0B1220] p-3 text-white"
             />
 
-            <button
-              disabled={loading}
-              onClick={scheduleDelivery}
-              className="w-full rounded-xl border border-[#F5A300] py-3 font-semibold text-[#F5A300] hover:bg-[#F5A300]/10"
-            >
-              Actualizar fecha de entrega
-            </button>
+            <div className="flex justify-end">
+              <EditButton disabled={loading} onClick={scheduleDelivery}>
+                Actualizar fecha de entrega
+              </EditButton>
+            </div>
 
-            <button
+            <AddButton
               disabled={loading}
-              onClick={handleClose}
-              className="w-full rounded-xl bg-[#F5A300] py-3 font-semibold text-black hover:bg-[#ffb82c]"
+              onClick={() => setCloseDialogOpen(true)}
+              className="w-full"
             >
               Cerrar venta
-            </button>
+            </AddButton>
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        open={rejectDialogOpen}
+        onOpenChange={setRejectDialogOpen}
+        title="¿Está seguro que desea rechazar la venta?"
+        description="Si es así, asegúrese de guardar una observación con el motivo."
+        confirmText="Rechazar venta"
+        cancelText="Cancelar"
+        destructive
+        loading={loading}
+        onConfirm={() => validate("rejected")}
+      />
+
+      <ConfirmDialog
+        open={approveDialogOpen}
+        onOpenChange={setApproveDialogOpen}
+        title="¿Está seguro que desea aprobar la venta?"
+        description="Si es así, el proceso continúa a la Visita Ambiental."
+        confirmText="Aprobar venta"
+        cancelText="Cancelar"
+        loading={loading}
+        onConfirm={() => validate("approved")}
+      />
+
+      <ConfirmDialog
+        open={closeDialogOpen}
+        onOpenChange={setCloseDialogOpen}
+        title="¿Está seguro que desea cerrar la venta?"
+        description="Al realizar el cierre de la venta ya no puede volver a modificar los datos de la misma."
+        confirmText="Cerrar venta"
+        cancelText="Cancelar"
+        loading={loading}
+        onConfirm={handleClose}
+      />
     </section>
   );
 }
