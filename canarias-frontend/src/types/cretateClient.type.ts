@@ -7,8 +7,15 @@ export interface Client {
   documentNumber?: string;
   createdBy?: string;
   address?: string;
+  zoneId?: string;
   phone?: string;
   email?: string;
+  nameReference1?: string;
+  telReference1?: string;
+  addressReference1?: string;
+  nameReference2?: string;
+  telReference2?: string;
+  addressReference2?: string;
   createdByName: string;
   createdBySocietyName: string;
   societyId: string;
@@ -47,15 +54,16 @@ export interface CreateClientPayload {
   documentNumber: string;
   address: string;
   phone: string;
+  zoneId?: string;
+  nameReference1: string;
+  telReference1: string;
+  addressReference1: string;
+  nameReference2: string;
+  telReference2: string;
+  addressReference2: string;
 }
 
-export interface CreatePreloadClientDto {
-  name: string;
-  surname: string;
-  documentNumber: string;
-  phone: string;
-  address: string;
-
+export interface CreatePreloadClientDto extends CreateClientPayload {
   // backend espera defaults o los completa
   supportDni?: boolean;
   supportBill?: boolean;

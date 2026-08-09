@@ -42,10 +42,21 @@ export class Sale {
   @Column({ name: "total_amount", type: "decimal", precision: 12, scale: 2 })
   totalAmount!: number;
 
-  @Column({ name: "seller_commission_rate", type: "decimal", precision: 5, scale: 4, default: 0.1 })
+  @Column({
+    name: "seller_commission_rate",
+    type: "decimal",
+    precision: 5,
+    scale: 4,
+    default: 0.1,
+  })
   sellerCommissionRate!: number;
 
-  @Column({ name: "seller_commission", type: "decimal", precision: 12, scale: 2 })
+  @Column({
+    name: "seller_commission",
+    type: "decimal",
+    precision: 12,
+    scale: 2,
+  })
   sellerCommission!: number;
 
   @Column({
@@ -84,6 +95,13 @@ export class Sale {
 
   @Column({ nullable: true })
   observation!: string;
+
+  @Column({
+    name: "deliverydate",
+    type: "date",
+    nullable: true,
+  })
+  deliveryDate!: string | null;
 
   @CreateDateColumn({ name: "created_at" })
   createdAt!: Date;

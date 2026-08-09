@@ -1,4 +1,4 @@
-export type PaymentFrequency = "weekly" | "monthly";
+export type PaymentFrequency = "weekly" | "monthly" | "biweekly" | "daily";
 
 export interface PreloadFormData {
   // 🧑 Cliente
@@ -10,15 +10,23 @@ export interface PreloadFormData {
   email: string;
   locality: string;
   phone: string;
+  zoneId: string;
 
   // 💰 Venta
   productId: string;
   quantity: number;
   installmentsCount: number;
   paymentFrequency: PaymentFrequency;
-  firstDueDate: string;
 
-  // 📞 Referencias
+  // � Referencias de garantía
+  nameReference1: string;
+  addressReference1: string;
+  telReference1: string;
+  nameReference2: string;
+  addressReference2: string;
+  telReference2: string;
+
+  // �📞 Referencias
   ref1Phone: string;
   ref1Relationship: string;
   ref1Address: string;

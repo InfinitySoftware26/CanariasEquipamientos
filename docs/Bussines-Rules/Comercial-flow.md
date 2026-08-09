@@ -39,6 +39,7 @@ Responsabilidades:
 * validar condiciones comerciales;
 * informar bases y condiciones al cliente;
 * coordinar entrega;
+* generar plan de cuotas;
 * validar documentación;
 * confirmar cierre administrativo.
 
@@ -55,7 +56,9 @@ Responsabilidades:
 * realizar visita ambiental;
 * ejecutar entrega;
 * solicitar documentación;
-* formalizar recepción contractual.
+* obtener la firma del contrato;
+* recibir la documentación requerida;
+* cobrar la primera cuota;
 
 Resultado esperado:
 
@@ -71,7 +74,15 @@ PENDING_ADMIN_VALIDATION
 
 ↓
 
+Validación administrativa
+
+↓
+
 PENDING_ENVIRONMENTAL_VISIT
+
+↓
+
+Visita ambiental aprobada
 
 ↓
 
@@ -79,7 +90,27 @@ PENDING_DELIVERY
 
 ↓
 
+Coordinación de entrega
+
+↓
+
+Generación automática del plan de cuotas
+
+↓
+
+Entrega
+
+↓
+
+Cobro primera cuota
+
+↓
+
 DELIVERED
+
+↓
+
+Confirmación administrativa
 
 ↓
 
@@ -144,11 +175,11 @@ Venta aprobada pendiente de coordinación de entrega.
 Responsable:
 Administración
 
-Acciones permitidas:
+Acciones permitidas
 
-* coordinar entrega;
-* registrar primera cuota;
-* validar documentación previa.
+* coordinar entrega
+* generar automáticamente el plan de cuotas
+* validar documentación previa
 
 Entrada:
 Visita ambiental aprobada.
@@ -169,9 +200,10 @@ Cobrador
 
 Acciones permitidas:
 
-* confirmar entrega;
-* solicitar documentación;
-* registrar firma.
+* confirmar entrega
+* registrar firma del contrato
+* recibir documentación
+* registrar cobro de la primera cuota
 
 Documentación requerida:
 
@@ -212,7 +244,9 @@ Fin del flujo.
 
 ## BR-CF-001 — Inicio de venta
 
-Solo el perfil **Vendedor** puede registrar una venta.
+Los perfiles SELLER y ADMIN pueden registrar una venta.
+
+Ambos seguirán exactamente el mismo flujo operativo.
 
 Estado:
 Implementado.
@@ -251,20 +285,12 @@ Aprobado.
 
 ## BR-CF-005 — Entrega requiere documentación
 
-La entrega requiere:
+Entrega requiere
 
+* firma del contrato;
 * DNI;
-* servicio.
-
-Estado:
-Definido.
-
----
-
-## BR-CF-006 — Cierre administrativo obligatorio
-
-- la carga inicial se encuentra disponible únicamente para vendedor;
-- se prevé habilitar carga también desde administración en Sprint 03;
+* comprobantes de servicio;
+* registro del primer pago.
 
 Estado:
 Definido.
@@ -275,9 +301,9 @@ Definido.
 
 Actualmente:
 
-* la carga inicial solo está disponible para vendedor;
-* el circuito completo aún no posee formularios operativos;
-* parte del flujo se valida mediante datos precargados.
+La venta podrá iniciarse por SELLER o ADMIN.
+
+El resto del flujo respetará las mismas reglas de negocio independientemente del rol creador.
 
 ---
 

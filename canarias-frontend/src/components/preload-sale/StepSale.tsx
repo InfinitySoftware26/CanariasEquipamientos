@@ -4,6 +4,8 @@ import { Package } from "lucide-react";
 import { StepTitle } from "./StepTitle";
 import { StepSaleProps } from "@/types/preload-sale/preload.type";
 import { useState } from "react";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Input } from "@/components/ui/input";
 
 type Option<T> = {
   label: string;
@@ -20,10 +22,9 @@ export function StepSale({
   const [openProduct, setOpenProduct] = useState(false);
   const [openInstallments, setOpenInstallments] = useState(false);
   const [openFrequency, setOpenFrequency] = useState(false);
+  const [openConfirm, setOpenConfirm] = useState(false);
 
-  const selectedProduct = products.find(
-    (p) => p.productId === form.productId,
-  );
+  const selectedProduct = products.find((p) => p.productId === form.productId);
 
   // ---------------- CUOTAS ----------------
 
@@ -31,6 +32,7 @@ export function StepSale({
     { label: "3 cuotas", value: 3 },
     { label: "6 cuotas", value: 6 },
     { label: "9 cuotas", value: 9 },
+    { label: "12 cuotas", value: 12 },
   ];
 
   const selectedInstallment = installmentOptions.find(
@@ -39,21 +41,30 @@ export function StepSale({
 
   // ---------------- FRECUENCIA ----------------
 
-  const frequencyOptions: Option<"weekly" | "monthly">[] = [
+  const frequencyOptions: Option<
+    "weekly" | "monthly" | "biweekly" | "daily"
+  >[] = [
     { label: "Mensual", value: "monthly" },
     { label: "Semanal", value: "weekly" },
+    { label: "Quincenal", value: "biweekly" },
+    { label: "Diaria", value: "daily" },
   ];
 
   const selectedFrequency = frequencyOptions.find(
     (o) => o.value === form.paymentFrequency,
   );
 
+  const saleDescription = `Se está creando una venta para ${form.name} ${form.surname} con ${
+    selectedProduct?.name ?? "producto desconocido"
+  } en ${form.installmentsCount} cuotas por un total aproximado de ${
+    selectedProduct ? Number(selectedProduct.price) * form.quantity : 0
+  }.`;
+
   return (
     <section className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
       <StepTitle icon={<Package size={18} />} label="Venta" />
 
       <div className="space-y-3">
-
         {/* ---------------- CLIENTE ---------------- */}
         <div className="rounded-2xl border border-[#F5A300]/20 bg-[#F5A300]/5 p-4">
           <p className="mb-1 text-xs uppercase tracking-wider text-[#F5A300]/80">
@@ -168,39 +179,41 @@ export function StepSale({
         </div>
 
         {/* ---------------- CANTIDAD ---------------- */}
-        <input
+        <Input
           type="number"
-          className="input"
-          value={form.quantity}
+          placeholder="Cantidad"
+          value={String(form.quantity)}
           onChange={(e) =>
             setForm({
               ...form,
               quantity: Number(e.target.value),
             })
           }
-        />
-
-        {/* ---------------- FECHA ---------------- */}
-        <input
-          type="date"
-          className="input"
-          value={form.firstDueDate}
-          onChange={(e) =>
-            setForm({
-              ...form,
-              firstDueDate: e.target.value,
-            })
-          }
+          className="h-11 border-white/10 bg-white/5 text-white"
         />
 
         {/* ---------------- SUBMIT ---------------- */}
         <button
-          onClick={handleSubmit}
+          onClick={() => setOpenConfirm(true)}
           disabled={loading}
           className="w-full rounded-xl bg-[#F5A300] py-2 font-semibold text-[#0D1B2A]"
         >
           {loading ? "Enviando..." : "Confirmar venta"}
         </button>
+
+        <ConfirmDialog
+          open={openConfirm}
+          onOpenChange={setOpenConfirm}
+          title="Confirmar venta"
+          description={saleDescription}
+          confirmText="Confirmar"
+          cancelText="Cancelar"
+          loading={loading}
+          onConfirm={() => {
+            setOpenConfirm(false);
+            handleSubmit();
+          }}
+        />
       </div>
     </section>
   );

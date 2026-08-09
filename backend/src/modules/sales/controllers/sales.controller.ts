@@ -26,6 +26,8 @@ import { CurrentUser } from "../../../common/decorators/current-user.decorator";
 import { StaffRole } from "../../../common/enums/staff-role.enum";
 import { CommissionPeriod } from "../../../common/enums/commission-period.enum";
 import { JwtPayload } from "../../auth/interfaces/jwt-payload.interface";
+import { CloseSaleDto } from "../dto/close-sale.dto";
+import { ScheduleDeliveryDto } from "../dto/schedule-delivery.dto";
 
 @ApiTags("sales")
 @ApiBearerAuth("access-token")
@@ -164,16 +166,17 @@ export class SalesController {
     return this.salesService.failDelivery(id, dto, user);
   }
 
-  @Patch(":id/close")
-  @Roles(StaffRole.ADMIN, StaffRole.MANAGER, StaffRole.SUPER_ADMIN)
-  @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: "Cerrar venta (post entrega)" })
-  close(
-    @Param("id", ParseUUIDPipe) id: string,
-    @CurrentUser() user: JwtPayload,
-  ) {
-    return this.salesService.close(id, user);
-  }
+ @Patch(":id/close")
+@Roles(StaffRole.ADMIN, StaffRole.MANAGER, StaffRole.SUPER_ADMIN)
+@HttpCode(HttpStatus.NO_CONTENT)
+@ApiOperation({ summary: "Cerrar venta (post entrega)" })
+close(
+  @Param("id", ParseUUIDPipe) id: string,
+  @Body() dto: CloseSaleDto,
+  @CurrentUser() user: JwtPayload,
+) {
+  return this.salesService.close(id, dto, user);
+}
 
   @Patch(":id/observation")
   @HttpCode(HttpStatus.NO_CONTENT)
@@ -196,4 +199,17 @@ export class SalesController {
   ) {
     return this.salesService.assignCollector(id, dto.collectorId, user);
   }
+
+  @Patch(":id/schedule-delivery")
+@Roles(StaffRole.ADMIN, StaffRole.MANAGER, StaffRole.SUPER_ADMIN)
+@HttpCode(HttpStatus.NO_CONTENT)
+@ApiOperation({ summary: "Coordinar la fecha de entrega de la venta" })
+scheduleDelivery(
+  @Param("id", ParseUUIDPipe) id: string,
+  @Body() dto: ScheduleDeliveryDto,
+  @CurrentUser() user: JwtPayload,
+) {
+  return this.salesService.scheduleDelivery(id, dto, user);
+}
+
 }

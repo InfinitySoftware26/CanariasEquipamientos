@@ -4,32 +4,34 @@
 
 Documentar las reglas de negocio relacionadas al proceso comercial de ventas.
 
-Este documento define comportamientos, restricciones y validaciones principales del módulo Sales.
+Este documento define los comportamientos, restricciones y validaciones principales del módulo Sales.
 
 ---
 
 # Descripción
 
-Una venta representa una solicitud comercial realizada por un vendedor para un cliente.
+Una venta representa una solicitud comercial realizada por un vendedor o un administrador para un cliente.
 
 La operación contempla:
 
 - selección de producto
 - validación administrativa
 - visita ambiental
-- entrega
+- coordinación de entrega
+- generación automática del plan de cuotas
+- entrega del producto y cobro inicial
 - cierre administrativo
-- generación de cuotas
 
 ---
 
 # Actores Involucrados
 
 | Rol | Responsabilidad |
-| SELLER | Registra la solicitud de venta |
-| ADMIN | Valida información y cierra la operación |
-| COLLECTOR | Ejecuta visitas y entregas |
-| MANAGER | Supervisión |
+|------|-----------------|
+| SELLER | Registra solicitudes de venta. |
+| ADMIN | Registra ventas administrativas, valida información, aprueba visitas ambientales, coordina entregas y realiza el cierre administrativo. |
+| COLLECTOR | Ejecuta visitas ambientales, realiza la entrega del producto, recibe la documentación requerida y registra el cobro de la primera cuota. |
+| MANAGER | Supervisa la operación comercial y administrativa. |
 
 ---
 
@@ -59,9 +61,17 @@ La venta debe tener una zona asignada para su gestión operativa.
 
 ---
 
+## BR-SALES-005
+
+La venta podrá ser registrada por un SELLER o por un ADMIN.
+
+Las ventas creadas por un ADMIN seguirán el mismo flujo operativo que una venta registrada por un SELLER.
+
+---
+
 # Validación Administrativa
 
-## BR-SALES-005
+## BR-SALES-006
 
 Toda venta nueva inicia en estado:
 
@@ -69,113 +79,110 @@ PENDING_ADMIN_VALIDATION
 
 ---
 
-## BR-SALES-006
+## BR-SALES-007
 
-La administración debe validar la información enviada por el vendedor antes de continuar el proceso.
+La administración deberá validar la información enviada y contactarse con el cliente para confirmar los datos personales, explicar las políticas de financiación y verificar que la operación pueda continuar.
 
 ---
 
-## BR-SALES-007
+## BR-SALES-008
 
-Una venta rechazada administrativamente no puede continuar el flujo operativo.
+Una venta rechazada administrativamente no podrá continuar el flujo operativo.
 
 ---
 
 # Visita Ambiental
 
-## BR-SALES-008
+## BR-SALES-009
 
-Una venta aprobada administrativamente requiere una evaluación ambiental.
+Toda venta aprobada administrativamente requiere una evaluación ambiental.
 
 ---
 
-## BR-SALES-009
+## BR-SALES-010
 
-El resultado de la visita ambiental determina si la operación continúa o finaliza.
+El resultado de la visita ambiental determinará si la operación continúa o finaliza.
 
 ---
 
 # Entrega
 
-## BR-SALES-010
-
-Una venta aprobada ambientalmente puede pasar a planificación de entrega.
-
----
-
 ## BR-SALES-011
 
-La entrega debe ser registrada por el cobrador asignado.
+Una venta aprobada ambientalmente podrá pasar a la etapa de coordinación de entrega.
 
 ---
-
-# Cierre
 
 ## BR-SALES-012
 
-La venta puede cerrarse únicamente cuando:
-
-- el producto fue entregado
-- el contrato fue firmado
+Al coordinar la entrega, el sistema deberá generar automáticamente el plan completo de cuotas correspondiente a la venta.
 
 ---
 
 ## BR-SALES-013
 
-La documentación pendiente (DNI o servicio) puede completarse posteriormente.
+Las cuotas generadas deberán encontrarse disponibles para su consulta y cobro antes de la entrega del producto.
 
 ---
-
-# Cuotas
 
 ## BR-SALES-014
 
-La generación de cuotas ocurre cuando la venta es cerrada.
+La entrega deberá ser registrada por el cobrador asignado.
+
+Durante la entrega deberá:
+
+- entregar el producto;
+- obtener la firma del contrato;
+- recibir la documentación requerida;
+- cobrar la primera cuota;
+- registrar el resultado de la entrega.
 
 ---
 
+# Cierre
+
 ## BR-SALES-015
 
-Las cuotas generadas quedan asociadas a la venta original.
+La documentación pendiente (DNI o comprobantes de servicio) podrá completarse posteriormente cuando la operación así lo permita.
 
 ---
 
 ## BR-SALES-016
 
-La creación de una venta puede generar el alta inicial de un nuevo cliente.
+La venta únicamente podrá pasar al estado CLOSED cuando:
 
-El cliente creado queda asociado a la venta.
+- el producto haya sido entregado;
+- el contrato haya sido firmado;
+- el primer pago haya sido registrado;
+- la administración confirme la recepción de la documentación y el cierre de la operación.
 
 ---
 
 ## BR-SALES-017
 
-La primera cuota deberá abonarse durante la entrega del producto.
-
-El cobro inicial forma parte del proceso de entrega y deberá registrarse antes del cierre administrativo.
+El cierre definitivo de una venta será responsabilidad exclusiva del área Administrativa.
 
 ---
 
 ## BR-SALES-018
 
-La venta únicamente podrá pasar al estado CLOSED cuando:
-
-- producto entregado;
-- documentación firmada;
-- primera cuota registrada;
-- administración confirme la operación.
+La comisión del vendedor será acreditada únicamente cuando la venta alcance el estado CLOSED.
 
 ---
 
+# Cuotas
+
 ## BR-SALES-019
 
-El cierre definitivo de una venta será responsabilidad exclusiva del área Administrativa.
+Las cuotas generadas quedarán asociadas a la venta que les dio origen.
 
 ---
 
 ## BR-SALES-020
 
-La comisión del vendedor será acreditada únicamente cuando la venta alcance el estado CLOSED.
+La creación de una venta podrá generar el alta inicial de un nuevo cliente.
+
+El cliente creado quedará asociado a la venta.
 
 ---
 
@@ -185,10 +192,10 @@ Toda venta deberá permitir configurar la modalidad de pago.
 
 Modalidades permitidas:
 
-- diaria
-- semanal
-- quincenal
-- mensual
+- diaria;
+- semanal;
+- quincenal;
+- mensual.
 
 ---
 
@@ -196,27 +203,31 @@ Modalidades permitidas:
 
 El detalle de la venta deberá mostrar:
 
-- nombre del cliente
-- dni del cliente
-- telefono del cliente
-- dirección del cliente;
+- nombre del cliente;
+- DNI;
+- teléfono;
+- dirección;
 - referencia telefónica.
 
 ---
 
 # Auditoría
 
-El sistema debe registrar:
+El sistema deberá registrar:
 
-- vendedor creador
-- administrador validador
-- cobrador interviniente
-- fechas
-- cambios de estado
-- observaciones
+- vendedor creador;
+- administrador interviniente;
+- cobrador asignado;
+- fecha de validación administrativa;
+- fecha de aprobación ambiental;
+- fecha de coordinación de entrega;
+- fecha de generación del plan de cuotas;
+- fecha de entrega;
+- cambios de estado;
+- observaciones.
 
 ---
 
 # Estado
 
-Documento vigente Sprint 02.
+Documento vigente Sprint 03.

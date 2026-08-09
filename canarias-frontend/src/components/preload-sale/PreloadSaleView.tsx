@@ -6,6 +6,8 @@ import { StepClientData } from "./StepClientData";
 import { StepSale } from "./StepSale";
 import { createPreloadClient } from "@/services/client.service";
 import { Client } from "@/types/cretateClient.type";
+import { InfoDialog } from "@/components/ui/info-dialog";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 export function PreloadSaleView({
   step,
@@ -19,12 +21,21 @@ export function PreloadSaleView({
   handleSubmit,
   goToSaleStep,
   searched,
+  zones,
+  infoOpen,
+  infoMessage,
+  closeInfo,
+
+  clientConfirmOpen,
+  setClientConfirmOpen,
+  clientConfirmType,
+  confirmClientSelection,
 }: PreloadSaleViewProps) {
   const handleGoToSaleStep = async () => {
     try {
       let clientId = form.clientId;
 
-      // 🧠 SI NO EXISTE CLIENTE → LO CREAMOS
+      // Si no existe cliente, lo creamos antes de pasar a la venta
       if (!clientId) {
         const created: Client = await createPreloadClient({
           name: form.name,
@@ -32,6 +43,13 @@ export function PreloadSaleView({
           documentNumber: form.documentNumber,
           phone: form.phone,
           address: form.address,
+          zoneId: form.zoneId,
+          nameReference1: form.nameReference1,
+          telReference1: form.telReference1,
+          addressReference1: form.addressReference1,
+          nameReference2: form.nameReference2,
+          telReference2: form.telReference2,
+          addressReference2: form.addressReference2,
         });
 
         clientId = created.clientId;
@@ -49,7 +67,7 @@ export function PreloadSaleView({
   };
 
   return (
-    <div className="pb-24 space-y-6">
+    <div className="space-y-6">
       {step === 1 && (
         <StepClient
           form={form}
@@ -62,7 +80,7 @@ export function PreloadSaleView({
 
       {step === 2 && (
         <>
-          <StepClientData form={form} setForm={setForm} />
+          <StepClientData form={form} setForm={setForm} zones={zones} />
 
           <button
             onClick={handleGoToSaleStep}
@@ -72,6 +90,36 @@ export function PreloadSaleView({
           </button>
         </>
       )}
+
+      {/* Confirmación luego de buscar el cliente */}
+      <ConfirmDialog
+        open={clientConfirmOpen}
+        onOpenChange={setClientConfirmOpen}
+        title={
+          clientConfirmType === "existing"
+            ? "Cliente seleccionado"
+            : "Cliente no registrado"
+        }
+        description={
+          clientConfirmType === "existing"
+            ? `Se utilizará al cliente ${form.name ?? ""} ${
+                form.surname ?? ""
+              } (DNI ${form.documentNumber ?? "-"}) en esta venta.`
+            : "El cliente no se encuentra registrado. Si continúa, se procederá a solicitar sus datos para crear el cliente."
+        }
+        confirmText="Continuar"
+        cancelText="Cancelar"
+        onConfirm={confirmClientSelection}
+      />
+
+      {/* Diálogo informativo existente */}
+      <InfoDialog
+        open={infoOpen}
+        onOpenChange={closeInfo}
+        title={infoMessage?.title ?? "Información"}
+        description={infoMessage?.description ?? ""}
+        actionText={infoMessage?.actionText ?? "Aceptar"}
+      />
 
       {step === 3 && (
         <StepSale

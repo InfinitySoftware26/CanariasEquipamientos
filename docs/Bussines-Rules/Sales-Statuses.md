@@ -38,13 +38,15 @@ Representa el resultado de una validación.
 
 # Installment Status
 
-Representa el estado de una cuota.
+Representa el estado operativo de una cuota.
 
 | Estado | Descripción |
 |---|---|
 | PENDING | Cuota pendiente de cobro |
-| PAID | Cuota cobrada |
-| OVERDUE | Cuota vencida |
+| PARTIAL | Cuota parcialmente abonada |
+| PAID | Cuota abonada en su totalidad |
+| OVERDUE | Cuota vencida con saldo pendiente |
+| CANCELLED | Cuota cancelada por un proceso administrativo autorizado |
 
 ---
 

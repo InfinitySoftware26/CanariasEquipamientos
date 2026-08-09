@@ -65,6 +65,14 @@ export default function SaleDetailPage() {
             >
               Venta #{sale.saleId}
             </p>
+            <p
+              className="
+              mt-2
+              text-white/50
+              "
+            >
+              Realizada por {sale.staff?.name} {sale.staff?.surname}
+            </p>
           </div>
 
           <SaleStatusBadge {...badge} />
@@ -99,7 +107,14 @@ export default function SaleDetailPage() {
 
           <p className="text-white/50">DNI: {sale.client?.documentNumber}</p>
 
+          <p className="text-white/50">Domicilio: {sale.client?.address}</p>
+
           <p className="text-white/50">Tel: {sale.client?.phone}</p>
+
+          {/* <p className="text-white/50">1er Referencia: {sale.client?.reference1}</p> */}
+
+          {/* <p className="text-white/50">2da Referencia: {sale.client?.reference2}</p> */}
+
         </div>
       </section>
 
@@ -121,7 +136,7 @@ export default function SaleDetailPage() {
           text-white
           "
         >
-          Productos
+          Producto
         </h2>
 
         <div className="mt-4 space-y-4">

@@ -99,6 +99,9 @@ export interface Sale {
 
   updatedAt?: string;
 
+  deliveryDate?: string;
+  
+
   // ESTADO
   status:
     | "pending_admin_validation"

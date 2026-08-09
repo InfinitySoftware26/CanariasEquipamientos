@@ -44,6 +44,24 @@ export class Client {
   @Column({ name: "visit_date", type: "timestamptz", nullable: true })
   visitDate?: Date;
 
+  @Column({ name: "name_reference1", type: "text", default: "" })
+  nameReference1!: string;
+
+  @Column({ name: "tel_reference1", type: "text", default: "" })
+  telReference1!: string;
+
+  @Column({ name: "address_reference1", type: "text", default: "" })
+  addressReference1!: string;
+
+  @Column({ name: "name_reference2", type: "text", default: "" })
+  nameReference2!: string;
+
+  @Column({ name: "tel_reference2", type: "text", default: "" })
+  telReference2!: string;
+
+  @Column({ name: "address_reference2", type: "text", default: "" })
+  addressReference2!: string;
+
   @Column({ type: "text", nullable: true })
   observations?: string;
 

@@ -5,11 +5,11 @@
 Definir las transiciones permitidas dentro del ciclo de vida de una venta.
 
 Este documento establece:
-- estados posibles;
-- transiciones válidas;
-- responsables por etapa;
-- restricciones operativas;
-- validaciones obligatorias.
+* estados posibles;
+* transiciones válidas;
+* responsables por etapa;
+* restricciones operativas;
+* validaciones obligatorias.
 
 Este documento describe el comportamiento esperado del flujo comercial independientemente del nivel actual de implementación.
 
@@ -56,9 +56,9 @@ CLOSED
 
 Los siguientes estados finalizan el flujo y no permiten continuar la operación:
 
-- REJECTED_ADMIN
-- ENVIRONMENTAL_REJECTED
-- CLOSED
+* REJECTED_ADMIN
+* ENVIRONMENTAL_REJECTED
+* CLOSED
 
 ---
 
@@ -68,17 +68,18 @@ Los siguientes estados finalizan el flujo y no permiten continuar la operación:
 
 Puede:
 
-- crear preventa / venta inicial;
-- ingresar información inicial del cliente;
-- seleccionar productos disponibles;
-- iniciar operación comercial.
+* crear preventa / venta inicial;
+* ingresar información inicial del cliente;
+* seleccionar productos disponibles;
+* iniciar operación comercial.
 
 No puede:
 
-- aprobar ventas;
-- rechazar ventas;
-- coordinar entrega;
-- cerrar operaciones.
+* aprobar ventas;
+* rechazar ventas;
+* coordinar entrega;
+* generar cuotas;
+* cerrar venta;
 
 ---
 
@@ -86,11 +87,12 @@ No puede:
 
 Puede:
 
-- validar condiciones comerciales;
-- aprobar solicitudes;
-- rechazar operaciones;
-- coordinar entrega;
-- confirmar cierre administrativo.
+* validar condiciones comerciales;
+* aprobar solicitudes;
+* rechazar operaciones;
+* coordinar entrega;
+* confirmar cierre administrativo.
+* generar automáticamente el plan de cuotas.
 
 No puede:
 
@@ -102,15 +104,16 @@ No puede:
 
 Puede:
 
-- realizar visita ambiental;
-- registrar resultado de visita;
-- confirmar entrega;
-- solicitar documentación.
+* realizar visita ambiental;
+* registrar resultado de visita;
+* confirmar entrega;
+* solicitar documentación.
+* registrar primer pago
 
 No puede:
 
-- aprobar venta;
-- cerrar operación.
+* aprobar venta;
+* cerrar operación.
 
 ---
 
@@ -118,17 +121,18 @@ No puede:
 
 ## Restricciones de estado
 
-- Una venta cerrada no puede volver a estados anteriores.
-- Una venta rechazada no puede continuar el flujo.
-- Toda transición debe respetar el orden definido.
+* Una venta cerrada no puede volver a estados anteriores.
+* Una venta rechazada no puede continuar el flujo.
+* Toda transición debe respetar el orden definido.
+* La transición hacia PENDING_DELIVERY deberá generar automáticamente el plan de cuotas correspondiente a la venta.
 
 ---
 
 ## Restricciones técnicas
 
-- Backend debe validar siempre la transición solicitada.
-- Frontend solo debe mostrar acciones permitidas según rol y estado.
-- El usuario solo podrá visualizar acciones correspondientes a su contexto operativo.
+* Backend debe validar siempre la transición solicitada.
+* Frontend solo debe mostrar acciones permitidas según rol y estado.
+* El usuario solo podrá visualizar acciones correspondientes a su contexto operativo.
 
 ---
 
