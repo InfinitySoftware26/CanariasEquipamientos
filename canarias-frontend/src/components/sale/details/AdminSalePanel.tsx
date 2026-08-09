@@ -313,13 +313,14 @@ export function AdminSalePanel({ sale, onRefresh }: Props) {
             <h3 className="font-semibold text-blue-300">Coordinar entrega</h3>
 
             <p className="text-sm text-white/70">
-              Seleccione la fecha y hora acordada con el cliente para realizar
-              la entrega.
+              Seleccione la fecha acordada con el cliente para realizar la
+              entrega.
             </p>
 
             <input
               type="date"
               value={deliveryDate}
+              min={new Date().toISOString().split("T")[0]}
               onChange={(e) => setDeliveryDate(e.target.value)}
               className="w-full rounded-xl bg-[#0B1220] p-3 text-white"
             />
@@ -341,7 +342,7 @@ export function AdminSalePanel({ sale, onRefresh }: Props) {
             </h3>
 
             <p className="text-sm text-white/70">
-              El cobrador confirmó la entrega. Si fue necesario, podés modificar
+              El cobrador confirmó la entrega. Si es necesario, podés modificar
               la fecha de entrega antes de cerrar definitivamente la venta.
             </p>
 

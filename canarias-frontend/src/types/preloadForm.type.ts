@@ -1,4 +1,4 @@
-export type PaymentFrequency = "weekly" | "monthly";
+export type PaymentFrequency = "weekly" | "monthly" | "biweekly" | "daily";
 
 export interface PreloadFormData {
   // 🧑 Cliente

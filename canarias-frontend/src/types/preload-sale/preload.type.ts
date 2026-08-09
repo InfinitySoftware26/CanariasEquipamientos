@@ -47,6 +47,10 @@ export type PreloadSaleViewProps = {
   searched: boolean;
   error: string | null;
   loading: boolean;
+  clientConfirmOpen: boolean;
+  setClientConfirmOpen: (open: boolean) => void;
+  clientConfirmType: "existing" | "new" | null;
+  confirmClientSelection: () => void;
 
   zones: Zone[];
   infoOpen: boolean;

@@ -32,6 +32,7 @@ export function StepSale({
     { label: "3 cuotas", value: 3 },
     { label: "6 cuotas", value: 6 },
     { label: "9 cuotas", value: 9 },
+    { label: "12 cuotas", value: 12 },
   ];
 
   const selectedInstallment = installmentOptions.find(
@@ -40,9 +41,13 @@ export function StepSale({
 
   // ---------------- FRECUENCIA ----------------
 
-  const frequencyOptions: Option<"weekly" | "monthly">[] = [
+  const frequencyOptions: Option<
+    "weekly" | "monthly" | "biweekly" | "daily"
+  >[] = [
     { label: "Mensual", value: "monthly" },
     { label: "Semanal", value: "weekly" },
+    { label: "Quincenal", value: "biweekly" },
+    { label: "Diaria", value: "daily" },
   ];
 
   const selectedFrequency = frequencyOptions.find(
