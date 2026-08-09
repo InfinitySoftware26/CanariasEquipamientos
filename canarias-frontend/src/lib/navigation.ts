@@ -23,86 +23,29 @@ export const navigationByRole = {
   ],
 
   [StaffRole.ADMIN]: [
-    {
-      label: "Panel Inicial",
-      href: "/dashboard/admin",
-    },
-    {
-      label: "Ventas",
-      href: "/sales",
-    },
-    {
-      label: "Nueva Venta",
-      href: "/sales/preload",
-    },
-    {
-      label: "Clientes",
-      href: "/client",
-    },
-
-    {
-      label: "Hojas de Ruta",
-      href: "/route-sheets",
-    },
-    {
-      label: "Zonas",
-      href: "/zones",
-    },
-
-    {
-      label: "Empleados",
-      href: "/staff",
-    },
+    { label: "Panel Inicial", href: "/dashboard/admin" },
+    { label: "Ventas", href: "/sales" },
+    { label: "Clientes", href: "/client" },
+    { label: "Hojas de Ruta", href: "/route-sheets" },
+    { label: "Zonas", href: "/zones" },
+    { label: "Empleados", href: "/staff" },
   ],
 
   [StaffRole.SELLER]: [
-    {
-      label: "Panel Inicial",
-      href: "/dashboard/seller",
-    },
-    {
-      label: "Mis Comisiones",
-      href: "/dashboard/seller/commissions",
-    },
-    {
-      label: "Nueva Venta",
-      href: "/sales/preload",
-    },
-    {
-      label: "Mis Ventas",
-      href: "/sales/my",
-    },
-    {
-      label: "Clientes",
-      href: "/client",
-    },
+    {label: "Panel Inicial",href: "/dashboard/seller"},
+    {label: "Mis Comisiones",href: "/dashboard/seller/commissions"},
+    {label: "Nueva Venta",href: "/sales/preload"},
+    {label: "Mis Ventas",href: "/sales/my"},
+    {label: "Clientes",href: "/client"},
   ],
 
   [StaffRole.COLLECTOR]: [
-    {
-      label: "Panel Inicial",
-      href: "/dashboard/collector",
-    },
+    {label: "Panel Inicial",href: "/dashboard/collector"},
     { label: "Mis Ventas", href: "/sales/collector" },
-    {
-      label: "Mis Hojas de Ruta",
-      href: "/route-sheets/collector/routes",
-    },
-    {
-      label: "Zonas",
-      href: "/zones",
-    },
-    {
-      label: "Mis Cobros",
-      href: "/collections",
-    },
-    {
-      label: "Liquidaciones",
-      href: "/settlements",
-    },
-    {
-      label: "Clientes",
-      href: "/client",
-    },
+    { label: "Mis Hojas de Ruta",href: "/route-sheets/collector/routes"},
+    { label: "Zonas", href: "/zones"},
+    { label: "Mis Cobros", href: "/collections"},
+    { label: "Liquidaciones", href: "/settlements"},
+    { label: "Clientes", href: "/client" },
   ],
 };
