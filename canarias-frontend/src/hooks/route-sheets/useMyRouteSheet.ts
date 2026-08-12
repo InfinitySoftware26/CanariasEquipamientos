@@ -8,7 +8,6 @@ import { RouteSheet } from "@/types/rotue-sheets/routeSheets.types";
 
 export function useMyRouteSheets() {
   const [routeSheets, setRouteSheets] = useState<RouteSheet[]>([]);
-
   const [loading, setLoading] = useState(true);
 
   const reload = useCallback(async () => {
@@ -17,7 +16,11 @@ export function useMyRouteSheets() {
 
       const data = await getMyRouteSheets();
 
+      console.log("🟢 MIS HOJAS DE RUTA:", data);
+
       setRouteSheets(data);
+    } catch (error) {
+      console.error("🔴 ERROR OBTENIENDO MIS HOJAS:", error);
     } finally {
       setLoading(false);
     }

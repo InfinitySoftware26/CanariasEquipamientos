@@ -51,7 +51,7 @@ hover:bg-white/10
           <div>
             <p className="text-xs text-white/40">Cobrador</p>
 
-            <p>{routeSheet.staffId}</p>
+            <p>{routeSheet.staffName}</p>
           </div>
         </div>
 

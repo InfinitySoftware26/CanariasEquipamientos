@@ -3,8 +3,6 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { RouteSheetStatus } from "@/types/rotue-sheets/routeSheets.types";
-
 import {
   RouteSheetFilterValues,
   RouteSheetFilters,
@@ -47,8 +45,27 @@ export default function RouteSheetsPage() {
     });
   }, [routeSheets, filters]);
 
+  const pendingCount = useMemo(
+    () =>
+      filtered.filter((routeSheet) => routeSheet.status === "pending").length,
+    [filtered],
+  );
+
+  const inProgressCount = useMemo(
+    () =>
+      filtered.filter((routeSheet) => routeSheet.status === "in_progress")
+        .length,
+    [filtered],
+  );
+
+  const completedCount = useMemo(
+    () =>
+      filtered.filter((routeSheet) => routeSheet.status === "completed").length,
+    [filtered],
+  );
+
   if (loading) {
-    return <div className="text-white">Cargando hojas de ruta...</div>;
+    return <div className="p-6 text-white">Cargando hojas de ruta...</div>;
   }
 
   return (
@@ -66,16 +83,9 @@ export default function RouteSheetsPage() {
 
       <RouteSheetStats
         total={filtered.length}
-        pending={
-          filtered.filter((r) => r.status === RouteSheetStatus.PENDING).length
-        }
-        progress={
-          filtered.filter((r) => r.status === RouteSheetStatus.IN_PROGRESS)
-            .length
-        }
-        completed={
-          filtered.filter((r) => r.status === RouteSheetStatus.COMPLETED).length
-        }
+        pending={pendingCount}
+        progress={inProgressCount}
+        completed={completedCount}
       />
 
       <RouteSheetFilters filters={filters} onChange={setFilters} />

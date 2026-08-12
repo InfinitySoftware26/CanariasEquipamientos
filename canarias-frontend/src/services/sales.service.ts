@@ -1,6 +1,7 @@
 import { useAuthStore } from "@/store/auth.store";
 import { CreateSalePayload } from "@/types/sales/createSale.type";
 import { apiFetch } from "./apiFetch.service";
+import { Sale } from "@/types/sales/sale.type";
 
 export async function createSale(data: CreateSalePayload) {
   const token = useAuthStore.getState().accessToken;
@@ -76,7 +77,7 @@ export async function getSaleById(id: string) {
   return json.data ?? json;
 }
 
-export async function getSales() {
+export async function getSales(): Promise<Sale[]> {
   const token = useAuthStore.getState().accessToken;
 
   if (!token) {
@@ -175,10 +176,7 @@ export async function deliverSale(id: string) {
   }
 }
 
-export async function closeSale(
-  saleId: string,
-  deliveryDate?: string,
-) {
+export async function closeSale(saleId: string, deliveryDate?: string) {
   const token = useAuthStore.getState().accessToken;
 
   const res = await apiFetch(`/sales/${saleId}/close`, {
