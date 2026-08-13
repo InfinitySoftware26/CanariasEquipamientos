@@ -62,7 +62,7 @@ export function RescheduleFailedVisitModal({
     try {
       setError(null);
 
-      await onSubmit(visit.failedVisitId, date);
+      await onSubmit(visit.id, date);
     } catch (err) {
       console.error("Error reprogramando visita:", err);
 
@@ -76,16 +76,15 @@ export function RescheduleFailedVisitModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-      {" "}
       <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0E1726] p-6 shadow-2xl">
-        {" "}
         <div>
-          {" "}
-          <h2 className="text-xl font-bold text-white">Reprogramar visita </h2>
+          <h2 className="text-xl font-bold text-white">Reprogramar visita</h2>
+
           <p className="mt-2 text-sm text-white/50">
-            Intento #{visit.attemptNumber}
+            Cliente: {visit.clientId}
           </p>
         </div>
+
         <form onSubmit={handleSubmit} className="mt-6 space-y-5">
           {error && (
             <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
