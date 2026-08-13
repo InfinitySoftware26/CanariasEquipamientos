@@ -75,33 +75,15 @@ export const navigationByRole = {
   ],
 
   [StaffRole.SELLER]: [
-    {
-      label: "Panel Inicial",
-      href: "/dashboard/seller",
-    },
-    {
-      label: "Mis Comisiones",
-      href: "/dashboard/seller/commissions",
-    },
-    {
-      label: "Nueva Venta",
-      href: "/sales/preload",
-    },
-    {
-      label: "Mis Ventas",
-      href: "/sales/my",
-    },
-    {
-      label: "Clientes",
-      href: "/client",
-    },
+    {label: "Panel Inicial",href: "/dashboard/seller"},
+    {label: "Mis Comisiones",href: "/dashboard/seller/commissions"},
+    {label: "Nueva Venta",href: "/sales/preload"},
+    {label: "Mis Ventas",href: "/sales/my"},
+    {label: "Clientes",href: "/client"},
   ],
 
   [StaffRole.COLLECTOR]: [
-    {
-      label: "Panel Inicial",
-      href: "/dashboard/collector",
-    },
+    {label: "Panel Inicial",href: "/dashboard/collector"},
     { label: "Mis Ventas", href: "/sales/collector" },
     {
       label: "Mis Hojas de Ruta",
