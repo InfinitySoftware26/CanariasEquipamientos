@@ -6,18 +6,11 @@ export type FailedVisitReason =
 
 export interface FailedVisit {
   failedVisitId: string;
-
   clientId: string;
-
   routeSheetItemId: string;
-
   reason: FailedVisitReason;
-
   notes?: string | null;
-
   attemptNumber?: number;
-
   registeredAt?: string;
-
   rescheduledDate?: string | null;
 }
