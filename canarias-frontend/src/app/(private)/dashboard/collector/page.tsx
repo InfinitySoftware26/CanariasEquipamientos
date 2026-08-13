@@ -53,7 +53,7 @@ export default function CollectorDashboard() {
 
           <div className="grid grid-cols-2 gap-3">
             <button
-              onClick={() => router.push("/collector/routes")}
+              onClick={() => router.push("/route-sheets/collector")}
               className="rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-left transition hover:bg-white/10"
             >
               <Route className="mb-2 text-[#F5A300]" />

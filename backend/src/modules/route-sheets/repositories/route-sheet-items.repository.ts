@@ -1,18 +1,22 @@
-import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { RouteSheetItem } from '../entities/route-sheet-item.entity';
-import { IRouteSheetItemsRepository } from '../interfaces/route-sheet-items-repository.interface';
-import { RouteSheetItemResult } from '../../../common/enums/route-sheet-item-result.enum';
+import { Injectable } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { RouteSheetItem } from "../entities/route-sheet-item.entity";
+import { IRouteSheetItemsRepository } from "../interfaces/route-sheet-items-repository.interface";
+import { RouteSheetItemResult } from "../../../common/enums/route-sheet-item-result.enum";
 
 @Injectable()
 export class RouteSheetItemsRepository implements IRouteSheetItemsRepository {
   constructor(
-    @InjectRepository(RouteSheetItem) private readonly repo: Repository<RouteSheetItem>,
+    @InjectRepository(RouteSheetItem)
+    private readonly repo: Repository<RouteSheetItem>,
   ) {}
 
   findByRouteSheet(routeSheetId: string): Promise<RouteSheetItem[]> {
-    return this.repo.find({ where: { routeSheetId }, order: { createdAt: 'ASC' } });
+    return this.repo.find({
+      where: { routeSheetId },
+      order: { createdAt: "ASC" },
+    });
   }
 
   findById(id: string): Promise<RouteSheetItem | null> {
@@ -21,7 +25,7 @@ export class RouteSheetItemsRepository implements IRouteSheetItemsRepository {
 
   async createMany(data: Partial<RouteSheetItem>[]): Promise<RouteSheetItem[]> {
     if (!data.length) return [];
-    return this.repo.save(data.map(d => this.repo.create(d)));
+    return this.repo.save(data.map((d) => this.repo.create(d)));
   }
 
   async updateResult(
@@ -31,7 +35,8 @@ export class RouteSheetItemsRepository implements IRouteSheetItemsRepository {
     notes?: string,
   ): Promise<void> {
     const updates: Partial<RouteSheetItem> = { result, visitedAt: new Date() };
-    if (collectedAmount !== undefined) updates.collectedAmount = collectedAmount;
+    if (collectedAmount !== undefined)
+      updates.collectedAmount = collectedAmount;
     if (notes !== undefined) updates.notes = notes;
     await this.repo.update({ itemId: id }, updates);
   }

@@ -1,45 +1,58 @@
 import {
-  Entity, PrimaryGeneratedColumn, Column,
-  CreateDateColumn, UpdateDateColumn,
-} from 'typeorm';
-import { RouteSheetItemType } from '../../../common/enums/route-sheet-item-type.enum';
-import { RouteSheetItemResult } from '../../../common/enums/route-sheet-item-result.enum';
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from "typeorm";
+import { RouteSheetItemType } from "../../../common/enums/route-sheet-item-type.enum";
+import { RouteSheetItemResult } from "../../../common/enums/route-sheet-item-result.enum";
 
-@Entity('ROUTE_SHEET_ITEMS')
+@Entity("ROUTE_SHEET_ITEMS")
 export class RouteSheetItem {
-  @PrimaryGeneratedColumn('uuid', { name: 'item_id' })
+  @PrimaryGeneratedColumn("uuid", { name: "item_id" })
   itemId!: string;
 
-  @Column({ name: 'route_sheet_id', type: 'uuid' })
+  @Column({ name: "route_sheet_id", type: "uuid" })
   routeSheetId!: string;
 
-  @Column({ name: 'client_id', type: 'uuid' })
+  @Column({ name: "client_id", type: "uuid" })
   clientId!: string;
 
-  @Column({ name: 'installment_id', type: 'uuid', nullable: true })
+  @Column({ name: "installment_id", type: "uuid", nullable: true })
   installmentId!: string;
 
-  @Column({ name: 'sale_id', type: 'uuid', nullable: true })
+  @Column({ name: "sale_id", type: "uuid", nullable: true })
   saleId!: string;
 
-  @Column({ name: 'item_type', type: 'enum', enum: RouteSheetItemType })
+  @Column({ name: "item_type", type: "enum", enum: RouteSheetItemType })
   itemType!: RouteSheetItemType;
 
-  @Column({ type: 'enum', enum: RouteSheetItemResult, default: RouteSheetItemResult.PENDING })
+  @Column({
+    type: "enum",
+    enum: RouteSheetItemResult,
+    default: RouteSheetItemResult.PENDING,
+  })
   result!: RouteSheetItemResult;
 
-  @Column({ name: 'collected_amount', type: 'decimal', precision: 12, scale: 2, nullable: true })
+  @Column({
+    name: "collected_amount",
+    type: "decimal",
+    precision: 12,
+    scale: 2,
+    nullable: true,
+  })
   collectedAmount!: number;
 
   @Column({ nullable: true })
   notes!: string;
 
-  @Column({ name: 'visited_at', type: 'timestamptz', nullable: true })
+  @Column({ name: "visited_at", type: "timestamptz", nullable: true })
   visitedAt!: Date;
 
-  @CreateDateColumn({ name: 'created_at' })
+  @CreateDateColumn({ name: "created_at" })
   createdAt!: Date;
 
-  @UpdateDateColumn({ name: 'updated_at' })
+  @UpdateDateColumn({ name: "updated_at" })
   updatedAt!: Date;
 }

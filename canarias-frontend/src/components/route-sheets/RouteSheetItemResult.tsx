@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import {
   RouteSheetItem,
@@ -30,6 +30,33 @@ interface Props {
   onSubmit: (data: RouteSheetItemResultData) => void | Promise<void>;
 }
 
+function parseMoney(value: string): number | undefined {
+  if (!value.trim()) {
+    return undefined;
+  }
+
+  // El input usa punto decimal.
+  const normalized = value.replace(",", ".").trim();
+  const parsed = Number(normalized);
+
+  if (!Number.isFinite(parsed)) {
+    return undefined;
+  }
+
+  return parsed;
+}
+
+function formatMoney(value: number | null | undefined): string {
+  if (value == null || !Number.isFinite(Number(value))) {
+    return "$0,00";
+  }
+
+  return Number(value).toLocaleString("es-AR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
 export function RouteSheetItemResultModal({
   item,
   loading = false,
@@ -51,23 +78,40 @@ export function RouteSheetItemResultModal({
     }
 
     setResult("completed");
-    setAmount("");
+
+    // Si tenemos el importe de la cuota, lo mostramos como sugerencia.
+    if (item.itemType === "installment" && item.installmentAmount != null) {
+      setAmount(String(Number(item.installmentAmount)));
+    } else {
+      setAmount("");
+    }
+
     setNotes("");
     setReason("client_absent");
     setError(null);
+  }, [item]);
+
+  const isInstallment = item?.itemType === "installment";
+  const isFailed = result === "failed";
+
+  const installmentAmount = useMemo(() => {
+    if (!item || item.installmentAmount == null) {
+      return null;
+    }
+
+    const value = Number(item.installmentAmount);
+
+    return Number.isFinite(value) ? value : null;
   }, [item]);
 
   if (!item) {
     return null;
   }
 
-  const isInstallment = item.itemType === "installment";
-  const isFailed = result === "failed";
-
   async function handleSubmit() {
     setError(null);
 
-    const numericAmount = amount ? Number(amount) : undefined;
+    const numericAmount = parseMoney(amount);
 
     if (
       isInstallment &&
@@ -75,6 +119,21 @@ export function RouteSheetItemResultModal({
       (!numericAmount || numericAmount <= 0)
     ) {
       setError("Ingresá un monto cobrado mayor a cero.");
+      return;
+    }
+
+    if (
+      isInstallment &&
+      result === "completed" &&
+      installmentAmount != null &&
+      numericAmount != null &&
+      numericAmount > installmentAmount
+    ) {
+      setError(
+        `El monto cobrado no puede superar el saldo de la cuota ($${formatMoney(
+          installmentAmount,
+        )}).`,
+      );
       return;
     }
 
@@ -105,7 +164,7 @@ export function RouteSheetItemResultModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-      <div className="w-full max-w-lg rounded-2xl border border-white/10 bg-[#101b2d] p-6 shadow-2xl">
+      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-white/10 bg-[#101b2d] p-6 shadow-2xl">
         <div className="mb-6">
           <h2 className="text-xl font-semibold text-white">Registrar visita</h2>
 
@@ -113,6 +172,13 @@ export function RouteSheetItemResultModal({
             <p>
               Cliente: <span className="text-white">{clientName}</span>
             </p>
+
+            {item.clientDocumentNumber && (
+              <p>
+                DNI:{" "}
+                <span className="text-white">{item.clientDocumentNumber}</span>
+              </p>
+            )}
 
             {item.clientAddress && (
               <p>
@@ -167,6 +233,7 @@ export function RouteSheetItemResultModal({
                 type="number"
                 min="0"
                 step="0.01"
+                max={installmentAmount != null ? installmentAmount : undefined}
                 disabled={loading}
                 placeholder="Monto cobrado"
                 value={amount}
@@ -174,10 +241,16 @@ export function RouteSheetItemResultModal({
                 className="w-full rounded-xl bg-black/20 p-3 text-white outline-none ring-1 ring-white/10 placeholder:text-white/30 focus:ring-[#F5A300]"
               />
 
-              {item.installmentAmount != null && (
-                <p className="mt-2 text-xs text-white/40">
-                  Cuota prevista: ${item.installmentAmount}
-                </p>
+              {installmentAmount != null && (
+                <div className="mt-2 rounded-xl bg-cyan-500/5 p-3">
+                  <p className="text-xs text-white/40">
+                    Saldo pendiente de esta cuota
+                  </p>
+
+                  <p className="mt-1 text-lg font-semibold text-cyan-300">
+                    ${formatMoney(installmentAmount)}
+                  </p>
+                </div>
               )}
             </div>
           )}
