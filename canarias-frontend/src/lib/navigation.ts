@@ -5,6 +5,13 @@ export const navigationByRole = {
     { label: "Panel Inicial", href: "/dashboard/super-admin" },
     { label: "Ventas", href: "/sales" },
     { label: "Hojas de Ruta", href: "/route-sheets" },
+    { label: "Cobranzas", href: "/collections" },
+    { label: "Cuotas", href: "/installments" },
+    { label: "Visitas fallidas", href: "/failed-visits" },
+    { label: "Cierres", href: "/closures" },
+    { label: "Liquidaciones", href: "/settlements" },
+    { label: "Financiación", href: "/financing" },
+    { label: "Reportes", href: "/reports" },
     { label: "Zonas", href: "/zones" },
     { label: "Sociedades", href: "/societies" },
     { label: "Empleados", href: "/staff" },
@@ -16,19 +23,55 @@ export const navigationByRole = {
     { label: "Ventas", href: "/sales" },
     { label: "Clientes", href: "/client" },
     { label: "Hojas de Ruta", href: "/route-sheets" },
-    { label: "Zonas", href: "/zones" },
     { label: "Cobranzas", href: "/collections" },
+    { label: "Cuotas", href: "/installments" },
+    { label: "Cierres", href: "/closures" },
+    { label: "Liquidaciones", href: "/settlements" },
+    { label: "Financiación", href: "/financing" },
+    { label: "Reportes", href: "/reports" },
+    { label: "Zonas", href: "/zones" },
     { label: "Balances", href: "/balances" },
     { label: "Empleados", href: "/staff" },
   ],
 
   [StaffRole.ADMIN]: [
-    { label: "Panel Inicial", href: "/dashboard/admin" },
-    { label: "Ventas", href: "/sales" },
-    { label: "Clientes", href: "/client" },
-    { label: "Hojas de Ruta", href: "/route-sheets" },
-    { label: "Zonas", href: "/zones" },
-    { label: "Empleados", href: "/staff" },
+    {
+      label: "Panel Inicial",
+      href: "/dashboard/admin",
+    },
+    {
+      label: "Ventas",
+      href: "/sales",
+    },
+    {
+      label: "Nueva Venta",
+      href: "/sales/preload",
+    },
+    {
+      label: "Clientes",
+      href: "/client",
+    },
+    { label: "Cobros", href: "/payments" },
+    { label: "Cobranzas", href: "/collections" },
+    { label: "Cuotas", href: "/installments" },
+    { label: "Visitas fallidas", href: "/failed-visits" },
+    { label: "Cierres", href: "/closures" },
+    { label: "Liquidaciones", href: "/settlements" },
+    { label: "Financiación", href: "/financing" },
+    { label: "Reportes", href: "/reports" },
+    {
+      label: "Hojas de Ruta",
+      href: "/route-sheets",
+    },
+    {
+      label: "Zonas",
+      href: "/zones",
+    },
+
+    {
+      label: "Empleados",
+      href: "/staff",
+    },
   ],
 
   [StaffRole.SELLER]: [
@@ -42,10 +85,27 @@ export const navigationByRole = {
   [StaffRole.COLLECTOR]: [
     {label: "Panel Inicial",href: "/dashboard/collector"},
     { label: "Mis Ventas", href: "/sales/collector" },
-    { label: "Mis Hojas de Ruta",href: "/route-sheets/collector/routes"},
-    { label: "Zonas", href: "/zones"},
-    { label: "Mis Cobros", href: "/collections"},
-    { label: "Liquidaciones", href: "/settlements"},
-    { label: "Clientes", href: "/client" },
+    {
+      label: "Mis Hojas de Ruta",
+      href: "/route-sheets/collector",
+    },
+    {
+      label: "Zonas",
+      href: "/zones",
+    },
+    {
+      label: "Mis Cobros",
+      href: "/collections",
+    },
+    { label: "Visitas fallidas", href: "/failed-visits" },
+    { label: "Cierres", href: "/closures" },
+    {
+      label: "Liquidaciones",
+      href: "/settlements",
+    },
+    {
+      label: "Clientes",
+      href: "/client",
+    },
   ],
 };

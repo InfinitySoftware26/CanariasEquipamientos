@@ -64,9 +64,9 @@ rounded-3xl
             >
               <td className="p-4 font-medium">{sheet.routeDate}</td>
 
-              <td>{sheet.zoneId}</td>
+              <td>{sheet.zoneName}</td>
 
-              <td>{sheet.staffId}</td>
+              <td>{sheet.staffName}</td>
 
               <td>
                 <RouteSheetStatusBadge status={sheet.status} />

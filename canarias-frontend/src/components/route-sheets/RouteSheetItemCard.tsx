@@ -1,6 +1,16 @@
 "use client";
 
+import {
+  CheckCircle2,
+  CreditCard,
+  MapPin,
+  Package,
+  Phone,
+  XCircle,
+} from "lucide-react";
+
 import { RouteSheetItem } from "@/types/rotue-sheets/routeSheets.types";
+
 import { SaveButton } from "@/components/button/SaveButton";
 
 interface Props {
@@ -9,53 +19,270 @@ interface Props {
 }
 
 export function RouteSheetItemCard({ item, onAction }: Props) {
+  const isInstallment = item.itemType === "installment";
+  const isPending = item.result === "pending";
+  const isCompleted = item.result === "completed";
+  const isFailed = item.result === "failed";
+
+  const collectedAmount =
+    item.collectedAmount !== null && item.collectedAmount !== undefined
+      ? Number(item.collectedAmount)
+      : null;
+
   return (
     <article
       className="
-rounded-3xl
-border
-border-white/10
-bg-white/5
-p-5
-space-y-4
-"
+        rounded-2xl
+        border
+        border-white/10
+        bg-[#101927]
+        p-5
+        shadow-lg
+      "
     >
-      <div className="flex justify-between">
-        <div>
-          <p className="text-xs text-white/40">Cliente</p>
+      {/* HEADER */}
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div
+            className="
+              flex
+              h-12
+              w-12
+              items-center
+              justify-center
+              rounded-xl
+              bg-cyan-500/10
+              text-cyan-400
+            "
+          >
+            {isInstallment ? <CreditCard size={22} /> : <Package size={22} />}
+          </div>
 
-          <p className="font-semibold">{item.clientId}</p>
+          <div>
+            <p className="text-xs text-white/40">Cliente</p>
+
+            <p className="text-lg font-semibold text-white">
+              {item.clientName || "Cliente no disponible"}
+            </p>
+          </div>
         </div>
 
         <span
           className="
-rounded-full
-bg-white/10
-px-3
-py-1
-text-xs
-"
+            rounded-full
+            bg-white/10
+            px-3
+            py-1
+            text-xs
+            text-white/70
+          "
         >
-          {item.itemType === "INSTALLMENT" ? "Cuota" : "Entrega"}
+          {isInstallment ? "Cuota" : "Entrega"}
         </span>
       </div>
 
-      <div className="text-sm">
-        Resultado:
-        <span className="font-semibold ml-2">{item.result}</span>
+      {/* CLIENT DATA */}
+      <div className="mt-5 grid gap-4 md:grid-cols-2">
+        <div>
+          <p className="text-xs text-white/40">DNI</p>
+
+          <p className="text-sm text-white/80">
+            {item.clientDocumentNumber || "No disponible"}
+          </p>
+        </div>
+
+        <div className="flex gap-2">
+          <MapPin size={18} className="mt-0.5 shrink-0 text-cyan-400" />
+
+          <div>
+            <p className="text-xs text-white/40">Dirección</p>
+
+            <p className="text-sm text-white/80">
+              {item.clientAddress || "No disponible"}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex gap-2">
+          <Phone size={18} className="shrink-0 text-cyan-400" />
+
+          <div>
+            <p className="text-xs text-white/40">Teléfono</p>
+
+            <p className="text-sm text-white/80">
+              {item.clientPhone || "No disponible"}
+            </p>
+          </div>
+        </div>
       </div>
 
-      {item.collectedAmount && (
-        <p>
-          Cobrado:
-          <strong>${item.collectedAmount}</strong>
-        </p>
+      {/* SALE */}
+      {item.sale && (
+        <div
+          className="
+            mt-5
+            rounded-xl
+            border
+            border-white/10
+            bg-black/20
+            p-4
+          "
+        >
+          <p className="mb-3 text-sm font-semibold text-white">
+            Información de la venta
+          </p>
+
+          <div className="grid gap-3 md:grid-cols-3">
+            <div>
+              <p className="text-xs text-white/40">Total venta</p>
+
+              <p className="font-semibold text-white">
+                ${item.saleTotalAmount ?? 0}
+              </p>
+            </div>
+
+            <div>
+              <p className="text-xs text-white/40">Importe cuota</p>
+
+              <p className="font-semibold text-white">
+                ${item.installmentAmount ?? 0}
+              </p>
+            </div>
+
+            <div>
+              <p className="text-xs text-white/40">Cantidad de cuotas</p>
+
+              <p className="font-semibold text-white">
+                {item.sale.installmentsCount}
+              </p>
+            </div>
+          </div>
+
+          {/* PRODUCTOS */}
+          {item.sale.products && item.sale.products.length > 0 && (
+            <div className="mt-4">
+              <p className="mb-2 text-xs text-white/40">Productos</p>
+
+              <div className="space-y-2">
+                {item.sale.products.map((product) => (
+                  <div
+                    key={product.saleProductId}
+                    className="
+                          flex
+                          items-center
+                          justify-between
+                          rounded-lg
+                          bg-white/5
+                          px-3
+                          py-2
+                        "
+                  >
+                    <div>
+                      <p className="text-sm font-medium text-white">
+                        {product.product?.name ?? "Producto"}
+                      </p>
+
+                      {product.product?.brand && (
+                        <p className="text-xs text-white/40">
+                          {product.product.brand}
+                        </p>
+                      )}
+                    </div>
+
+                    <span className="text-sm text-white">
+                      x{product.quantity}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       )}
 
-      {item.result === "PENDING" && (
-        <SaveButton onClick={onAction} size="sm" className="inline-flex px-3 py-2">
-          {item.itemType === "DELIVERY" ? "Confirmar entrega" : "Registrar cobro"}
-        </SaveButton>
+      {/* RESULTADO */}
+      <div className="mt-5">
+        <span className="text-sm text-white/50">Resultado:</span>
+
+        {isPending && (
+          <span className="ml-2 font-semibold text-yellow-300">Pendiente</span>
+        )}
+
+        {isCompleted && (
+          <span className="ml-2 inline-flex items-center gap-1 font-semibold text-emerald-400">
+            <CheckCircle2 size={16} />
+            {isInstallment ? "Pago recibido" : "Entrega realizada"}
+          </span>
+        )}
+
+        {isFailed && (
+          <span className="ml-2 inline-flex items-center gap-1 font-semibold text-red-400">
+            <XCircle size={16} />
+            Visita fallida
+          </span>
+        )}
+      </div>
+
+      {/* COBRADO */}
+      {isInstallment && collectedAmount !== null && (
+        <div
+          className="
+              mt-3
+              rounded-xl
+              border
+              border-emerald-500/20
+              bg-emerald-500/5
+              px-4
+              py-3
+            "
+        >
+          <p className="text-xs text-white/50">Monto recibido</p>
+
+          <p className="mt-1 text-lg font-bold text-emerald-400">
+            $
+            {collectedAmount.toLocaleString("es-AR", {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}
+          </p>
+        </div>
+      )}
+
+      {/* ACTION */}
+      {isPending && (
+        <div className="mt-5 flex justify-end">
+          <SaveButton
+            onClick={onAction}
+            size="sm"
+            className="inline-flex px-4 py-2"
+          >
+            {isInstallment ? "Registrar cobro" : "Confirmar entrega"}
+          </SaveButton>
+        </div>
+      )}
+
+      {/* COMPLETED STATUS */}
+      {isCompleted && (
+        <div className="mt-5 rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-3">
+          <p className="text-sm font-medium text-emerald-400">
+            {isInstallment
+              ? "✓ Pago registrado correctamente"
+              : "✓ Entrega registrada correctamente"}
+          </p>
+        </div>
+      )}
+
+      {/* FAILED STATUS */}
+      {isFailed && (
+        <div className="mt-5 rounded-xl border border-red-500/20 bg-red-500/5 px-4 py-3">
+          <p className="text-sm font-medium text-red-400">
+            Visita marcada como fallida
+          </p>
+
+          {item.notes && (
+            <p className="mt-1 text-sm text-white/60">{item.notes}</p>
+          )}
+        </div>
       )}
     </article>
   );

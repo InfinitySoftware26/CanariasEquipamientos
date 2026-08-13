@@ -1,172 +1,179 @@
 "use client";
 
-import { ClipboardCheck, Truck, CheckCircle2, XCircle } from "lucide-react";
-import { useEffect, useState } from "react";
+import {
+  ClipboardCheck,
+  Truck,
+  CheckCircle2,
+  XCircle,
+  DollarSign,
+  BarChart3,
+} from "lucide-react";
+
 import { useRouter } from "next/navigation";
 
-import { DashboardCard } from "@/components/dashboard/DashboardCard";
-import { KpiCard } from "@/components/dashboard/KpiCard";
-
 import { useAuthStore } from "@/store/auth.store";
-import { getSales } from "@/services/sales.service";
+import { useAdminDashboard } from "@/hooks/admin/useAdminDashboard";
 
-import { Pipeline, Sale } from "@/types/sales/sale.type";
+import { DashboardHero } from "@/components/dashboard/DashboardHero";
+import { KpiCard } from "@/components/dashboard/KpiCard";
+import { PipelineCard } from "@/components/dashboard/PipelineCard";
+import { QuickActionCard } from "@/components/dashboard/QuickActionCard";
+import { AlertsSection } from "@/components/admin/AlertsSection";
+import { RecentActivity } from "@/components/admin/RecentActivity";
+import { RecentSalesTable } from "@/components/admin/RecentSalesTable";
 
 export default function AdminDashboard() {
-  const user = useAuthStore((state) => state.user);
   const router = useRouter();
 
-  const [loading, setLoading] = useState(true);
+  const user = useAuthStore((state) => state.user);
 
-  const [stats, setStats] = useState<Pipeline>({
-    adminValidation: 0,
-    envVisit: 0,
-    delivery: 0,
-    closed: 0,
-    rejected: 0,
-  });
+  const { loading, metrics, pipeline, activities, recentSales } =
+    useAdminDashboard();
 
-  useEffect(() => {
-    const loadStats = async () => {
-      try {
-        const sales: Sale[] = await getSales();
+  if (loading) {
+    return (
+      <div className="space-y-6 animate-pulse">
+        <div className="h-52 rounded-3xl bg-white/5" />
 
-        const nextStats: Pipeline = {
-          adminValidation: 0,
-          envVisit: 0,
-          delivery: 0,
-          closed: 0,
-          rejected: 0,
-        };
-
-        sales.forEach((sale) => {
-          switch (sale.status) {
-            case "pending_admin_validation":
-              nextStats.adminValidation++;
-              break;
-
-            case "pending_environmental_visit":
-              nextStats.envVisit++;
-              break;
-
-            case "pending_delivery":
-              nextStats.delivery++;
-              break;
-
-            case "closed":
-              nextStats.closed++;
-              break;
-
-            case "rejected_admin":
-            case "environmental_rejected":
-              nextStats.rejected++;
-              break;
-          }
-        });
-
-        setStats(nextStats);
-      } catch (error) {
-        console.error("Error cargando estadísticas:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadStats();
-  }, []);
+        <div className="grid gap-5 lg:grid-cols-6">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="h-36 rounded-2xl bg-white/5" />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-10">
-      {/* HERO */}
-      <section className="rounded-3xl border border-white/10 bg-gradient-to-r from-[#10254A] via-[#16315F] to-[#21457A] p-8">
-        <h1 className="text-3xl font-bold text-white">
-          Bienvenido{" "}
-          <span className="text-[#F5A300]">
-            {user?.name ?? "Administrador"}
-          </span>{" "}
-          👋
-        </h1>
+    <div className="space-y-8">
+      <DashboardHero
+        badge="Consola Administrativa"
+        title={`Bienvenido ${user?.name}`}
+        subtitle="Control operativo de validaciones, visitas, entregas y cierre de ventas."
+        action={
+          <div className="rounded-2xl border border-white/10 bg-white/5 px-6 py-5">
+            <p className="text-xs uppercase tracking-widest text-white/50">
+              Ventas Totales
+            </p>
 
-        <p className="mt-3 text-white/70">
-          Control y seguimiento de operaciones comerciales.
-        </p>
-      </section>
+            <h2 className="mt-2 text-5xl font-bold text-white">
+              {metrics.totalSales}
+            </h2>
+          </div>
+        }
+      />
 
-      {/* KPIS */}
-      <section className="space-y-4">
-        <h2 className="text-lg font-semibold text-white">
-          Estado del proceso comercial
-        </h2>
+      {/* KPIs */}
 
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
-          <KpiCard title="Pend. Validación" value={stats.adminValidation} />
+      <section>
+        <h2 className="mb-4 text-xl font-semibold text-white">Indicadores</h2>
 
-          <KpiCard title="Pend. Visita" value={stats.envVisit} />
+        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-6">
+          <KpiCard
+            title="Pendientes"
+            value={metrics.pendingSales}
+            icon={<ClipboardCheck />}
+          />
 
-          <KpiCard title="Pend. Entrega" value={stats.delivery} />
+          <KpiCard
+            title="Entregadas"
+            value={metrics.deliveredSales}
+            icon={<Truck />}
+          />
 
-          <KpiCard title="Cerradas" value={stats.closed} />
+          <KpiCard
+            title="Cerradas"
+            value={metrics.closedSales}
+            icon={<BarChart3 />}
+            trend="up"
+          />
 
-          <KpiCard title="Rechazadas" value={stats.rejected} />
+          <KpiCard
+            title="Rechazadas"
+            value={metrics.rejectedSales}
+            icon={<XCircle />}
+            trend="down"
+          />
+
+          <KpiCard
+            title="Ticket Promedio"
+            value={`$${metrics.averageTicket.toLocaleString("es-AR")}`}
+            icon={<DollarSign />}
+          />
+
+          <KpiCard
+            title="Monto Total"
+            value={`$${metrics.totalAmount.toLocaleString("es-AR")}`}
+            icon={<DollarSign />}
+          />
         </div>
       </section>
 
-      {/* ALERTAS */}
-      <section className="space-y-3">
-        <h2 className="text-lg font-semibold text-white">
-          Alertas administrativas
+      {/* Pipeline */}
+
+      <section>
+        <h2 className="mb-4 text-xl font-semibold text-white">
+          Pipeline Comercial
         </h2>
 
-        {stats.adminValidation > 0 && (
-          <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 p-4">
-            <p className="text-sm text-amber-300">
-              ⚠ Existen {stats.adminValidation} ventas pendientes de validación.
-            </p>
-          </div>
-        )}
+        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-5">
+          <PipelineCard
+            title="Pend. Validación"
+            value={pipeline.adminValidation}
+          />
 
-        {stats.envVisit > 0 && (
-          <div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-4">
-            <p className="text-sm text-red-300">
-              ⚠ Hay {stats.envVisit} visitas pendientes de coordinación.
-            </p>
-          </div>
-        )}
+          <PipelineCard title="Pend. Visita" value={pipeline.envVisit} />
+
+          <PipelineCard title="Pend. Entrega" value={pipeline.delivery} />
+
+          <PipelineCard title="Cerradas" value={pipeline.closed} highlight />
+
+          <PipelineCard title="Rechazadas" value={pipeline.rejected} />
+        </div>
       </section>
 
-      {/* ACCIONES */}
-      <section className="space-y-4">
-        <h2 className="text-lg font-semibold text-white">Acciones rápidas</h2>
+      <AlertsSection pipeline={pipeline} />
 
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <DashboardCard
+      <div className="grid gap-8 xl:grid-cols-2">
+        <RecentActivity activities={activities} />
+
+        <RecentSalesTable sales={recentSales} />
+      </div>
+
+      <section>
+        <h2 className="mb-5 text-xl font-semibold text-white">
+          Acciones rápidas
+        </h2>
+
+        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+          <QuickActionCard
             title="Validar ventas"
-            description="Aprobar o rechazar ventas"
+            description="Ventas esperando aprobación"
             icon={<ClipboardCheck size={22} />}
             onClick={() =>
               router.push("/sales?status=PENDING_ADMIN_VALIDATION")
             }
           />
 
-          <DashboardCard
+          <QuickActionCard
             title="Coordinar visitas"
-            description="Ventas pendientes de visita"
+            description="Visitas ambientales"
             icon={<Truck size={22} />}
             onClick={() =>
               router.push("/sales?status=PENDING_ENVIRONMENTAL_VISIT")
             }
           />
 
-          <DashboardCard
-            title="Coordinar entregas"
+          <QuickActionCard
+            title="Entregas"
             description="Ventas listas para entregar"
             icon={<CheckCircle2 size={22} />}
             onClick={() => router.push("/sales?status=PENDING_DELIVERY")}
           />
 
-          <DashboardCard
-            title="Ventas rechazadas"
-            description="Revisar operaciones rechazadas"
+          <QuickActionCard
+            title="Rechazadas"
+            description="Revisar operaciones"
             icon={<XCircle size={22} />}
             onClick={() => router.push("/sales?status=REJECTED_ADMIN")}
           />
