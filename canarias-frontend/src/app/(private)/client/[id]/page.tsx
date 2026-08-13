@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { getClientById } from "@/services/client.service";
 import { ClientDetailPanel } from "@/components/client/ClientDetailPanel";
+import { ClientCommercialSummary } from "@/components/client/ClientCommercialSummary";
 import { ClientView } from "@/types/cretateClient.type";
 
 export default function ClientDetailPage() {
@@ -34,5 +35,11 @@ export default function ClientDetailPage() {
     return <p className="text-white/60">Cargando...</p>;
   }
 
-  return <ClientDetailPanel client={client} />;
+  return (
+    <div className="space-y-8">
+      <ClientDetailPanel client={client} />
+
+      <ClientCommercialSummary clientId={client.clientId} />
+    </div>
+  );
 }
