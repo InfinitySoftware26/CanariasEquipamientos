@@ -11,21 +11,26 @@ import {
 } from "lucide-react";
 
 import { useRouteSheet } from "@/hooks/route-sheets/useRouteSheet";
-import { useRouteSheetItems } from "@/hooks/route-sheets/useRouteSheetsItems";
 import { useUpdateRouteSheetItem } from "@/hooks/route-sheets/useUpdateRouteSheetItem";
+import { updateRouteSheetStatus } from "@/services/route-sheets/routeSheets.service";
 
 import { RouteSheetItemCard } from "@/components/route-sheets/RouteSheetItemCard";
+import { RouteSheetItemResultModal } from "@/components/route-sheets/RouteSheetItemResult";
 
 import {
   RouteSheetItem,
   RouteSheetItemResult,
 } from "@/types/rotue-sheets/routeSheets.types";
-import { RouteSheetItemResultModal } from "@/components/route-sheets/RouteSheetItemResult";
 
 interface ItemResultData {
   result: RouteSheetItemResult;
   collectedAmount?: number;
   notes?: string;
+  failedVisitReason?:
+    | "client_absent"
+    | "refused_payment"
+    | "wrong_address"
+    | "other";
 }
 
 export default function CollectorRouteSheetDetailPage() {
@@ -35,6 +40,9 @@ export default function CollectorRouteSheetDetailPage() {
 
   const [selectedItem, setSelectedItem] = useState<RouteSheetItem | null>(null);
 
+  const [closingRoute, setClosingRoute] = useState(false);
+  const [closeError, setCloseError] = useState("");
+
   const {
     routeSheet,
     loading: loadingSheet,
@@ -42,27 +50,49 @@ export default function CollectorRouteSheetDetailPage() {
     reload: reloadSheet,
   } = useRouteSheet(routeSheetId);
 
-  const {
-    items,
-    loading: loadingItems,
-    reload,
-  } = useRouteSheetItems(routeSheetId);
-
   const { loading: updating, update } = useUpdateRouteSheetItem();
 
+  /**
+   * IMPORTANTE:
+   *
+   * Ya no usamos useRouteSheetItems() acá.
+   *
+   * /route-sheets/:id ya devuelve:
+   * {
+   *   ...routeSheet,
+   *   items: [...]
+   * }
+   *
+   * Esto evita perder los datos enriquecidos que vienen
+   * desde el detalle de la hoja.
+   */
+  const items = useMemo<RouteSheetItem[]>(() => {
+    if (!routeSheet?.items) {
+      return [];
+    }
+
+    return routeSheet.items;
+  }, [routeSheet]);
+
   const report = useMemo(() => {
-    const completed = items.filter((item) => item.result === "completed");
+    const completed = items.filter(
+      (item) => item.result === RouteSheetItemResult.COMPLETED,
+    );
 
-    const failed = items.filter((item) => item.result === "failed");
+    const failed = items.filter(
+      (item) => item.result === RouteSheetItemResult.FAILED,
+    );
 
-    const pending = items.filter((item) => item.result === "pending");
+    const pending = items.filter(
+      (item) => item.result === RouteSheetItemResult.PENDING,
+    );
 
     const totalCollected = completed.reduce((total, item) => {
       if (item.itemType !== "installment") {
         return total;
       }
 
-      return total + Number(item.collectedAmount || 0);
+      return total + Number(item.collectedAmount ?? 0);
     }, 0);
 
     return {
@@ -74,11 +104,19 @@ export default function CollectorRouteSheetDetailPage() {
     };
   }, [items]);
 
+  /**
+   * La ruta SOLO puede cerrarse cuando:
+   *
+   * - tiene items
+   * - no queda ningún item pendiente
+   */
+  const canCompleteRoute = items.length > 0 && report.pending.length === 0;
+
   if (!routeSheetId) {
     return <div className="p-6 text-red-400">ID de hoja de ruta inválido.</div>;
   }
 
-  if (loadingSheet || loadingItems) {
+  if (loadingSheet) {
     return <div className="p-6 text-white">Cargando hoja de ruta...</div>;
   }
 
@@ -93,19 +131,98 @@ export default function CollectorRouteSheetDetailPage() {
       return;
     }
 
+    /**
+     * Normalizamos el monto antes de enviarlo.
+     *
+     * El backend espera un número.
+     */
+    let collectedAmount: number | undefined;
+
+    if (data.collectedAmount !== undefined && data.collectedAmount !== null) {
+      collectedAmount = Number(data.collectedAmount);
+
+      if (!Number.isFinite(collectedAmount)) {
+        throw new Error("El monto ingresado no es válido.");
+      }
+
+      if (collectedAmount < 0) {
+        throw new Error("El monto no puede ser negativo.");
+      }
+
+      /**
+       * Para una cobranza no permitimos cobrar más que el saldo
+       * de la cuota que tenemos disponible en el item.
+       *
+       * Esto además evita enviar accidentalmente valores como
+       * 25448113 cuando la cuota es 32583.33.
+       */
+      if (
+        selectedItem.itemType === "installment" &&
+        selectedItem.installmentAmount !== null &&
+        selectedItem.installmentAmount !== undefined &&
+        collectedAmount > Number(selectedItem.installmentAmount)
+      ) {
+        throw new Error(
+          `El monto ingresado ($${collectedAmount.toLocaleString("es-AR", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })}) supera el importe de la cuota ($${Number(
+            selectedItem.installmentAmount,
+          ).toLocaleString("es-AR", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })}).`,
+        );
+      }
+
+      /**
+       * Evitamos errores de precisión de floating point.
+       */
+      collectedAmount =
+        Math.round((collectedAmount + Number.EPSILON) * 100) / 100;
+    }
+
     await update(selectedItem.itemId, {
       result: data.result,
-      collectedAmount: data.collectedAmount,
-      notes: data.notes,
+      collectedAmount,
+      notes: data.notes?.trim() || undefined,
+      failedVisitReason: data.failedVisitReason,
     });
 
     setSelectedItem(null);
 
-    await reload();
     await reloadSheet();
   }
 
+  async function handleCompleteRoute() {
+    if (!canCompleteRoute) {
+      return;
+    }
+
+    try {
+      setClosingRoute(true);
+      setCloseError("");
+
+      await updateRouteSheetStatus(routeSheetId, {
+        status: "completed",
+      });
+
+      await reloadSheet();
+    } catch (error) {
+      console.error(error);
+
+      setCloseError(
+        error instanceof Error
+          ? error.message
+          : "No se pudo completar la hoja de ruta.",
+      );
+    } finally {
+      setClosingRoute(false);
+    }
+  }
+
   const isRouteCompleted = routeSheet.status === "completed";
+  const isRouteCancelled = routeSheet.status === "cancelled";
 
   return (
     <div className="space-y-8">
@@ -132,11 +249,17 @@ export default function CollectorRouteSheetDetailPage() {
               ${
                 isRouteCompleted
                   ? "bg-emerald-500/15 text-emerald-400"
-                  : "bg-yellow-500/15 text-yellow-300"
+                  : isRouteCancelled
+                    ? "bg-red-500/15 text-red-400"
+                    : "bg-yellow-500/15 text-yellow-300"
               }
             `}
           >
-            {isRouteCompleted ? "Ruta finalizada" : "Ruta en curso"}
+            {isRouteCompleted
+              ? "Ruta finalizada"
+              : isRouteCancelled
+                ? "Ruta cancelada"
+                : "Ruta en curso"}
           </span>
         </div>
 
@@ -150,13 +273,17 @@ export default function CollectorRouteSheetDetailPage() {
           <div>
             <p className="text-xs text-white/40">Zona</p>
 
-            <p className="mt-1 text-white">{routeSheet.zoneName}</p>
+            <p className="mt-1 text-white">
+              {routeSheet.zoneName || "No disponible"}
+            </p>
           </div>
 
           <div>
             <p className="text-xs text-white/40">Estado</p>
 
-            <p className="mt-1 text-white">{routeSheet.status}</p>
+            <p className="mt-1 text-white">
+              {formatRouteStatus(routeSheet.status)}
+            </p>
           </div>
         </div>
       </section>
@@ -206,6 +333,62 @@ export default function CollectorRouteSheetDetailPage() {
           />
         </div>
       </section>
+
+      {/* CERRAR RUTA */}
+      {!isRouteCompleted && !isRouteCancelled && (
+        <section className="rounded-3xl border border-white/10 bg-[#101927] p-6">
+          <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-white">
+                Finalizar hoja de ruta
+              </h2>
+
+              {canCompleteRoute ? (
+                <p className="mt-1 text-sm text-emerald-400">
+                  Todas las visitas fueron procesadas. La ruta puede
+                  finalizarse.
+                </p>
+              ) : (
+                <p className="mt-1 text-sm text-yellow-300">
+                  Todavía quedan {report.pending.length} visita
+                  {report.pending.length === 1 ? "" : "s"} pendiente
+                  {report.pending.length === 1 ? "" : "s"}.
+                </p>
+              )}
+
+              {closeError && (
+                <p className="mt-2 text-sm text-red-400">{closeError}</p>
+              )}
+            </div>
+
+            <button
+              type="button"
+              disabled={!canCompleteRoute || closingRoute}
+              onClick={handleCompleteRoute}
+              className="
+                inline-flex
+                items-center
+                justify-center
+                gap-2
+                rounded-xl
+                bg-emerald-500
+                px-5
+                py-3
+                font-semibold
+                text-white
+                transition
+                hover:bg-emerald-400
+                disabled:cursor-not-allowed
+                disabled:opacity-40
+              "
+            >
+              <CheckCircle2 size={18} />
+
+              {closingRoute ? "Finalizando..." : "Marcar ruta como completa"}
+            </button>
+          </div>
+        </section>
+      )}
 
       {/* REPORTE FINAL */}
       {isRouteCompleted && (
@@ -290,7 +473,7 @@ export default function CollectorRouteSheetDetailPage() {
 
         {items.length === 0 && (
           <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-white/60">
-            No hay visitas pendientes.
+            No hay visitas en esta hoja de ruta.
           </div>
         )}
 
@@ -388,7 +571,13 @@ function ReportItem({ item, type }: ReportItemProps) {
           item.installmentAmount !== undefined && (
             <p className="text-white/60">
               Cuota prevista:{" "}
-              <span className="text-white">${item.installmentAmount}</span>
+              <span className="text-white">
+                $
+                {Number(item.installmentAmount).toLocaleString("es-AR", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+              </span>
             </p>
           )}
 
@@ -422,4 +611,23 @@ function ReportItem({ item, type }: ReportItemProps) {
       )}
     </div>
   );
+}
+
+function formatRouteStatus(status: string) {
+  switch (status) {
+    case "pending":
+      return "Pendiente";
+
+    case "in_progress":
+      return "En curso";
+
+    case "completed":
+      return "Completada";
+
+    case "cancelled":
+      return "Cancelada";
+
+    default:
+      return status;
+  }
 }

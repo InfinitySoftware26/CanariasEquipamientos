@@ -11,7 +11,12 @@ import {
   HttpStatus,
   ParseUUIDPipe,
 } from "@nestjs/common";
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from "@nestjs/swagger";
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
+  ApiQuery,
+} from "@nestjs/swagger";
 import { SalesService } from "../services/sales.service";
 import { CreateSaleDto } from "../dto/create-sale.dto";
 import { ValidateSaleDto } from "../dto/validate-sale.dto";
@@ -53,7 +58,7 @@ export class SalesController {
   }
 
   @Get("my")
-  @Roles(StaffRole.SELLER, StaffRole.ADMIN)
+  @Roles(StaffRole.SELLER, StaffRole.ADMIN, StaffRole.COLLECTOR)
   @ApiOperation({ summary: "Mis ventas (vendedor)" })
   findMy(@CurrentUser() user: JwtPayload) {
     return this.salesService.findBySeller(user.sub, user.societyId);
@@ -61,15 +66,32 @@ export class SalesController {
 
   @Get("my/commissions")
   @Roles(StaffRole.SELLER)
-  @ApiOperation({ summary: "Comisiones del vendedor filtradas por período (año, mes, semana o día)" })
-  @ApiQuery({ name: "period", enum: CommissionPeriod, required: false, description: "Granularidad del filtro. Default: month" })
-  @ApiQuery({ name: "date", required: false, description: "Fecha de referencia (ISO, ej: 2026-07-23). Default: hoy" })
+  @ApiOperation({
+    summary:
+      "Comisiones del vendedor filtradas por período (año, mes, semana o día)",
+  })
+  @ApiQuery({
+    name: "period",
+    enum: CommissionPeriod,
+    required: false,
+    description: "Granularidad del filtro. Default: month",
+  })
+  @ApiQuery({
+    name: "date",
+    required: false,
+    description: "Fecha de referencia (ISO, ej: 2026-07-23). Default: hoy",
+  })
   findMyCommissions(
     @CurrentUser() user: JwtPayload,
     @Query("period") period: CommissionPeriod = CommissionPeriod.MONTH,
     @Query("date") date?: string,
   ) {
-    return this.salesService.getSellerCommissions(user.sub, user.societyId, period, date);
+    return this.salesService.getSellerCommissions(
+      user.sub,
+      user.societyId,
+      period,
+      date,
+    );
   }
 
   @Get("collector")
@@ -166,17 +188,17 @@ export class SalesController {
     return this.salesService.failDelivery(id, dto, user);
   }
 
- @Patch(":id/close")
-@Roles(StaffRole.ADMIN, StaffRole.MANAGER, StaffRole.SUPER_ADMIN)
-@HttpCode(HttpStatus.NO_CONTENT)
-@ApiOperation({ summary: "Cerrar venta (post entrega)" })
-close(
-  @Param("id", ParseUUIDPipe) id: string,
-  @Body() dto: CloseSaleDto,
-  @CurrentUser() user: JwtPayload,
-) {
-  return this.salesService.close(id, dto, user);
-}
+  @Patch(":id/close")
+  @Roles(StaffRole.ADMIN, StaffRole.MANAGER, StaffRole.SUPER_ADMIN)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: "Cerrar venta (post entrega)" })
+  close(
+    @Param("id", ParseUUIDPipe) id: string,
+    @Body() dto: CloseSaleDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.salesService.close(id, dto, user);
+  }
 
   @Patch(":id/observation")
   @HttpCode(HttpStatus.NO_CONTENT)
@@ -201,15 +223,14 @@ close(
   }
 
   @Patch(":id/schedule-delivery")
-@Roles(StaffRole.ADMIN, StaffRole.MANAGER, StaffRole.SUPER_ADMIN)
-@HttpCode(HttpStatus.NO_CONTENT)
-@ApiOperation({ summary: "Coordinar la fecha de entrega de la venta" })
-scheduleDelivery(
-  @Param("id", ParseUUIDPipe) id: string,
-  @Body() dto: ScheduleDeliveryDto,
-  @CurrentUser() user: JwtPayload,
-) {
-  return this.salesService.scheduleDelivery(id, dto, user);
-}
-
+  @Roles(StaffRole.ADMIN, StaffRole.MANAGER, StaffRole.SUPER_ADMIN)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: "Coordinar la fecha de entrega de la venta" })
+  scheduleDelivery(
+    @Param("id", ParseUUIDPipe) id: string,
+    @Body() dto: ScheduleDeliveryDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.salesService.scheduleDelivery(id, dto, user);
+  }
 }
