@@ -3,8 +3,8 @@
  * No incluye SUPER_ADMIN — ese rol tiene su propio endpoint.
  */
 export enum AssignableRole {
-  MANAGER   = 'gerente',
-  ADMIN     = 'administrativo',
-  SELLER    = 'vendedor',
-  COLLECTOR = 'cobrador',
+  MANAGER = "gerente",
+  ADMIN = "administrativo",
+  SELLER = "vendedor",
+  COLLECTOR = "cobrador",
 }

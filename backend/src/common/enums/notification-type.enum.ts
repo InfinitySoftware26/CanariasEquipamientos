@@ -1,6 +1,6 @@
 export enum NotificationType {
-  PAYMENT = 'payment',
-  CLOSURE = 'closure',
-  SALE    = 'sale',
-  SYSTEM  = 'system',
+  PAYMENT = "payment",
+  CLOSURE = "closure",
+  SALE = "sale",
+  SYSTEM = "system",
 }
