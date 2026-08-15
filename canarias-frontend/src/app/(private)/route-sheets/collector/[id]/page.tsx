@@ -12,6 +12,7 @@ import {
 
 import { useRouteSheet } from "@/hooks/route-sheets/useRouteSheet";
 import { useUpdateRouteSheetItem } from "@/hooks/route-sheets/useUpdateRouteSheetItem";
+import { useUpdateRouteSheetStatus } from "@/hooks/route-sheets/useUpdateRouteSheetStatus";
 import { updateRouteSheetStatus } from "@/services/route-sheets/routeSheets.service";
 
 import { RouteSheetItemCard } from "@/components/route-sheets/RouteSheetItemCard";
@@ -43,6 +44,9 @@ export default function CollectorRouteSheetDetailPage() {
   const [closingRoute, setClosingRoute] = useState(false);
   const [closeError, setCloseError] = useState("");
 
+  const [startingRoute, setStartingRoute] = useState(false);
+  const [startError, setStartError] = useState("");
+
   const {
     routeSheet,
     loading: loadingSheet,
@@ -51,6 +55,7 @@ export default function CollectorRouteSheetDetailPage() {
   } = useRouteSheet(routeSheetId);
 
   const { loading: updating, update } = useUpdateRouteSheetItem();
+  const { loading: updatingStatus } = useUpdateRouteSheetStatus();
 
   /**
    * IMPORTANTE:
@@ -194,6 +199,29 @@ export default function CollectorRouteSheetDetailPage() {
     await reloadSheet();
   }
 
+  async function handleStartRoute() {
+    try {
+      setStartingRoute(true);
+      setStartError("");
+
+      await updateRouteSheetStatus(routeSheetId, {
+        status: "in_progress",
+      });
+
+      await reloadSheet();
+    } catch (error) {
+      console.error(error);
+
+      setStartError(
+        error instanceof Error
+          ? error.message
+          : "No se pudo iniciar la hoja de ruta.",
+      );
+    } finally {
+      setStartingRoute(false);
+    }
+  }
+
   async function handleCompleteRoute() {
     if (!canCompleteRoute) {
       return;
@@ -223,6 +251,71 @@ export default function CollectorRouteSheetDetailPage() {
 
   const isRouteCompleted = routeSheet.status === "completed";
   const isRouteCancelled = routeSheet.status === "cancelled";
+  const isRoutePending = routeSheet.status === "pending";
+  const isRouteInProgress = routeSheet.status === "in_progress";
+
+  if (isRoutePending) {
+    return (
+      <div className="space-y-8">
+        <section className="rounded-3xl border border-white/10 bg-gradient-to-r from-[#10254A] via-[#16315F] to-[#21457A] p-8">
+          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+            <div>
+              <p className="text-sm text-white/50">Hoja de ruta</p>
+              <h1 className="mt-1 text-3xl font-bold text-white">
+                Recorrido del día
+              </h1>
+            </div>
+            <span className="inline-flex w-fit rounded-full bg-yellow-500/15 px-4 py-2 text-sm font-semibold text-yellow-300">
+              Pendiente de iniciar
+            </span>
+          </div>
+          <div className="mt-6 grid gap-4 md:grid-cols-3">
+            <div>
+              <p className="text-xs text-white/40">Fecha</p>
+              <p className="mt-1 text-white">{routeSheet.routeDate}</p>
+            </div>
+            <div>
+              <p className="text-xs text-white/40">Zona</p>
+              <p className="mt-1 text-white">
+                {routeSheet.zoneName || "No disponible"}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-white/40">Estado</p>
+              <p className="mt-1 text-white">Pendiente</p>
+            </div>
+          </div>
+        </section>
+
+        <section className="rounded-3xl border border-white/10 bg-[#101927] p-8">
+          <div className="space-y-4">
+            <div>
+              <h2 className="text-2xl font-semibold text-white">
+                Iniciar recorrido
+              </h2>
+              <p className="mt-2 text-white/60">
+                Presioná el botón para comenzar el recorrido del día.
+              </p>
+            </div>
+            {startError && (
+              <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">
+                {startError}
+              </div>
+            )}
+            <button
+              type="button"
+              disabled={startingRoute}
+              onClick={handleStartRoute}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-cyan-600 px-6 py-3 font-semibold text-white transition hover:bg-cyan-500 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <CheckCircle2 size={20} />
+              {startingRoute ? "Iniciando..." : "Iniciar recorrido"}
+            </button>
+          </div>
+        </section>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -335,7 +428,7 @@ export default function CollectorRouteSheetDetailPage() {
       </section>
 
       {/* CERRAR RUTA */}
-      {!isRouteCompleted && !isRouteCancelled && (
+      {isRouteInProgress && !isRouteCompleted && !isRouteCancelled && (
         <section className="rounded-3xl border border-white/10 bg-[#101927] p-6">
           <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
             <div>
@@ -460,33 +553,35 @@ export default function CollectorRouteSheetDetailPage() {
       )}
 
       {/* RECORRIDO */}
-      <section className="space-y-4">
-        <div>
-          <h2 className="text-xl font-semibold text-white">
-            Recorrido del día
-          </h2>
+      {isRouteInProgress && (
+        <section className="space-y-4">
+          <div>
+            <h2 className="text-xl font-semibold text-white">
+              Recorrido del día
+            </h2>
 
-          <p className="mt-1 text-sm text-white/50">
-            Gestioná cada visita desde su tarjeta.
-          </p>
-        </div>
-
-        {items.length === 0 && (
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-white/60">
-            No hay visitas en esta hoja de ruta.
+            <p className="mt-1 text-sm text-white/50">
+              Gestioná cada visita desde su tarjeta.
+            </p>
           </div>
-        )}
 
-        <div className="grid gap-5">
-          {items.map((item) => (
-            <RouteSheetItemCard
-              key={item.itemId}
-              item={item}
-              onAction={() => setSelectedItem(item)}
-            />
-          ))}
-        </div>
-      </section>
+          {items.length === 0 && (
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-white/60">
+              No hay visitas en esta hoja de ruta.
+            </div>
+          )}
+
+          <div className="grid gap-5">
+            {items.map((item) => (
+              <RouteSheetItemCard
+                key={item.itemId}
+                item={item}
+                onAction={() => setSelectedItem(item)}
+              />
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* MODAL */}
       <RouteSheetItemResultModal
