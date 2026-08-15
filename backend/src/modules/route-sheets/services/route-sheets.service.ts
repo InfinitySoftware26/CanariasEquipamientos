@@ -22,6 +22,7 @@ import { RouteSheet } from "../entities/route-sheet.entity";
 import { RouteSheetItem } from "../entities/route-sheet-item.entity";
 import { RouteSheetStatus } from "../../../common/enums/route-sheet-status.enum";
 import { RouteSheetItemType } from "../../../common/enums/route-sheet-item-type.enum";
+import { RouteSheetItemResult } from "../../../common/enums/route-sheet-item-result.enum";
 import { InstallmentStatus } from "../../../common/enums/installment-status.enum";
 import { SaleStatus } from "../../../common/enums/sale-status.enum";
 import { StaffRole } from "../../../common/enums/staff-role.enum";
@@ -76,17 +77,32 @@ export class RouteSheetsService {
 
   private toResponse(routeSheet: RouteSheet) {
     const { zone, staff, ...rest } = routeSheet;
-    return { ...rest, zoneName: zone?.name ?? null, staffName: staff?.name ?? null };
+    return {
+      ...rest,
+      zoneName: zone?.name ?? null,
+      staffName: staff?.name ?? null,
+    };
   }
 
   async findBySociety(societyId: string, filters?: RouteSheetFilters) {
-    const routeSheets = await this.routeSheetsRepo.findBySociety(societyId, filters);
-    return routeSheets.map(rs => this.toResponse(rs));
+    const routeSheets = await this.routeSheetsRepo.findBySociety(
+      societyId,
+      filters,
+    );
+    return routeSheets.map((rs) => this.toResponse(rs));
   }
 
-  async findByStaff(staffId: string, societyId: string, filters?: RouteSheetFilters) {
-    const routeSheets = await this.routeSheetsRepo.findByStaff(staffId, societyId, filters);
-    return routeSheets.map(rs => this.toResponse(rs));
+  async findByStaff(
+    staffId: string,
+    societyId: string,
+    filters?: RouteSheetFilters,
+  ) {
+    const routeSheets = await this.routeSheetsRepo.findByStaff(
+      staffId,
+      societyId,
+      filters,
+    );
+    return routeSheets.map((rs) => this.toResponse(rs));
   }
 
   async findById(id: string): Promise<RouteSheet> {
@@ -98,10 +114,56 @@ export class RouteSheetsService {
 
   async findByIdWithItems(id: string) {
     const routeSheet = await this.findById(id);
-    const items = await this.itemsRepo.findByRouteSheet(id);
-    return { ...this.toResponse(routeSheet), items };
-  }
 
+    const items = await this.itemsRepo.findByRouteSheet(id);
+
+    const enrichedItems = await Promise.all(
+      items.map(async (item) => {
+        const client = await this.clientRepo.findOne({
+          where: {
+            clientId: item.clientId,
+          },
+        });
+
+        const installment = item.installmentId
+          ? await this.installmentRepo.findOne({
+              where: {
+                installmentId: item.installmentId,
+              },
+            })
+          : null;
+
+        const sale = item.saleId
+          ? await this.saleRepo.findOne({
+              where: {
+                saleId: item.saleId,
+              },
+            })
+          : null;
+
+        return {
+          ...item,
+
+          clientName: client
+            ? `${client.name ?? ""} ${client.surname ?? ""}`.trim()
+            : null,
+
+          clientAddress: client?.address ?? null,
+
+          installmentAmount: installment?.amount ?? null,
+
+          installmentDueDate: installment?.dueDate ?? null,
+
+          saleId: sale?.saleId ?? item.saleId ?? null,
+        };
+      }),
+    );
+
+    return {
+      ...this.toResponse(routeSheet),
+      items: enrichedItems,
+    };
+  }
   // ─── CREAR HOJA DE RUTA ───────────────────────────────────────────────────
 
   async create(dto: CreateRouteSheetDto, user: JwtPayload) {
@@ -121,14 +183,6 @@ export class RouteSheetsService {
         "Solo se pueden asignar hojas de ruta a cobradores",
       );
     }
-    const test = await this.staffZoneRepo.query(`
-  SELECT *
-  FROM "STAFF_ZONES"
-  WHERE staff_id = '${dto.staffId}'
-  AND zone_id = '${dto.zoneId}'
-`);
-
-    console.log("RAW QUERY:", test);
 
     const staffZone = await this.staffZoneRepo.findOne({
       where: {
@@ -170,23 +224,38 @@ export class RouteSheetsService {
     routeSheet: RouteSheet,
     routeDate: string,
   ): Promise<RouteSheetItem[]> {
-    const clients = await this.clientRepo.find({
-      where: { zoneId: routeSheet.zoneId },
-    });
-    const clientIds = clients.map((c) => c.clientId);
-    if (!clientIds.length) return [];
-
-    const pendingInstallments = await this.installmentRepo.find({
-      where: {
-        clientId: In(clientIds),
-        status: In(OPEN_INSTALLMENT_STATUSES),
-        dueDate: LessThanOrEqual(routeDate as unknown as Date),
-      },
-    });
+    const pendingInstallments = await this.installmentRepo
+      .createQueryBuilder("installment")
+      .innerJoin(Sale, "sale", "sale.sale_id = installment.sale_id")
+      .innerJoin(Client, "client", "client.client_id = installment.client_id")
+      .where("installment.status IN (:...statuses)", {
+        statuses: OPEN_INSTALLMENT_STATUSES,
+      })
+      .andWhere("installment.due_date <= :routeDate", {
+        routeDate,
+      })
+      .andWhere("client.zone_id = :zoneId", {
+        zoneId: routeSheet.zoneId,
+      })
+      .andWhere("installment.society_id = :societyId", {
+        societyId: routeSheet.societyId,
+      })
+      .andWhere("sale.assigned_collector_id = :staffId", {
+        staffId: routeSheet.staffId,
+      })
+      .getMany();
 
     const pendingDeliveries = await this.saleRepo
       .createQueryBuilder("sale")
-      .where("sale.client_id IN (:...clientIds)", { clientIds })
+      .where(
+        "sale.client_id IN (SELECT client_id FROM CLIENT WHERE zone_id = :zoneId)",
+        {
+          zoneId: routeSheet.zoneId,
+        },
+      )
+      .andWhere("sale.society_id = :societyId", {
+        societyId: routeSheet.societyId,
+      })
       .andWhere("sale.status = :status", {
         status: SaleStatus.PENDING_DELIVERY,
       })
@@ -203,8 +272,10 @@ export class RouteSheetsService {
         routeSheetId: routeSheet.routeSheetId,
         clientId: inst.clientId,
         installmentId: inst.installmentId,
+        saleId: inst.saleId,
         itemType: RouteSheetItemType.INSTALLMENT,
       })),
+
       ...pendingDeliveries.map((sale) => ({
         routeSheetId: routeSheet.routeSheetId,
         clientId: sale.clientId,
@@ -231,10 +302,25 @@ export class RouteSheetsService {
       );
     }
 
-    if (!ALLOWED_TRANSITIONS[routeSheet.status].includes(status)) {
+    const allowedTransitions = ALLOWED_TRANSITIONS[routeSheet.status] ?? [];
+
+    if (!allowedTransitions.includes(status)) {
       throw new BadRequestException(
         `No se puede pasar de ${routeSheet.status} a ${status}`,
       );
+    }
+
+    if (status === RouteSheetStatus.COMPLETED) {
+      const items = await this.itemsRepo.findByRouteSheet(id);
+      const hasPendingItems = items.some(
+        (item) => item.result === RouteSheetItemResult.PENDING,
+      );
+
+      if (hasPendingItems) {
+        throw new BadRequestException(
+          "No se puede completar la hoja de ruta mientras existan visitas pendientes",
+        );
+      }
     }
 
     await this.routeSheetsRepo.updateStatus(id, status);
