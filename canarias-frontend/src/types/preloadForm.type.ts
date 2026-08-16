@@ -2,7 +2,7 @@ export type PaymentFrequency = "weekly" | "monthly" | "biweekly" | "daily";
 
 export interface PreloadFormData {
   // 🧑 Cliente
-  clientId?: string; // 👈 IMPORTANTE (te faltaba y es clave)
+  clientId?: string;
   name: string;
   surname: string;
   documentNumber: string;
@@ -18,7 +18,7 @@ export interface PreloadFormData {
   installmentsCount: number;
   paymentFrequency: PaymentFrequency;
 
-  // � Referencias de garantía
+  // 🔒 Referencias de garantía
   nameReference1: string;
   addressReference1: string;
   telReference1: string;
@@ -26,11 +26,28 @@ export interface PreloadFormData {
   addressReference2: string;
   telReference2: string;
 
-  // �📞 Referencias
+  // 📞 Referencias adicionales
   ref1Phone: string;
   ref1Relationship: string;
   ref1Address: string;
   ref2Phone: string;
   ref2Relationship: string;
   ref2Address: string;
+
+  // 📊 Datos socioeconómicos
+  profession?: string;
+  monthlyIncome?: string;
+  paymentMethod?: string;
+  incomeDependents?: string;
+  additionalIncome?: string;
+  housingSituation?: string;
+  contractDuration?: string;
+  cuil?: string;
+  activeCredit?: boolean;
+
+  // 📝 Observaciones
+  observations?: string;
+
+  societyId?: string;
 }
+
