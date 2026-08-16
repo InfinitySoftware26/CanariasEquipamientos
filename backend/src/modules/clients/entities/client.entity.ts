@@ -29,6 +29,33 @@ export class Client {
   @Column({ nullable: true })
   email?: string;
 
+  @Column({ nullable: true })
+  profession?: string;
+
+  @Column({ name: "monthly_income", nullable: true })
+  monthlyIncome?: string;
+
+  @Column({ name: "payment_method", nullable: true })
+  paymentMethod?: string;
+
+  @Column({ name: "income_dependents", nullable: true })
+  incomeDependents?: string;
+
+  @Column({ name: "additional_income", nullable: true })
+  additionalIncome?: string;
+
+  @Column({ name: "housing_situation", nullable: true })
+  housingSituation?: string;
+
+  @Column({ name: "contract_duration", nullable: true })
+  contractDuration?: string;
+
+  @Column({ nullable: true })
+  cuil?: string;
+
+  @Column({ name: "active_credit", type: "boolean", default: false })
+  activeCredit!: boolean;
+
   @Column({ name: "support_dni", default: false })
   supportDni!: boolean;
 
