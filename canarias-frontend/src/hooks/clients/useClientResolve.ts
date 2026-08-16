@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { searchClientByDocument } from "@/services/client.service";
-import { createPreloadClient } from "@/services/client.service";
+import { searchClientByDocument, createPreloadClient } from "@/services/client.service";
 import { Client, CreatePreloadClientDto } from "@/types/cretateClient.type";
 
 interface ResolverInput {
@@ -9,6 +8,30 @@ interface ResolverInput {
   surname?: string;
   phone?: string;
   address?: string;
+  email?: string;
+
+  // Referencias
+  nameReference1?: string;
+  telReference1?: string;
+  addressReference1?: string;
+  nameReference2?: string;
+  telReference2?: string;
+  addressReference2?: string;
+
+  // Socioeconómicos
+  profession?: string;
+  monthlyIncome?: string;
+  paymentMethod?: string;
+  incomeDependents?: string;
+  additionalIncome?: string;
+  housingSituation?: string;
+  contractDuration?: string;
+  cuil?: string;
+  activeCredit?: boolean;
+
+  // Otros
+  observations?: string;
+  societyId?: string;
 }
 
 export function useClientResolver() {
@@ -31,14 +54,33 @@ export function useClientResolver() {
         surname: data.surname ?? "",
         phone: data.phone ?? "",
         address: data.address ?? "",
+        email: data.email ?? "",
         documentNumber: data.documentNumber,
-        zoneId: undefined,
-        nameReference1: "",
-        telReference1: "",
-        addressReference1: "",
-        nameReference2: "",
-        telReference2: "",
-        addressReference2: "",
+        zoneId: data.societyId ?? undefined,
+
+        // Referencias
+        nameReference1: data.nameReference1 ?? "",
+        telReference1: data.telReference1 ?? "",
+        addressReference1: data.addressReference1 ?? "",
+        nameReference2: data.nameReference2 ?? "",
+        telReference2: data.telReference2 ?? "",
+        addressReference2: data.addressReference2 ?? "",
+
+        // Socioeconómicos
+        profession: data.profession ?? "",
+        monthlyIncome: data.monthlyIncome ?? "",
+        paymentMethod: data.paymentMethod ?? "",
+        incomeDependents: data.incomeDependents ?? "",
+        additionalIncome: data.additionalIncome ?? "",
+        housingSituation: data.housingSituation ?? "",
+        contractDuration: data.contractDuration ?? "",
+        cuil: data.cuil ?? "",
+        activeCredit: data.activeCredit ?? false,
+
+        // Otros
+        observations: data.observations ?? "",
+        societyId: data.societyId ?? "",
+
         supportDni: false,
         supportBill: false,
         supportVisit: false,

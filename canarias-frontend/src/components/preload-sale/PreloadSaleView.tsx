@@ -38,18 +38,38 @@ export function PreloadSaleView({
       // Si no existe cliente, lo creamos antes de pasar a la venta
       if (!clientId) {
         const created: Client = await createPreloadClient({
-          name: form.name,
-          surname: form.surname,
-          documentNumber: form.documentNumber,
-          phone: form.phone,
-          address: form.address,
-          zoneId: form.zoneId,
+          // Básicos
+          name: form.name || undefined,
+          surname: form.surname || undefined,
+          documentNumber: form.documentNumber || undefined,
+          phone: form.phone || undefined,
+          address: form.address || undefined,
+          email: form.email || undefined,
+          zoneId: form.zoneId || undefined,
+
+          // Referencias (requeridas en backend)
           nameReference1: form.nameReference1,
           telReference1: form.telReference1,
           addressReference1: form.addressReference1,
           nameReference2: form.nameReference2,
           telReference2: form.telReference2,
           addressReference2: form.addressReference2,
+
+          // Socioeconómicos
+          profession: form.profession || undefined,
+          monthlyIncome: form.monthlyIncome || undefined,
+          paymentMethod: form.paymentMethod || undefined,
+          incomeDependents: form.incomeDependents || undefined,
+          additionalIncome: form.additionalIncome || undefined,
+          housingSituation: form.housingSituation || undefined,
+          contractDuration: form.contractDuration || undefined,
+          cuil: form.cuil || undefined,
+          activeCredit: form.activeCredit ?? false,
+
+          // Observaciones
+          observations: form.observations || undefined,
+
+          societyId: form.societyId || undefined,
         });
 
         clientId = created.clientId;
@@ -62,7 +82,7 @@ export function PreloadSaleView({
 
       goToSaleStep();
     } catch (e) {
-      console.error(e);
+      console.error("Error creando cliente:", e);
     }
   };
 

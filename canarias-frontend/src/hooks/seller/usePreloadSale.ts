@@ -32,7 +32,6 @@ const initialForm: PreloadFormData = {
   nameReference1: "",
   telReference1: "",
   addressReference1: "",
-
   nameReference2: "",
   telReference2: "",
   addressReference2: "",
@@ -40,10 +39,25 @@ const initialForm: PreloadFormData = {
   ref1Phone: "",
   ref1Relationship: "",
   ref1Address: "",
-
   ref2Phone: "",
   ref2Relationship: "",
   ref2Address: "",
+
+  // ─── SOCIOECONÓMICOS ───
+  profession: "",
+  monthlyIncome: "",
+  paymentMethod: "",
+  incomeDependents: "",
+  additionalIncome: "",
+  housingSituation: "",
+  contractDuration: "",
+  cuil: "",
+  activeCredit: false,
+
+  // Observaciones
+  observations: "",
+
+  societyId: "",
 };
 
 export function usePreloadSale() {
@@ -122,9 +136,7 @@ export function usePreloadSale() {
       setLoading(true);
       setError(null);
 
-      const client = await searchClientByDocument(
-        form.documentNumber,
-      );
+      const client = await searchClientByDocument(form.documentNumber);
 
       setSearched(true);
 
@@ -153,8 +165,7 @@ export function usePreloadSale() {
         name: client.name ?? "",
         surname: client.surname ?? "",
 
-        documentNumber:
-          client.documentNumber ?? prev.documentNumber,
+        documentNumber: client.documentNumber ?? prev.documentNumber,
 
         address: client.address ?? "",
         zoneId: client.zoneId ?? "",
@@ -175,17 +186,17 @@ export function usePreloadSale() {
   // ---------------- CLIENT CONFIRMATION ----------------
 
   function confirmClientSelection() {
-  if (clientConfirmType === "new") {
-    setStep(2);
-  }
+    if (clientConfirmType === "new") {
+      setStep(2);
+    }
 
-  if (clientConfirmType === "existing") {
-    setStep(3);
-  }
+    if (clientConfirmType === "existing") {
+      setStep(3);
+    }
 
-  setClientConfirmOpen(false);
-  setClientConfirmType(null);
-}
+    setClientConfirmOpen(false);
+    setClientConfirmType(null);
+  }
   // ---------------- SALE STEP ----------------
 
   function goToSaleStep() {
@@ -212,8 +223,7 @@ export function usePreloadSale() {
         document: form.documentNumber,
       });
 
-      let finalClientId =
-        existingClient?.clientId ?? form.clientId;
+      let finalClientId = existingClient?.clientId ?? form.clientId;
 
       // ---------------- CREATE CLIENT IF NEEDED ----------------
 
@@ -227,6 +237,7 @@ export function usePreloadSale() {
             documentNumber: form.documentNumber,
             address: form.address,
             phone: form.phone,
+            email: form.email,
             zoneId: form.zoneId,
 
             nameReference1: form.nameReference1,
@@ -236,15 +247,27 @@ export function usePreloadSale() {
             nameReference2: form.nameReference2,
             telReference2: form.telReference2,
             addressReference2: form.addressReference2,
+
+            // ─── SOCIOECONÓMICOS ───
+            profession: form.profession,
+            monthlyIncome: form.monthlyIncome,
+            paymentMethod: form.paymentMethod,
+            incomeDependents: form.incomeDependents,
+            additionalIncome: form.additionalIncome,
+            housingSituation: form.housingSituation,
+            contractDuration: form.contractDuration,
+            cuil: form.cuil,
+            activeCredit: form.activeCredit,
+
+            // Observaciones
+            observations: form.observations,
+
+            societyId: form.societyId,
           });
         } catch (err) {
-          console.warn(
-            "El cliente ya existe. Reintentando búsqueda...",
-          );
+          console.warn("El cliente ya existe. Reintentando búsqueda...");
 
-          client = await searchClientByDocument(
-            form.documentNumber,
-          );
+          client = await searchClientByDocument(form.documentNumber);
 
           setSearched(true);
 
@@ -264,8 +287,7 @@ export function usePreloadSale() {
           name: client.name ?? prev.name,
           surname: client.surname ?? prev.surname,
 
-          documentNumber:
-            client.documentNumber ?? prev.documentNumber,
+          documentNumber: client.documentNumber ?? prev.documentNumber,
 
           address: client.address ?? prev.address,
           phone: client.phone ?? prev.phone,
@@ -293,6 +315,21 @@ export function usePreloadSale() {
       if (!selectedProduct) {
         throw new Error("Producto no válido");
       }
+
+      // ---------------- LOGUEAR PAYLOAD VENTA ----------------
+      console.log("Payload venta:", {
+        clientId: finalClientId,
+        installmentsCount: form.installmentsCount,
+        paymentFrequency: form.paymentFrequency,
+        observation: form.observations ?? `Localidad: ${form.locality}`,
+        products: [
+          {
+            productId: form.productId,
+            quantity: form.quantity,
+            unitPrice: Number(selectedProduct.price),
+          },
+        ],
+      });
 
       // ---------------- CREATE SALE ----------------
 

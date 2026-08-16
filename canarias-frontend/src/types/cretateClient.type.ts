@@ -49,19 +49,40 @@ export interface ClientLookupResponse extends Client {
 }
 
 export interface CreateClientPayload {
-  name: string;
-  surname: string;
-  documentNumber: string;
-  address: string;
-  phone: string;
+  // Básicos (opcionales en backend)
+  name?: string;
+  surname?: string;
+  documentNumber?: string;
+  address?: string;
+  phone?: string;
+  email?: string;
   zoneId?: string;
+
+  // Referencias (requeridas en backend)
   nameReference1: string;
   telReference1: string;
   addressReference1: string;
   nameReference2: string;
   telReference2: string;
   addressReference2: string;
+
+  // Socioeconómicos (opcionales en backend)
+  profession?: string;
+  monthlyIncome?: string;
+  paymentMethod?: string;
+  incomeDependents?: string;
+  additionalIncome?: string;
+  housingSituation?: string;
+  contractDuration?: string;
+  cuil?: string;
+  activeCredit?: boolean;
+
+  // Otros (opcionales en backend)
+  observations?: string;
+  societyId?: string;
 }
+
+
 
 export interface CreatePreloadClientDto extends CreateClientPayload {
   // backend espera defaults o los completa
