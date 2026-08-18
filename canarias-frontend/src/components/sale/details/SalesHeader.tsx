@@ -53,10 +53,14 @@ export function SaleHeader({ sale }: SaleHeaderProps) {
           </div>
 
           <div className="text-right">
-            <p className="text-sm text-white/50">Primer vencimiento</p>
+            <p className="text-sm text-white/50">Fecha de entrega</p>
 
             <p className="font-medium text-white">
-              {new Date(sale.firstDueDate).toLocaleDateString("es-AR")}
+              {sale.deliveryDate
+                ? new Date(`${sale.deliveryDate}T00:00:00`).toLocaleDateString(
+                    "es-AR",
+                  )
+                : "Sin coordinar"}
             </p>
           </div>
         </div>

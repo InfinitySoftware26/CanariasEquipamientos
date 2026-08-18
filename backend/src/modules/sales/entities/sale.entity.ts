@@ -73,8 +73,12 @@ export class Sale {
   @Column({ name: "payment_frequency", type: "enum", enum: PaymentFrequency })
   paymentFrequency!: PaymentFrequency;
 
-  @Column({ name: "first_due_date", type: "date" })
-  firstDueDate!: Date;
+  @Column({
+    name: "first_due_date",
+    type: "date",
+    nullable: true,
+  })
+  firstDueDate!: Date | null;
 
   @Column({ name: "sale_date", type: "timestamptz" })
   saleDate!: Date;

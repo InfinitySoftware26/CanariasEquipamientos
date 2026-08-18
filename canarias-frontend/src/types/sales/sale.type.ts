@@ -87,7 +87,7 @@ export interface Sale {
   paymentFrequency: string;
 
   // FECHAS
-  firstDueDate: string;
+  firstDueDate?: string | null;
 
   saleDate: string;
 
@@ -99,7 +99,7 @@ export interface Sale {
 
   updatedAt?: string;
 
-  deliveryDate?: string;
+  deliveryDate?: string | null;
   
 
   // ESTADO

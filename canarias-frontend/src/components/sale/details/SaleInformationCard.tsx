@@ -68,8 +68,14 @@ export function SaleInformationCard({ sale }: SaleInformationCardProps) {
         />
 
         <Info
-          title="Primer vencimiento"
-          value={new Date(sale.firstDueDate).toLocaleDateString()}
+          title="Fecha de entrega"
+          value={
+            sale.deliveryDate
+              ? new Date(`${sale.deliveryDate}T00:00:00`).toLocaleDateString(
+                  "es-AR",
+                )
+              : "Sin coordinar"
+          }
         />
       </div>
 
