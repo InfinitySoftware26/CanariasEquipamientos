@@ -60,7 +60,7 @@ export class SalesService {
     @InjectRepository(Installment)
     private readonly installmentRepo: Repository<Installment>,
     private readonly financingConfigService: FinancingConfigService,
-  ) { }
+  ) {}
 
   // ─── QUERIES ──────────────────────────────────────────────────────────────
 
@@ -98,7 +98,7 @@ export class SalesService {
     const totalCommission =
       Math.round(
         closedSales.reduce((sum, s) => sum + Number(s.sellerCommission), 0) *
-        100,
+          100,
       ) / 100;
     const averageCommission = closedSales.length
       ? Math.round((totalCommission / closedSales.length) * 100) / 100
@@ -175,11 +175,6 @@ export class SalesService {
       Math.round(totalAmount * SELLER_COMMISSION_RATE * 100) / 100;
 
     const saleDate = new Date();
-    const dueDates = this.calculateDueDates(
-      saleDate,
-      dto.installmentsCount,
-      dto.paymentFrequency,
-    );
 
     const sale = await this.salesRepo.create({
       clientId: dto.clientId,
@@ -191,7 +186,6 @@ export class SalesService {
       installmentAmount,
       installmentsCount: dto.installmentsCount,
       paymentFrequency: dto.paymentFrequency,
-      firstDueDate: dueDates[0],
       saleDate,
       observation: dto.observation,
       status: SaleStatus.PENDING_ADMIN_VALIDATION,
@@ -210,28 +204,6 @@ export class SalesService {
         ),
       ),
     );
-
-    // las cuotas no se generan al crear la venta,
-    // sino al aprobarla en la validación administrativa.
-    // Esto es para evitar generar cuotas de ventas que luego podrían ser rechazadas
-    // y no concretarse.
-
-    // await Promise.all(
-    //   dueDates.map((dueDate, i) =>
-    //     this.installmentRepo.save(this.installmentRepo.create({
-    //       saleId: sale.saleId,
-    //       clientId: dto.clientId,
-    //       societyId,
-    //       installmentNumber: i + 1,
-    //       amount: installmentAmount,
-    //       paidAmount: 0,
-    //       remainingAmount: installmentAmount,
-    //       dueDate,
-    //       paymentFrequency: dto.paymentFrequency,
-    //       status: InstallmentStatus.PENDING,
-    //     })),
-    //   ),
-    // );
 
     await this.historyRepo.create({
       saleId: sale.saleId,
@@ -315,11 +287,18 @@ export class SalesService {
 
     await this.salesRepo.updateStatus(saleId, newStatus);
 
-    // Al aprobar la visita ambiental, la venta queda pendiente de entrega.
-    // En este momento se genera el plan de cuotas para que la primera
-    // pueda cobrarse durante la entrega del producto.
-    if (dto.status === "approved") {
-      await this.generateInstallments(sale);
+    /*
+     * La fecha de entrega es la fuente de verdad para el
+     * calendario de cuotas.
+     *
+     * Si ya fue coordinada antes de aprobar la visita,
+     * generamos las cuotas inmediatamente.
+     *
+     * Si todavía no existe, se generarán cuando Administración
+     * coordine la entrega.
+     */
+    if (dto.status === "approved" && sale.deliveryDate) {
+      await this.generateInstallments(sale, sale.deliveryDate);
     }
 
     await this.validationsRepo.create({
@@ -345,20 +324,55 @@ export class SalesService {
     });
   }
 
-  private async generateInstallments(sale: Sale): Promise<void> {
-    const existingInstallments = await this.installmentRepo.count({
+  private async generateInstallments(
+    sale: Sale,
+    deliveryDate: string,
+  ): Promise<void> {
+    if (!deliveryDate) {
+      return;
+    }
+
+    const existingInstallments = await this.installmentRepo.find({
       where: {
         saleId: sale.saleId,
       },
+      order: {
+        installmentNumber: "ASC",
+      },
     });
 
-    if (existingInstallments > 0) {
+    /*
+     * Si ya existe alguna cuota con importe pagado,
+     * no recalculamos el plan para no modificar
+     * información histórica de cobranza.
+     */
+    const hasPaidInstallment = existingInstallments.some(
+      (installment) =>
+        Number(installment.paidAmount) > 0 ||
+        installment.status === InstallmentStatus.PAID,
+    );
+
+    if (hasPaidInstallment) {
       return;
+    }
+
+    /*
+     * Si existen cuotas pero todavía no se cobró ninguna,
+     * las eliminamos para regenerarlas desde la nueva
+     * deliveryDate.
+     *
+     * Esto permite que Administración pueda cambiar
+     * la fecha de entrega antes de comenzar la cobranza.
+     */
+    if (existingInstallments.length > 0) {
+      await this.installmentRepo.delete({
+        saleId: sale.saleId,
+      });
     }
 
     const installments: Partial<Installment>[] = [];
 
-    let dueDate = new Date(sale.firstDueDate);
+    let dueDate = new Date(`${deliveryDate}T00:00:00`);
 
     for (let number = 1; number <= sale.installmentsCount; number++) {
       installments.push({
@@ -379,23 +393,7 @@ export class SalesService {
         status: InstallmentStatus.PENDING,
       });
 
-      switch (sale.paymentFrequency) {
-        case PaymentFrequency.DAILY:
-          dueDate.setDate(dueDate.getDate() + 1);
-          break;
-
-        case PaymentFrequency.WEEKLY:
-          dueDate.setDate(dueDate.getDate() + 7);
-          break;
-
-        case PaymentFrequency.BIWEEKLY:
-          dueDate.setDate(dueDate.getDate() + 15);
-          break;
-
-        case PaymentFrequency.MONTHLY:
-          dueDate.setMonth(dueDate.getMonth() + 1);
-          break;
-      }
+      dueDate = this.getNextInstallmentDate(dueDate, sale.paymentFrequency);
     }
 
     await this.installmentRepo.save(
@@ -404,6 +402,39 @@ export class SalesService {
       ),
     );
   }
+
+  //-------CALCULO---------------------------------------------------------------
+
+  private getNextInstallmentDate(
+  currentDate: Date,
+  frequency: PaymentFrequency,
+): Date {
+  const nextDate = new Date(currentDate);
+
+  switch (frequency) {
+    case PaymentFrequency.DAILY:
+      do {
+        nextDate.setDate(nextDate.getDate() + 1);
+      } while (nextDate.getDay() === 0);
+
+      return nextDate;
+
+    case PaymentFrequency.BIWEEKLY:
+      nextDate.setDate(nextDate.getDate() + 14);
+      return nextDate;
+
+    case PaymentFrequency.WEEKLY:
+      nextDate.setDate(nextDate.getDate() + 7);
+      return nextDate;
+
+    case PaymentFrequency.MONTHLY:
+      nextDate.setDate(nextDate.getDate() + 28);
+      return nextDate;
+
+    default:
+      return nextDate;
+  }
+}
 
   // ─── ENTREGA ──────────────────────────────────────────────────────────────
 
@@ -517,14 +548,19 @@ export class SalesService {
 
     await this.salesRepo.update(saleId, updateData);
 
+    const updatedSale = await this.findById(saleId);
+
+    if (dto.deliveryDate) {
+      await this.generateInstallments(updatedSale, dto.deliveryDate);
+    }
+
     await this.historyRepo.create({
       saleId,
       action: "SALE_CLOSED",
       snapshot: {
         previousStatus: sale.status,
         newStatus: SaleStatus.CLOSED,
-        deliveryDate:
-          dto.deliveryDate ?? sale.deliveryDate ?? null,
+        deliveryDate: dto.deliveryDate ?? sale.deliveryDate ?? null,
       } as object,
       performedBy: staffId,
       performedByName: name,
@@ -540,12 +576,6 @@ export class SalesService {
 
     const sale = await this.findById(saleId);
 
-    console.log("Estado actual:", sale.status);
-
-    console.log(dto);
-    console.log(dto.deliveryDate);
-    console.log(sale.status);
-
     if (
       sale.status !== SaleStatus.PENDING_DELIVERY &&
       sale.status !== SaleStatus.DELIVERED
@@ -558,6 +588,10 @@ export class SalesService {
     await this.salesRepo.update(saleId, {
       deliveryDate: dto.deliveryDate,
     });
+
+    const updatedSale = await this.findById(saleId);
+
+    await this.generateInstallments(updatedSale, dto.deliveryDate);
 
     await this.historyRepo.create({
       saleId,
@@ -690,23 +724,5 @@ export class SalesService {
     }
 
     return { from, to };
-  }
-
-  private calculateDueDates(
-    firstDueDate: Date,
-    count: number,
-    frequency: PaymentFrequency,
-  ): Date[] {
-    const dates: Date[] = [];
-    for (let i = 0; i < count; i++) {
-      const d = new Date(firstDueDate);
-      if (frequency === PaymentFrequency.WEEKLY) {
-        d.setDate(d.getDate() + i * 7);
-      } else {
-        d.setMonth(d.getMonth() + i);
-      }
-      dates.push(d);
-    }
-    return dates;
   }
 }
