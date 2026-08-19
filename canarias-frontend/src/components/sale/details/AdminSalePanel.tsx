@@ -42,9 +42,12 @@ export function AdminSalePanel({ sale, onRefresh }: Props) {
   const [selectedCollector, setSelectedCollector] = useState(
     sale.assignedCollectorId ?? "",
   );
+  const [environmentalConfirmOpen, setEnvironmentalConfirmOpen] =
+    useState(false);
   const [deliveryDate, setDeliveryDate] = useState(
     sale.deliveryDate?.split("T")[0] ?? "",
   );
+  const [deliveryConfirmOpen, setDeliveryConfirmOpen] = useState(false);
   const badge = getSaleStatusLabel(sale.status);
   useEffect(() => {
     async function loadCollectors() {
@@ -61,7 +64,10 @@ export function AdminSalePanel({ sale, onRefresh }: Props) {
   }, []);
 
   const canValidate = sale.status === "pending_admin_validation";
-  const canAssign = sale.status === "pending_environmental_visit";
+  const canAssign =
+    sale.status === "pending_environmental_visit" ||
+    sale.status === "pending_delivery" ||
+    sale.status === "delivered";
   const canDelivery = sale.status === "pending_delivery";
   const canClose = sale.status === "delivered";
 
@@ -84,10 +90,29 @@ export function AdminSalePanel({ sale, onRefresh }: Props) {
       return;
     }
 
+    if (result === "approved") {
+      setEnvironmentalConfirmOpen(true);
+      return;
+    }
+
     try {
       setLoading(true);
 
       await adminValidateSale(sale.saleId, result, observation);
+
+      await onRefresh();
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function confirmEnvironmentalApproval() {
+    try {
+      setLoading(true);
+
+      await adminValidateSale(sale.saleId, "approved", observation);
+
+      setEnvironmentalConfirmOpen(false);
 
       await onRefresh();
     } finally {
@@ -113,17 +138,23 @@ export function AdminSalePanel({ sale, onRefresh }: Props) {
     }
   }
 
-  async function scheduleDelivery() {
+  function scheduleDelivery() {
     if (!deliveryDate) {
       alert("Seleccione una fecha de entrega.");
 
       return;
     }
 
+    setDeliveryConfirmOpen(true);
+  }
+
+  async function confirmScheduleDelivery() {
     try {
       setLoading(true);
 
       await scheduleDeliveryDate(sale.saleId, deliveryDate);
+
+      setDeliveryConfirmOpen(false);
 
       await onRefresh();
     } finally {
@@ -147,18 +178,13 @@ export function AdminSalePanel({ sale, onRefresh }: Props) {
     try {
       setLoading(true);
 
-      if (deliveryDate) {
-        await scheduleDeliveryDate(sale.saleId, deliveryDate);
-      }
-
-      await closeSale(sale.saleId, deliveryDate);
+      await closeSale(sale.saleId, deliveryDate || undefined);
 
       await onRefresh();
     } finally {
       setLoading(false);
     }
   }
-
   return (
     <section className="rounded-3xl border border-white/10 bg-[#111827] shadow-xl">
       <div className="flex items-center justify-between border-b border-white/10 px-6 py-5">
@@ -303,7 +329,9 @@ export function AdminSalePanel({ sale, onRefresh }: Props) {
               onClick={handleAssign}
               className="w-full"
             >
-              Asignar cobrador
+              {sale.assignedCollectorId
+                ? "Reasignar cobrador"
+                : "Asignar cobrador"}
             </AddButton>
           </div>
         )}
@@ -402,6 +430,30 @@ export function AdminSalePanel({ sale, onRefresh }: Props) {
         cancelText="Cancelar"
         loading={loading}
         onConfirm={handleClose}
+      />
+
+      <ConfirmDialog
+        open={environmentalConfirmOpen}
+        onOpenChange={setEnvironmentalConfirmOpen}
+        title="Confirmar visita ambiental"
+        description={
+          "Al aprobar la visita ambiental se generarán automáticamente las cuotas de esta venta. La primera cuota tomará como fecha la fecha de entrega coordinada. ¿Deseás continuar?"
+        }
+        onConfirm={confirmEnvironmentalApproval}
+        confirmText="Confirmar aprobación"
+        cancelText="Cancelar"
+      />
+
+      <ConfirmDialog
+        open={deliveryConfirmOpen}
+        onOpenChange={setDeliveryConfirmOpen}
+        title="Confirmar fecha de entrega"
+        description={
+          "Esta será la fecha utilizada como inicio del plan de cuotas. La fecha de entrega puede actualizarse posteriormente al cerrar la venta si ocurre algún inconveniente con la entrega. No es necesario cargar las cuotas manualmente: el sistema las genera y las recalcula automáticamente."
+        }
+        onConfirm={confirmScheduleDelivery}
+        confirmText="Confirmar fecha"
+        cancelText="Cancelar"
       />
     </section>
   );

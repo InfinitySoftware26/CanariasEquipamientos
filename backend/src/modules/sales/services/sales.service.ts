@@ -406,36 +406,35 @@ export class SalesService {
   //-------CALCULO---------------------------------------------------------------
 
   private getNextInstallmentDate(
-    currentDate: Date,
-    frequency: PaymentFrequency,
-  ): Date {
-    const nextDate = new Date(currentDate);
+  currentDate: Date,
+  frequency: PaymentFrequency,
+): Date {
+  const nextDate = new Date(currentDate);
 
-    switch (frequency) {
-      case PaymentFrequency.DAILY:
+  switch (frequency) {
+    case PaymentFrequency.DAILY:
+      do {
         nextDate.setDate(nextDate.getDate() + 1);
-        break;
+      } while (nextDate.getDay() === 0);
 
-      case PaymentFrequency.WEEKLY:
-        nextDate.setDate(nextDate.getDate() + 7);
-        break;
+      return nextDate;
 
-      case PaymentFrequency.BIWEEKLY:
-        nextDate.setDate(nextDate.getDate() + 14);
-        break;
+    case PaymentFrequency.BIWEEKLY:
+      nextDate.setDate(nextDate.getDate() + 14);
+      return nextDate;
 
-      case PaymentFrequency.MONTHLY:
-        nextDate.setDate(nextDate.getDate() + 28);
-        break;
+    case PaymentFrequency.WEEKLY:
+      nextDate.setDate(nextDate.getDate() + 7);
+      return nextDate;
 
-      default:
-        throw new BadRequestException(
-          `Frecuencia de pago no soportada: ${frequency}`,
-        );
-    }
+    case PaymentFrequency.MONTHLY:
+      nextDate.setDate(nextDate.getDate() + 28);
+      return nextDate;
 
-    return nextDate;
+    default:
+      return nextDate;
   }
+}
 
   // ─── ENTREGA ──────────────────────────────────────────────────────────────
 
