@@ -7,6 +7,7 @@ export type FailedVisitReason =
 export interface FailedVisit {
   failedVisitId: string;
   clientId: string;
+  saleId: string;
   routeSheetItemId: string;
   reason: FailedVisitReason;
   notes?: string | null;

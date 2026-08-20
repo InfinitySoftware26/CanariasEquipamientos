@@ -30,13 +30,39 @@ interface Props {
   onSubmit: (data: RouteSheetItemResultData) => void | Promise<void>;
 }
 
+/**
+ * Traducción de los estados internos del sistema.
+ *
+ * IMPORTANTE:
+ * No cambiamos los valores reales que utiliza el backend:
+ *
+ * completed -> Completado
+ * failed    -> Fallido
+ *
+ * De esta manera el frontend muestra español,
+ * pero seguimos enviando los valores esperados por la API.
+ */
+const RESULT_LABELS: Record<RouteSheetItemResult, string> = {
+  pending: "Pendiente",
+  completed: "Completado",
+  failed: "Fallido",
+};
+
+const FAILED_REASON_LABELS: Record<FailedVisitReason, string> = {
+  client_absent: "Cliente ausente",
+  refused_payment: "Pago rechazado",
+  wrong_address: "Dirección incorrecta",
+  other: "Otro motivo",
+};
+
 function parseMoney(value: string): number | undefined {
   if (!value.trim()) {
     return undefined;
   }
 
-  // El input usa punto decimal.
+  // El input acepta punto o coma decimal.
   const normalized = value.replace(",", ".").trim();
+
   const parsed = Number(normalized);
 
   if (!Number.isFinite(parsed)) {
@@ -66,12 +92,17 @@ export function RouteSheetItemResultModal({
   const [result, setResult] = useState<RouteSheetItemResult>("completed");
 
   const [amount, setAmount] = useState("");
+
   const [notes, setNotes] = useState("");
 
   const [reason, setReason] = useState<FailedVisitReason>("client_absent");
 
   const [error, setError] = useState<string | null>(null);
 
+  /**
+   * Reiniciamos el formulario cada vez que
+   * se abre el modal para otro item.
+   */
   useEffect(() => {
     if (!item) {
       return;
@@ -79,7 +110,8 @@ export function RouteSheetItemResultModal({
 
     setResult("completed");
 
-    // Si tenemos el importe de la cuota, lo mostramos como sugerencia.
+    // Si tenemos el importe de la cuota,
+    // lo mostramos como sugerencia.
     if (item.itemType === "installment" && item.installmentAmount != null) {
       setAmount(String(Number(item.installmentAmount)));
     } else {
@@ -92,6 +124,7 @@ export function RouteSheetItemResultModal({
   }, [item]);
 
   const isInstallment = item?.itemType === "installment";
+
   const isFailed = result === "failed";
 
   const installmentAmount = useMemo(() => {
@@ -113,15 +146,24 @@ export function RouteSheetItemResultModal({
 
     const numericAmount = parseMoney(amount);
 
+    /**
+     * Si es una cuota y la visita fue completada,
+     * necesitamos un importe mayor a cero.
+     */
     if (
       isInstallment &&
       result === "completed" &&
       (!numericAmount || numericAmount <= 0)
     ) {
       setError("Ingresá un monto cobrado mayor a cero.");
+
       return;
     }
 
+    /**
+     * El cobrador no puede registrar un importe
+     * superior al saldo de la cuota.
+     */
     if (
       isInstallment &&
       result === "completed" &&
@@ -134,19 +176,27 @@ export function RouteSheetItemResultModal({
           installmentAmount,
         )}).`,
       );
+
       return;
     }
 
+    /**
+     * Una visita fallida requiere observaciones.
+     */
     if (isFailed && !notes.trim()) {
       setError("Ingresá una observación para la visita fallida.");
+
       return;
     }
 
     try {
       await onSubmit({
         result,
+
         collectedAmount: result === "completed" ? numericAmount : undefined,
+
         notes: notes.trim() || undefined,
+
         failedVisitReason: isFailed ? reason : undefined,
       });
     } catch (err) {
@@ -165,6 +215,10 @@ export function RouteSheetItemResultModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
       <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-white/10 bg-[#101b2d] p-6 shadow-2xl">
+        {/* =====================================================
+            HEADER
+        ====================================================== */}
+
         <div className="mb-6">
           <h2 className="text-xl font-semibold text-white">Registrar visita</h2>
 
@@ -195,6 +249,10 @@ export function RouteSheetItemResultModal({
           </div>
         </div>
 
+        {/* =====================================================
+            ERROR
+        ====================================================== */}
+
         {error && (
           <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">
             {error}
@@ -202,6 +260,10 @@ export function RouteSheetItemResultModal({
         )}
 
         <div className="space-y-5">
+          {/* ===================================================
+              RESULTADO
+          ==================================================== */}
+
           <div>
             <label className="mb-2 block text-sm text-white/70">
               Resultado
@@ -215,13 +277,25 @@ export function RouteSheetItemResultModal({
               }
               className="w-full rounded-xl bg-black/20 p-3 text-white outline-none ring-1 ring-white/10 focus:ring-[#F5A300]"
             >
-              <option value="completed">
+              <option value="completed" className="bg-[#101b2d] text-white">
                 {isInstallment ? "Cobro completado" : "Entrega completada"}
               </option>
 
-              <option value="failed">Visita fallida</option>
+              <option value="failed" className="bg-[#101b2d] text-white">
+                Visita fallida
+              </option>
             </select>
+
+            {/* Estado actual traducido */}
+            <p className="mt-2 text-xs text-white/40">
+              Estado:{" "}
+              <span className="text-white/70">{RESULT_LABELS[result]}</span>
+            </p>
           </div>
+
+          {/* ===================================================
+              MONTO COBRADO
+          ==================================================== */}
 
           {isInstallment && result === "completed" && (
             <div>
@@ -255,6 +329,10 @@ export function RouteSheetItemResultModal({
             </div>
           )}
 
+          {/* ===================================================
+              MOTIVO VISITA FALLIDA
+          ==================================================== */}
+
           {isFailed && (
             <div>
               <label className="mb-2 block text-sm text-white/70">
@@ -269,16 +347,45 @@ export function RouteSheetItemResultModal({
                 }
                 className="w-full rounded-xl bg-black/20 p-3 text-white outline-none ring-1 ring-white/10 focus:ring-[#F5A300]"
               >
-                <option value="client_absent">Cliente ausente</option>
+                <option
+                  value="client_absent"
+                  className="bg-[#101b2d] text-white"
+                >
+                  Cliente ausente
+                </option>
 
-                <option value="refused_payment">Pago rechazado</option>
+                <option
+                  value="refused_payment"
+                  className="bg-[#101b2d] text-white"
+                >
+                  Pago rechazado
+                </option>
 
-                <option value="wrong_address">Dirección incorrecta</option>
+                <option
+                  value="wrong_address"
+                  className="bg-[#101b2d] text-white"
+                >
+                  Dirección incorrecta
+                </option>
 
-                <option value="other">Otro motivo</option>
+                <option value="other" className="bg-[#101b2d] text-white">
+                  Otro motivo
+                </option>
               </select>
+
+              {/* Motivo actual traducido */}
+              <p className="mt-2 text-xs text-white/40">
+                Motivo seleccionado:{" "}
+                <span className="text-white/70">
+                  {FAILED_REASON_LABELS[reason]}
+                </span>
+              </p>
             </div>
           )}
+
+          {/* ===================================================
+              OBSERVACIONES
+          ==================================================== */}
 
           <div>
             <label className="mb-2 block text-sm text-white/70">
@@ -294,6 +401,10 @@ export function RouteSheetItemResultModal({
               className="min-h-[100px] w-full rounded-xl bg-black/20 p-3 text-white outline-none ring-1 ring-white/10 placeholder:text-white/30 focus:ring-[#F5A300]"
             />
           </div>
+
+          {/* ===================================================
+              BOTONES
+          ==================================================== */}
 
           <div className="flex gap-3">
             <CancelButton

@@ -9,16 +9,25 @@ import { useClosureActions } from "@/hooks/closures/useClosureActions";
 
 import { ClosureDetail } from "@/components/closures/ClosureDetail";
 
-const ALLOWED_ROLES = [StaffRole.ADMIN, StaffRole.MANAGER, StaffRole.SUPER_ADMIN];
+const VALIDATOR_ROLES = [
+  StaffRole.ADMIN,
+  StaffRole.MANAGER,
+  StaffRole.SUPER_ADMIN,
+];
+
+const ALLOWED_ROLES = [...VALIDATOR_ROLES, StaffRole.COLLECTOR];
 
 export default function ClosureDetailPage() {
   const { id } = useParams<{ id: string }>();
 
   const activeRole = useAuthStore((state) => state.activeRole);
   const allowed = !!activeRole && ALLOWED_ROLES.includes(activeRole);
+  const canValidate = !!activeRole && VALIDATOR_ROLES.includes(activeRole);
 
-  const { closure, reconciliation, loading, error, refresh } =
-    useClosureDetail(id, allowed);
+  const { closure, reconciliation, loading, error, refresh } = useClosureDetail(
+    id,
+    allowed,
+  );
 
   const { approve, reject, loading: acting } = useClosureActions();
 
@@ -67,7 +76,7 @@ export default function ClosureDetailPage() {
         <ClosureDetail
           closure={closure}
           reconciliation={reconciliation}
-          canValidate={allowed}
+          canValidate={canValidate}
           acting={acting}
           onApprove={async () => {
             await approve(closure.closureId);

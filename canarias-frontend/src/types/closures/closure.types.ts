@@ -33,9 +33,16 @@ export interface ClosureReconciliation {
 export interface ClosureFilters {
   status?: DailyClosureStatus;
   closingDate?: string;
+  staffId?:string;
 }
 
 export interface ValidateClosurePayload {
   status: "validated" | "rejected";
   observations?: string;
+}
+
+export interface CreateClosurePayload {
+  closingDate: string;
+  totalCollected: number;
+  notes?: string;
 }

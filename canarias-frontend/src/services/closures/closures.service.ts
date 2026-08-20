@@ -3,6 +3,7 @@ import { apiFetch } from "../apiFetch.service";
 import {
   ClosureFilters,
   ClosureReconciliation,
+  CreateClosurePayload,
   DailyClosure,
   ValidateClosurePayload,
 } from "@/types/closures/closure.types";
@@ -65,6 +66,7 @@ export async function getClosures(
 
   if (filters?.status) params.append("status", filters.status);
   if (filters?.closingDate) params.append("closingDate", filters.closingDate);
+  if (filters?.staffId) params.append("staffId", filters.staffId);
 
   const queryString = params.toString();
   const endpoint = queryString ? `/closures?${queryString}` : "/closures";
@@ -81,9 +83,9 @@ export async function getClosures(
     );
   }
 
-  const data = await getResponseData<DailyClosure[] | { data?: DailyClosure[] }>(
-    response,
-  );
+  const data = await getResponseData<
+    DailyClosure[] | { data?: DailyClosure[] }
+  >(response);
 
   return Array.isArray(data) ? data : [];
 }
@@ -98,7 +100,9 @@ export async function getClosureById(id: string): Promise<DailyClosure> {
   });
 
   if (!response.ok) {
-    throw new Error(await getErrorMessage(response, "Error obteniendo el cierre"));
+    throw new Error(
+      await getErrorMessage(response, "Error obteniendo el cierre"),
+    );
   }
 
   return getResponseData<DailyClosure>(response);
@@ -124,6 +128,29 @@ export async function getClosureReconciliation(
   return getResponseData<ClosureReconciliation>(response);
 }
 
+export async function createClosure(
+  payload: CreateClosurePayload,
+): Promise<DailyClosure> {
+  const token = getToken();
+
+  const response = await apiFetch("/closures", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      await getErrorMessage(response, "Error declarando el cierre diario"),
+    );
+  }
+
+  return getResponseData<DailyClosure>(response);
+}
+
 export async function validateClosure(
   id: string,
   payload: ValidateClosurePayload,
@@ -140,6 +167,8 @@ export async function validateClosure(
   });
 
   if (!response.ok) {
-    throw new Error(await getErrorMessage(response, "Error validando el cierre"));
+    throw new Error(
+      await getErrorMessage(response, "Error validando el cierre"),
+    );
   }
 }

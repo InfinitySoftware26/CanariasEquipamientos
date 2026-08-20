@@ -19,7 +19,6 @@ export interface SaleClient {
 export interface SaleStaff {
   staffId: string;
   name: string;
-  surname?: string;
   email?: string;
   role?: string;
 }
@@ -100,7 +99,6 @@ export interface Sale {
   updatedAt?: string;
 
   deliveryDate?: string | null;
-  
 
   // ESTADO
   status:
