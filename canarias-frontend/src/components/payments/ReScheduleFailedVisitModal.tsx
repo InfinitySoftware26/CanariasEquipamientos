@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-import { FailedVisit } from "@/types/payments/failed_visits.types";
+import { FailedVisit } from "@/types/failed-visits/failed-visitis.type";
 
 interface Props {
   failedVisit: FailedVisit | null;
@@ -13,6 +13,7 @@ interface Props {
 
 function getTomorrow() {
   const date = new Date();
+
   date.setDate(date.getDate() + 1);
 
   return date.toISOString().split("T")[0];
@@ -59,10 +60,15 @@ export function RescheduleFailedVisitModal({
       return;
     }
 
+    if (!visit.failedVisitId) {
+      setError("No se encontró el identificador de la visita fallida.");
+      return;
+    }
+
     try {
       setError(null);
 
-      await onSubmit(visit.id, date);
+      await onSubmit(visit.failedVisitId, date);
     } catch (err) {
       console.error("Error reprogramando visita:", err);
 
@@ -82,6 +88,10 @@ export function RescheduleFailedVisitModal({
 
           <p className="mt-2 text-sm text-white/50">
             Cliente: {visit.clientId}
+          </p>
+
+          <p className="mt-1 text-xs text-white/30">
+            Visita: {visit.failedVisitId}
           </p>
         </div>
 

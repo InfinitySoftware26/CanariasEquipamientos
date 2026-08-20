@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 import { useOverdueInstallments } from "@/hooks/installments/useOverdueInstallments";
+import { useClientInstallments } from "@/hooks/installments/useClientInstallments";
 import { useInstallmentsView } from "@/hooks/installments/useInstallmentsView";
 import { useInstallmentsPagination } from "@/hooks/installments/useInstallmentsPagination";
 import { usePayInstallment } from "@/hooks/installments/usePayInstallment";
@@ -26,10 +28,29 @@ export default function InstallmentsPage() {
   const activeRole = useAuthStore((state) => state.activeRole);
   const canPay = !!activeRole && CAN_PAY_ROLES.includes(activeRole);
 
-  const { installments, loading, error, refresh } = useOverdueInstallments();
+  // Si venimos desde "Ver todas" en el detalle de un cliente (?clientId=...)
+  // mostramos TODAS sus cuotas (incluidas pagadas). Sin ese parámetro, se
+  // mantiene el comportamiento por defecto: solo cuotas vencidas globales
+  // (todavía no existe un endpoint de listado general en el backend).
+  const searchParams = useSearchParams();
+  const clientId = searchParams.get("clientId");
 
-  const { search, setSearch, filter, setFilter, filteredInstallments, filters, stats } =
-    useInstallmentsView(installments);
+  const overdueQuery = useOverdueInstallments();
+  const clientQuery = useClientInstallments(clientId);
+
+  const { installments, loading, error, refresh } = clientId
+    ? clientQuery
+    : overdueQuery;
+
+  const {
+    search,
+    setSearch,
+    filter,
+    setFilter,
+    filteredInstallments,
+    filters,
+    stats,
+  } = useInstallmentsView(installments);
 
   const { paginated, page, setPage, totalPages } =
     useInstallmentsPagination(filteredInstallments);
@@ -53,10 +74,14 @@ export default function InstallmentsPage() {
     <div className="space-y-8">
       {/* HEADER */}
       <section>
-        <h1 className="text-3xl font-bold text-white">Cuotas</h1>
+        <h1 className="text-3xl font-bold text-white">
+          {clientId ? "Cuotas del cliente" : "Cuotas"}
+        </h1>
 
         <p className="mt-2 text-white/60">
-          Cuotas vencidas pendientes de cobro.
+          {clientId
+            ? "Historial completo de cuotas del cliente: pendientes, vencidas y cobradas."
+            : "Cuotas vencidas pendientes de cobro."}
         </p>
       </section>
 
@@ -100,7 +125,11 @@ export default function InstallmentsPage() {
 
         {!loading && !error && paginated.length === 0 && (
           <div className="rounded-2xl border border-white/10 bg-[#0E1726] p-8 text-center">
-            <p className="text-white/60">No hay cuotas vencidas.</p>
+            <p className="text-white/60">
+              {clientId
+                ? "Este cliente no tiene cuotas registradas."
+                : "No hay cuotas vencidas."}
+            </p>
           </div>
         )}
 

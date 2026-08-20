@@ -16,7 +16,7 @@ const STATUS_FILTERS: { label: string; value: "all" | DailyClosureStatus }[] = [
   { label: "Rechazados", value: "rejected" },
 ];
 
-export function useClosures() {
+export function useClosures(staffId?: string) {
   const [closures, setClosures] = useState<DailyClosure[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,10 +33,15 @@ export function useClosures() {
 
       if (status !== "all") filters.status = status;
       if (closingDate) filters.closingDate = closingDate;
+      if (staffId) filters.staffId = staffId;
 
       const response = await getClosures(filters);
 
-      setClosures(response);
+      // Si el backend todavía no soporta el filtro por staffId, filtramos
+      // igual del lado del cliente para no exponer cierres de otros cobradores.
+      setClosures(
+        staffId ? response.filter((c) => c.staffId === staffId) : response,
+      );
     } catch (err) {
       console.error(err);
 
@@ -50,7 +55,7 @@ export function useClosures() {
     } finally {
       setLoading(false);
     }
-  }, [status, closingDate]);
+  }, [status, closingDate, staffId]);
 
   useEffect(() => {
     loadClosures();
