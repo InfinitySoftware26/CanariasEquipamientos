@@ -86,6 +86,12 @@ export async function getClosures(
   const data = await getResponseData<
     DailyClosure[] | { data?: DailyClosure[] }
   >(response);
+  console.log("🔵 CLOSURES RESPONSE:", data);
+
+  if (Array.isArray(data) && data.length > 0) {
+    console.log("🔵 FIRST CLOSURE:", data[0]);
+    console.log("🔵 STAFF:", data[0].staff);
+  }
 
   return Array.isArray(data) ? data : [];
 }
@@ -105,7 +111,12 @@ export async function getClosureById(id: string): Promise<DailyClosure> {
     );
   }
 
-  return getResponseData<DailyClosure>(response);
+  const data = await getResponseData<DailyClosure>(response);
+
+  console.log("🟢 CLOSURE DETAIL:", data);
+  console.log("🟢 STAFF DETAIL:", data?.staff);
+
+  return data;
 }
 
 export async function getClosureReconciliation(

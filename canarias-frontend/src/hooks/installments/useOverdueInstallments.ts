@@ -3,11 +3,14 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { getOverdueInstallments } from "@/services/installments/installments.service";
+
 import { Installment } from "@/types/installments/installment.types";
 
 export function useOverdueInstallments() {
   const [installments, setInstallments] = useState<Installment[]>([]);
+
   const [loading, setLoading] = useState(false);
+
   const [error, setError] = useState<string | null>(null);
 
   const loadInstallments = useCallback(async () => {
@@ -17,9 +20,11 @@ export function useOverdueInstallments() {
 
       const response = await getOverdueInstallments();
 
-      setInstallments(response);
+      console.log("🟢 HOOK OVERDUE INSTALLMENTS:", response);
+
+      setInstallments(Array.isArray(response) ? response : []);
     } catch (err) {
-      console.error(err);
+      console.error("🔴 HOOK OVERDUE ERROR:", err);
 
       setInstallments([]);
 

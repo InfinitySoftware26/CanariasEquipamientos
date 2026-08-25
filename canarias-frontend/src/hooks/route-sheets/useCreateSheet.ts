@@ -1,9 +1,12 @@
 "use client";
 
-import { createRouteSheet } from "@/services/route-sheets/routeSheets.service";
-import { CreateRouteSheetPayload } from "@/types/rotue-sheets/createRouteSheets.type";
-import { RouteSheetDetail } from "@/types/rotue-sheets/routeSheets.types";
 import { useState } from "react";
+
+import { createRouteSheet } from "@/services/route-sheets/routeSheets.service";
+
+import { CreateRouteSheetPayload } from "@/types/rotue-sheets/createRouteSheets.type";
+
+import { RouteSheetDetail } from "@/types/rotue-sheets/routeSheets.types";
 
 interface UseCreateRouteSheetReturn {
   loading: boolean;
@@ -22,8 +25,23 @@ export function useCreateRouteSheet(): UseCreateRouteSheetReturn {
       setLoading(true);
       setError("");
 
-      return await createRouteSheet(payload);
+      console.log("==========================================");
+      console.log("🚀 useCreateRouteSheet");
+      console.log("==========================================");
+      console.log("PAYLOAD:", payload);
+
+      const result = await createRouteSheet(payload);
+
+      console.log("==========================================");
+      console.log("✅ useCreateRouteSheet - HOJA CREADA");
+      console.log("==========================================");
+      console.log("RESULT:", result);
+
+      return result;
     } catch (err) {
+      console.error("==========================================");
+      console.error("❌ useCreateRouteSheet - ERROR");
+      console.error("==========================================");
       console.error(err);
 
       const message =
@@ -33,6 +51,9 @@ export function useCreateRouteSheet(): UseCreateRouteSheetReturn {
 
       setError(message);
 
+      // Importante:
+      // El componente que llamó a create()
+      // necesita recibir el error.
       throw err;
     } finally {
       setLoading(false);
