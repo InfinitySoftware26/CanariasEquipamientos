@@ -250,6 +250,15 @@ Todas las migraciones deberán:
 
 ---
 
+# Historial — Módulo Financing
+
+| Migración                                          | Descripción                                                                 |
+| --------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `20260823000001-FinancingPlansPromotionsSchema`      | Reemplaza el modelo de 3 tasas fijas por `FINANCING_CONFIGURATIONS` + `FINANCING_PLANS` + `PROMOTIONS`, sus tablas M2M de productos, y agrega `financing_plan_id`/`promotion_id` a `SALES`. |
+| `20260825000001-RenamePromotionProfitToDiscount`     | Renombra `profit_percentage` → `discount_percentage` en `PROMOTIONS` y amplía el rango permitido a `-1..1` (antes `0..1`) para soportar descuentos y recargos. |
+
+---
+
 # Objetivo Arquitectónico
 
 Garantizar evolución segura del sistema sin pérdida de integridad.
