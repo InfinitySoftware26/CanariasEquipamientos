@@ -5,14 +5,17 @@ import {
   BadRequestException,
   ForbiddenException,
 } from "@nestjs/common";
+
 import {
   IRouteSheetItemsRepository,
   ROUTE_SHEET_ITEMS_REPOSITORY,
 } from "../interfaces/route-sheet-items-repository.interface";
+
 import {
   IRouteSheetsRepository,
   ROUTE_SHEETS_REPOSITORY,
 } from "../interfaces/route-sheets-repository.interface";
+
 import { UpdateRouteSheetItemDto } from "../dto/update-route-sheet-item.dto";
 import { RouteSheetItem } from "../entities/route-sheet-item.entity";
 import { RouteSheetItemType } from "../../../common/enums/route-sheet-item-type.enum";
@@ -29,8 +32,10 @@ export class RouteSheetItemsService {
   constructor(
     @Inject(ROUTE_SHEET_ITEMS_REPOSITORY)
     private readonly itemsRepo: IRouteSheetItemsRepository,
+
     @Inject(ROUTE_SHEETS_REPOSITORY)
     private readonly routeSheetsRepo: IRouteSheetsRepository,
+
     private readonly salesService: SalesService,
     private readonly installmentsService: InstallmentsService,
     private readonly paymentsService: PaymentsService,
@@ -43,8 +48,11 @@ export class RouteSheetItemsService {
 
   async findById(id: string): Promise<RouteSheetItem> {
     const item = await this.itemsRepo.findById(id);
-    if (!item)
+
+    if (!item) {
       throw new NotFoundException(`Ítem de hoja de ruta ${id} no encontrado`);
+    }
+
     return item;
   }
 
@@ -54,17 +62,24 @@ export class RouteSheetItemsService {
     user: JwtPayload,
   ): Promise<void> {
     const item = await this.findById(id);
+
     const routeSheet = await this.routeSheetsRepo.findById(item.routeSheetId);
-    if (!routeSheet)
+
+    if (!routeSheet) {
       throw new NotFoundException(
         `Hoja de ruta ${item.routeSheetId} no encontrada`,
       );
+    }
 
     if (user.role === StaffRole.COLLECTOR && routeSheet.staffId !== user.sub) {
       throw new ForbiddenException(
         "No eres el cobrador asignado a esta hoja de ruta",
       );
     }
+
+    // ============================================================
+    // COBRO DE CUOTA
+    // ============================================================
 
     if (
       item.itemType === RouteSheetItemType.INSTALLMENT &&
@@ -75,6 +90,13 @@ export class RouteSheetItemsService {
           "collectedAmount es requerido para registrar el cobro de una cuota",
         );
       }
+
+      if (!item.installmentId) {
+        throw new BadRequestException(
+          "El ítem de cuota no tiene una cuota asociada",
+        );
+      }
+
       await this.paymentsService.registerFromCollection({
         societyId: user.societyId,
         staffId: user.sub,
@@ -84,6 +106,10 @@ export class RouteSheetItemsService {
       });
     }
 
+    // ============================================================
+    // VISITA FALLIDA DE CUOTA
+    // ============================================================
+
     if (
       item.itemType === RouteSheetItemType.INSTALLMENT &&
       dto.result === RouteSheetItemResult.FAILED
@@ -91,6 +117,12 @@ export class RouteSheetItemsService {
       if (!dto.failedVisitReason) {
         throw new BadRequestException(
           "failedVisitReason es requerido para registrar una visita fallida",
+        );
+      }
+
+      if (!item.installmentId) {
+        throw new BadRequestException(
+          "El ítem de cuota no tiene una cuota asociada",
         );
       }
 
@@ -105,23 +137,47 @@ export class RouteSheetItemsService {
       });
     }
 
+    // ============================================================
+    // ENTREGA COMPLETADA
+    // ============================================================
+
     if (
       item.itemType === RouteSheetItemType.DELIVERY &&
       dto.result === RouteSheetItemResult.COMPLETED
     ) {
+      if (!item.saleId) {
+        throw new BadRequestException(
+          "El ítem de entrega no tiene una venta asociada",
+        );
+      }
+
       await this.salesService.deliver(item.saleId, user);
     }
+
+    // ============================================================
+    // ENTREGA FALLIDA
+    // ============================================================
 
     if (
       item.itemType === RouteSheetItemType.DELIVERY &&
       dto.result === RouteSheetItemResult.FAILED
     ) {
+      if (!item.saleId) {
+        throw new BadRequestException(
+          "El ítem de entrega no tiene una venta asociada",
+        );
+      }
+
       await this.salesService.failDelivery(
         item.saleId,
         { reason: dto.notes ?? "Entrega frustrada" },
         user,
       );
     }
+
+    // ============================================================
+    // ACTUALIZAR RESULTADO
+    // ============================================================
 
     await this.itemsRepo.updateResult(
       id,

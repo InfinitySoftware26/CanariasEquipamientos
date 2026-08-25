@@ -29,10 +29,6 @@ const STATUS_STYLES: Record<DailyClosure["status"], string> = {
   rejected: "bg-red-500/15 text-red-400",
 };
 
-function truncateId(id: string) {
-  return `${id.slice(0, 8)}...`;
-}
-
 function differenceColor(difference: number) {
   if (difference > 0) return "text-red-400";
   if (difference < 0) return "text-green-400";
@@ -92,7 +88,10 @@ export function ClosureDetail({
             </h2>
 
             <p className="mt-1 text-sm text-white/50">
-              Cobrador: {truncateId(closure.staffId)}
+              Cobrador:{" "}
+              {closure.staff
+                ? `${closure.staff.name}`
+                : "Cobrador no disponible"}
             </p>
           </div>
 

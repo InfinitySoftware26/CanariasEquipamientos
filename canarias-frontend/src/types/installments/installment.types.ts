@@ -1,9 +1,9 @@
 export type InstallmentStatus =
-  | "pending"
-  | "paid"
-  | "overdue"
-  | "partial"
-  | "defaulted";
+  | "Pendiente"
+  | "Pagado"
+  | "Atrasada"
+  | "Pago Parcial"
+  | "Impaga";
 
 export interface Installment {
   installmentId: string;

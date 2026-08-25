@@ -5,6 +5,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
 } from "typeorm";
+
 import { RouteSheetItemType } from "../../../common/enums/route-sheet-item-type.enum";
 import { RouteSheetItemResult } from "../../../common/enums/route-sheet-item-result.enum";
 
@@ -13,19 +14,37 @@ export class RouteSheetItem {
   @PrimaryGeneratedColumn("uuid", { name: "item_id" })
   itemId!: string;
 
-  @Column({ name: "route_sheet_id", type: "uuid" })
+  @Column({
+    name: "route_sheet_id",
+    type: "uuid",
+  })
   routeSheetId!: string;
 
-  @Column({ name: "client_id", type: "uuid" })
+  @Column({
+    name: "client_id",
+    type: "uuid",
+  })
   clientId!: string;
 
-  @Column({ name: "installment_id", type: "uuid", nullable: true })
-  installmentId!: string;
+  @Column({
+    name: "installment_id",
+    type: "uuid",
+    nullable: true,
+  })
+  installmentId!: string | null;
 
-  @Column({ name: "sale_id", type: "uuid", nullable: true })
-  saleId!: string;
+  @Column({
+    name: "sale_id",
+    type: "uuid",
+    nullable: true,
+  })
+  saleId!: string | null;
 
-  @Column({ name: "item_type", type: "enum", enum: RouteSheetItemType })
+  @Column({
+    name: "item_type",
+    type: "enum",
+    enum: RouteSheetItemType,
+  })
   itemType!: RouteSheetItemType;
 
   @Column({
@@ -42,17 +61,24 @@ export class RouteSheetItem {
     scale: 2,
     nullable: true,
   })
-  collectedAmount!: number;
+  collectedAmount!: number | null;
 
-  @Column({ nullable: true })
-  notes!: string;
+  @Column({ type: "text", nullable: true })
+  notes!: string | null;
+  @Column({
+    name: "visited_at",
+    type: "timestamptz",
+    nullable: true,
+  })
+  visitedAt!: Date | null;
 
-  @Column({ name: "visited_at", type: "timestamptz", nullable: true })
-  visitedAt!: Date;
-
-  @CreateDateColumn({ name: "created_at" })
+  @CreateDateColumn({
+    name: "created_at",
+  })
   createdAt!: Date;
 
-  @UpdateDateColumn({ name: "updated_at" })
+  @UpdateDateColumn({
+    name: "updated_at",
+  })
   updatedAt!: Date;
 }

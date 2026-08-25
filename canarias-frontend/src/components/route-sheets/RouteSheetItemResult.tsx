@@ -43,7 +43,7 @@ interface Props {
  * pero seguimos enviando los valores esperados por la API.
  */
 const RESULT_LABELS: Record<RouteSheetItemResult, string> = {
-  pending: "Pendiente",
+  pending: "pending",
   completed: "Completado",
   failed: "Fallido",
 };

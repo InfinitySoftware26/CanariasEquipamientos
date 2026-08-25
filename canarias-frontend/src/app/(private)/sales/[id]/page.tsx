@@ -71,7 +71,7 @@ export default function SaleDetailPage() {
               text-white/50
               "
             >
-              Realizada por {sale.staff?.name} {sale.staff?.surname}
+              Realizada por {sale.staff?.name}
             </p>
           </div>
 
@@ -114,7 +114,6 @@ export default function SaleDetailPage() {
           {/* <p className="text-white/50">1er Referencia: {sale.client?.reference1}</p> */}
 
           {/* <p className="text-white/50">2da Referencia: {sale.client?.reference2}</p> */}
-
         </div>
       </section>
 

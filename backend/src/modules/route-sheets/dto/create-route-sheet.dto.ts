@@ -1,19 +1,32 @@
-import { IsUUID, IsDateString } from "class-validator";
-import { ApiProperty } from "@nestjs/swagger";
+import {
+  ArrayMinSize,
+  IsArray,
+  IsDateString,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsUUID,
+} from "class-validator";
 
 export class CreateRouteSheetDto {
-  @ApiProperty({ description: "UUID de la zona" })
   @IsUUID()
+  @IsNotEmpty()
   zoneId!: string;
 
-  @ApiProperty({ description: "UUID del cobrador asignado" })
   @IsUUID()
+  @IsNotEmpty()
   staffId!: string;
 
-  @ApiProperty({
-    example: "2026-07-06",
-    description: "Fecha del recorrido (YYYY-MM-DD)",
-  })
   @IsDateString()
+  @IsNotEmpty()
   routeDate!: string;
+
+  /**
+   * Cuotas que el administrador seleccionó
+   * para incluir en esta hoja de ruta.
+   */
+  @IsArray()
+  @ArrayMinSize(1)
+  @IsUUID("4", { each: true })
+  installmentIds!: string[];
 }

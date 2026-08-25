@@ -20,12 +20,6 @@ const STATUS_STYLES: Record<DailyClosure["status"], string> = {
   rejected: "bg-red-500/15 text-red-400",
 };
 
-// El backend no expone el nombre del cobrador en el cierre; se muestra el
-// id truncado hasta que el endpoint lo incluya (deuda técnica).
-function truncateId(id: string) {
-  return `${id.slice(0, 8)}...`;
-}
-
 export function ClosureRow({ closure }: Props) {
   return (
     <tr className="border-b border-white/5 transition hover:bg-white/5">
@@ -34,16 +28,18 @@ export function ClosureRow({ closure }: Props) {
       </td>
 
       <td className="px-6 py-4 text-white/80">
-        {truncateId(closure.staffId)}
+        {closure.staff ? `${closure.staff.name} ` : "Cobrador no disponible"}
       </td>
 
       <td className="px-6 py-4 font-semibold text-white">
-        $ {Number(closure.totalCollected).toLocaleString()}
+        ${Number(closure.totalCollected).toLocaleString()}
       </td>
 
       <td className="px-6 py-4">
         <span
-          className={`rounded-full px-3 py-1 text-xs font-medium ${STATUS_STYLES[closure.status]}`}
+          className={`rounded-full px-3 py-1 text-xs font-medium ${
+            STATUS_STYLES[closure.status]
+          }`}
         >
           {STATUS_LABELS[closure.status]}
         </span>

@@ -321,7 +321,7 @@ export function usePreloadSale() {
         clientId: finalClientId,
         installmentsCount: form.installmentsCount,
         paymentFrequency: form.paymentFrequency,
-        observation: form.observations ?? `Localidad: ${form.locality}`,
+        observation: form.observations,
         products: [
           {
             productId: form.productId,
@@ -340,7 +340,7 @@ export function usePreloadSale() {
 
         paymentFrequency: form.paymentFrequency,
 
-        observation: `Localidad: ${form.locality}`,
+        observation: form.observations,
 
         products: [
           {
