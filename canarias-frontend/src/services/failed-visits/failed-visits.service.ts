@@ -1,7 +1,7 @@
 import { useAuthStore } from "@/store/auth.store";
 import { apiFetch } from "../apiFetch.service";
-import { FailedVisit } from "@/types/payments/failed_visits.types";
 import {
+  FailedVisit,
   FailedVisitFilters,
   RescheduleFailedVisitPayload,
 } from "@/types/failed-visits/failed-visitis.type";

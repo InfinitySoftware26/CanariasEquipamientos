@@ -12,8 +12,8 @@ export interface UpdateRouteSheetItemPayload {
   notes?: string;
 
   failedVisitReason?:
-    | "Cliente Ausente"
-    | "Pago Rechazado"
-    | "Direccion incorrecta"
-    | "Otro";
+    | "client_absent"
+    | "refused_payment"
+    | "wrong_address"
+    | "other";
 }
