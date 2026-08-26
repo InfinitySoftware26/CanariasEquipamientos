@@ -1,4 +1,4 @@
-export type SettlementStatus = "Pendiente" | "Validada" | "Rechazada";
+export type SettlementStatus = "pending" | "validated" | "rejected";
 
 export interface Settlement {
   settlementId: string;
