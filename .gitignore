@@ -155,3 +155,6 @@ yarn.lock
 node_modules/
 .env
 
+
+# Backups/zip accidentales
+*.zip
