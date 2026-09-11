@@ -1,261 +1,476 @@
-# Canarias System — Business Rules — Financiación
+# Flujos de Financiación - Arquitectura y Especificación
 
-# Objetivo
+## 📋 Tabla de Contenidos
 
-Definir las reglas de negocio vinculadas a financiación, cuotas, intereses y condiciones comerciales.
-
----
-
-# Descripción General
-
-El sistema permitirá gestionar ventas financiadas mediante planes de cuotas configurables.
-
-La financiación constituye uno de los módulos críticos del negocio.
+- [Visión General](#visión-general)
+- [Entidades y Relaciones](#entidades-y-relaciones)
+- [Flujo de Creación](#flujo-de-creación)
+- [Aislamiento por Sociedad](#aislamiento-por-sociedad)
+- [Integración con Ventas](#integración-con-ventas)
 
 ---
 
-# Componentes de Financiación
+## Visión General
 
-* monto financiado
-* interés
-* cantidad cuotas
-* frecuencia cuotas
-* mora
-* deuda restante
-* pagos parciales
+El módulo de financiación gestiona tres entidades principales que trabajan de manera coordinada:
 
----
+1. **FinancingConfiguration**: Tasa base de financiación (global o específica por productos)
+2. **FinancingPlan**: Esquemas de pago (cuotas + frecuencia)
+3. **Promotion**: Ganancias adicionales o descuentos especiales
 
-# Frecuencia de Cuotas
+### Ejemplo de Flujo Real
 
-| Tipo   | Descripción      |
-| ------ | ---------------- |
-| DAILY  | Cuotas diarias   |
-| WEEKLY | Cuotas semanales |
-
----
-
-# Reglas Generales
-
----
-
-## BR-FINANCE-001
-
-Toda venta financiada debe generar cuotas automáticamente.
+```
+ADMIN crea:
+├─ "Financiación Estándar" (12% tasa, global)
+│  └─ Aplicable a todos los productos de la sociedad
+│
+├─ Plan "3 cuotas mensuales" (vinculado a Financiación Estándar)
+│  └─ installmentsCount: 3
+│  └─ paymentFrequency: "monthly"
+│
+└─ Promoción "5% de descuento en 6 cuotas" (vinculada al plan)
+   └─ discountPercentage: 0.05
+   └─ Descuento sobre la tasa base (positivo = descuento, negativo = recargo)
+```
 
 ---
 
-## BR-FINANCE-002
+## Entidades y Relaciones
 
-Las cuotas deben calcularse según el plan configurado.
+### FinancingConfiguration
 
----
+Almacena una tasa de financiación base.
 
-## BR-FINANCE-003
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| `financingConfigId` | UUID | PK |
+| `societyId` | UUID | FK - Aislamiento multi-sociedad |
+| `name` | varchar(150) | "Financiación Estándar", "Premium", etc. |
+| `financingRate` | decimal(5,4) | Tasa: 0.12 = 12% |
+| `isGlobal` | boolean | `true` = aplica a todos los productos |
+| `isActive` | boolean | Control de activación |
+| `products` | M2M | Productos específicos (si `isGlobal = false`) |
+| `createdAt` | timestamp | Auditoría |
+| `updatedAt` | timestamp | Auditoría |
 
-La financiación puede variar según producto.
+**Relación M2M**: `FINANCING_CONFIG_PRODUCTS`
+- Registra qué productos aplican esta configuración cuando `isGlobal = false`
 
----
+### FinancingPlan
 
-## BR-FINANCE-004
+Define un esquema de pago (cuotas + frecuencia) vinculado a una FinancingConfiguration.
 
-El administrador puede modificar condiciones financieras.
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| `financingPlanId` | UUID | PK |
+| `societyId` | UUID | FK - Aislamiento multi-sociedad |
+| `name` | varchar(150) | "3 cuotas mensuales", "6 semanales", etc. |
+| `financingConfigId` | UUID | FK → FinancingConfiguration |
+| `paymentFrequency` | enum | `daily`, `weekly`, `biweekly`, `monthly` |
+| `installmentsCount` | integer | Cantidad de cuotas (3, 6, 12, etc.) |
+| `isGlobal` | boolean | Aplica a todos los productos |
+| `isActive` | boolean | Estado |
+| `products` | M2M | Productos específicos (si `isGlobal = false`) |
+| `promotions` | 1:N | Promociones vinculadas |
+| `createdAt` | timestamp | Auditoría |
+| `updatedAt` | timestamp | Auditoría |
 
----
+**Relaciones**:
+- **1:N** → `Promotion`: Un plan puede tener múltiples promociones
+- **M2M**: `FINANCING_PLAN_PRODUCTS`
 
-## BR-FINANCE-005
+### Promotion
 
-El sistema debe calcular automáticamente:
+Define una ganancia adicional o descuento especial.
 
-* saldo pendiente
-* deuda restante
-* interés acumulado
-* cuotas pagadas
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| `promotionId` | UUID | PK |
+| `societyId` | UUID | FK - Aislamiento multi-sociedad |
+| `name` | varchar(150) | "5% de descuento en 6 cuotas", "Black Friday", etc. |
+| `financingPlanId` | UUID | FK → FinancingPlan (nullable) |
+| `plan` | 1:N relation | Carga el plan vinculado |
+| `discountPercentage` | decimal(5,4) | Ajuste con signo: positivo = descuento, negativo = recargo (rango -1 a 1) |
+| `paymentFrequency` | enum | Frecuencia (si no está vinculada a un plan) |
+| `installmentsCount` | integer | Cuotas (si no está vinculada a un plan) |
+| `isGlobal` | boolean | Aplica a todos los productos |
+| `isActive` | boolean | Estado |
+| `products` | M2M | Productos específicos (si `isGlobal = false`) |
+| `createdAt` | timestamp | Auditoría |
+| `updatedAt` | timestamp | Auditoría |
 
----
-
-# Mora
-
----
-
-## BR-FINANCE-006
-
-Las cuotas vencidas generan mora automáticamente.
-
----
-
-## BR-FINANCE-007
-
-La mora puede generar restricciones operativas.
-
----
-
-## BR-FINANCE-008
-
-Clientes con mora crítica podrán bloquear nuevas ventas.
-
----
-
-# Refinanciación
-
----
-
-## BR-FINANCE-009
-
-Las refinanciaciones deberán generar nuevo cronograma.
-
----
-
-## BR-FINANCE-010
-
-Toda refinanciación debe quedar auditada.
-
----
-
-# Pagos Parciales
-
----
-
-## BR-FINANCE-011
-
-El sistema debe permitir pagos parciales.
+**Relaciones**:
+- **N:1** → `FinancingPlan`: Vinculación opcional a un plan
+- **M2M**: `PROMOTION_PRODUCTS`
 
 ---
 
-## BR-FINANCE-012
+## Flujo de Creación
 
-Los pagos parciales impactan saldo pendiente.
+### Paso 1: Crear Configuración Base
 
----
+```bash
+POST /financing/configs
+Content-Type: application/json
+Authorization: Bearer <token>
 
-# Modelo Implementado — Configuración / Plan / Promoción
+{
+  "name": "Financiación Estándar",
+  "financingRate": 0.12,
+  "isGlobal": true
+}
 
-El módulo de financiación (`financing`) reemplaza el esquema previo de 3 tasas fijas
-(3/6/9 cuotas) por 3 entidades independientes y componibles.
+# Respuesta 201
+{
+  "financingConfigId": "uuid-1",
+  "societyId": "uuid-society",
+  "name": "Financiación Estándar",
+  "financingRate": 0.12,
+  "isGlobal": true,
+  "isActive": true,
+  "products": [],
+  "createdAt": "2026-08-24T10:00:00Z",
+  "updatedAt": "2026-08-24T10:00:00Z"
+}
+```
 
-## Entidades
+### Paso 2: Crear Plan Vinculado
 
-| Entidad                  | Responsabilidad                                                      |
-| ------------------------ | --------------------------------------------------------------------- |
-| `FinancingConfiguration` | Tasa base de financiación (`financingRate`), global o por producto   |
-| `FinancingPlan`          | Esquema de cuotas: cantidad + frecuencia de pago, vinculado a una config |
-| `Promotion`              | Ajuste opcional sobre la tasa (descuento o recargo), vinculado o no a un plan |
+```bash
+POST /financing/plans
+Content-Type: application/json
+Authorization: Bearer <token>
 
----
+{
+  "name": "3 cuotas mensuales",
+  "financingConfigId": "uuid-1",
+  "paymentFrequency": "monthly",
+  "installmentsCount": 3,
+  "isGlobal": true
+}
 
-## BR-FINANCE-013
+# Respuesta 201
+{
+  "financingPlanId": "uuid-plan-1",
+  "societyId": "uuid-society",
+  "name": "3 cuotas mensuales",
+  "financingConfigId": "uuid-1",
+  "paymentFrequency": "monthly",
+  "installmentsCount": 3,
+  "isGlobal": true,
+  "isActive": true,
+  "products": [],
+  "promotions": [],
+  "createdAt": "2026-08-24T10:05:00Z",
+  "updatedAt": "2026-08-24T10:05:00Z"
+}
+```
 
-Toda `FinancingConfiguration` pertenece a una única sociedad (`societyId`) y define
-una tasa base (`financingRate`) que puede aplicarse:
+### Paso 3: Crear Promoción (Opcional)
 
-* de forma global (`isGlobal = true`) a todos los productos de la sociedad, o
-* a un subconjunto de productos específicos (`isGlobal = false` + relación M2M).
+```bash
+POST /financing/promotions
+Content-Type: application/json
+Authorization: Bearer <token>
 
----
+{
+  "name": "5% de descuento en 6 cuotas",
+  "financingPlanId": "uuid-plan-1",
+  "discountPercentage": 0.05,
+  "isGlobal": true
+}
 
-## BR-FINANCE-014
-
-Todo `FinancingPlan` debe estar vinculado a una `FinancingConfiguration` existente
-de la misma sociedad. Define la cantidad de cuotas (`installmentsCount`) y la
-frecuencia de pago (`daily`, `weekly`, `biweekly`, `monthly`).
-
----
-
-## BR-FINANCE-015
-
-Una `Promotion` puede:
-
-* estar vinculada a un `FinancingPlan` puntual, o
-* ser independiente (aplicando `isGlobal`/`productIds` propios cuando no depende de un plan).
-
----
-
-## BR-FINANCE-016 — Descuento vs. recargo
-
-El campo `discountPercentage` de `Promotion` es un ajuste **con signo** sobre la
-tasa base de la configuración:
-
-* valor **positivo** → descuento real para el cliente (la tasa final baja).
-* valor **negativo** → recargo (la tasa final sube).
-
-Rango permitido: `-1 <= discountPercentage <= 1` (equivalente a -100% / +100%).
-
----
-
-## BR-FINANCE-017 — Aislamiento multi-sociedad
-
-Toda operación de lectura, escritura o borrado sobre `FinancingConfiguration`,
-`FinancingPlan` o `Promotion` debe validar `societyId` extraído del JWT del usuario
-autenticado. Ninguna consulta puede omitir este filtro. Un intento de acceder a un
-recurso de otra sociedad responde `404 Not Found` (nunca expone su existencia).
-
----
-
-## BR-FINANCE-018 — Integridad referencial en bajas
-
-No se puede eliminar:
-
-* una `FinancingConfiguration` si tiene `FinancingPlan` vinculados,
-* un `FinancingPlan` si tiene `Promotion` o ventas (`Sale`) vinculadas,
-* una `Promotion` si tiene ventas vinculadas.
-
-El backend traduce la violación de clave foránea (Postgres `23503`) en un error de
-negocio `400 Bad Request` con mensaje explicativo, nunca en un `500`.
-
----
-
-## BR-FINANCE-019 — Roles habilitados
-
-Crear, actualizar y eliminar configuraciones, planes y promociones requiere rol
-`ADMIN`, `MANAGER` o `SUPER_ADMIN`. La lectura está disponible para cualquier
-usuario autenticado de la sociedad.
-
----
-
-# Restricciones
-
-* No se permiten cuotas negativas.
-* No se permiten intereses negativos.
-* No se permiten ventas sin financiación válida.
+# Respuesta 201
+{
+  "promotionId": "uuid-promo-1",
+  "societyId": "uuid-society",
+  "name": "5% de descuento en 6 cuotas",
+  "financingPlanId": "uuid-plan-1",
+  "plan": { /* objeto FinancingPlan completo */ },
+  "discountPercentage": 0.05,
+  "paymentFrequency": null,
+  "installmentsCount": null,
+  "isGlobal": true,
+  "isActive": true,
+  "products": [],
+  "createdAt": "2026-08-24T10:10:00Z",
+  "updatedAt": "2026-08-24T10:10:00Z"
+}
+```
 
 ---
 
-# Consideraciones Técnicas
+## Aislamiento por Sociedad
 
-* Los cálculos financieros deben ejecutarse en backend.
-* Los montos deben almacenarse con precisión decimal.
-* Las reglas financieras deben centralizarse en services específicos.
-* El módulo `financing` expone un único `FinancingService`/`FinancingController` para
-  las 3 entidades, con repositorios separados por entidad (ver `Architecture/BackendArchitecture.md`).
+### Garantía de Seguridad
+
+Todos los métodos de consulta/actualización/eliminación validan que el `societyId` coincida con el usuario autenticado:
+
+```typescript
+// Backend - Validación en Repository
+
+async findById(societyId: string, financingConfigId: string) {
+  return this.repo.findOne({
+    where: {
+      societyId,           // ← Siempre requerido
+      financingConfigId,
+    },
+    relations: ['products'],
+  });
+}
+```
+
+### Flujo de Autenticación
+
+```
+JWT (Token)
+    ↓
+CurrentUser() decorator
+    ↓
+user.societyId extraído
+    ↓
+Pasado a Service
+    ↓
+Validado en Repository
+    ↓
+WHERE society_id = ? AND ...
+    ↓
+Respuesta segura (solo datos de esa sociedad)
+```
+
+### Prevención de Ataques
+
+**❌ NO permitido (sin societyId)**:
+```
+GET /financing/configs/uuid → Error 403 (falta societyId en query)
+```
+
+**✅ Permitido**:
+```
+GET /financing/configs → Devuelve solo los de la sociedad del usuario
+```
 
 ---
 
-# Estado de Integración con Ventas
+## Integración con Ventas
 
-* Las entidades `FinancingConfiguration`, `FinancingPlan` y `Promotion` están
-  completas y operativas (CRUD + seguridad multi-sociedad).
-* `Sale` ya posee las columnas `financing_plan_id` y `promotion_id` (FK `RESTRICT`)
-  para dejar registrado qué plan/promoción se usó en cada venta.
-* **Pendiente (Fase 2)**: `SalesService.createSale()` todavía calcula las cuotas con
-  una tasa fija temporal (12%) en lugar de resolver `FinancingPlan` + `Promotion`.
-  Ver comentario `TODO` en `sales.service.ts`.
+### Caso de Uso: Cliente selecciona plan en checkout
+
+1. **Frontend**:
+   ```typescript
+   // Usuario selecciona 6 cuotas mensuales
+   const plan = await getFinancingPlanById("uuid-plan-1");
+   // plan.installmentsCount = 6
+   // plan.paymentFrequency = "monthly"
+   ```
+
+2. **Envío a Backend (crear venta)**:
+   ```json
+   {
+     "productIds": ["prod-1", "prod-2"],
+     "financingPlanId": "uuid-plan-1",
+     "installmentCount": 6,
+     "paymentFrequency": "monthly"
+   }
+   ```
+
+3. **Backend (Sales Service)**:
+   ```typescript
+   // Resuelve la financiación aplicable
+   const plan = await financingService.getFinancingPlanById(
+     societyId,
+     financingPlanId
+   );
+   
+   // Obtiene configuración base
+   const config = await financingService.getFinancingConfigurationById(
+     societyId,
+     plan.financingConfigId
+   );
+   
+   // Calcula tasa total
+   const baseRate = config.financingRate; // 0.12 = 12%
+   const discount = promotion?.discountPercentage ?? 0; // 0.05 = -5% sobre la tasa
+   const totalRate = baseRate - discount; // 0.07 = 7%
+   
+   // Genera cuotas con la estructura
+   const installments = generateInstallments(
+     totalAmount,
+     plan.installmentsCount,
+     plan.paymentFrequency,
+     totalRate
+   );
+   ```
+
+4. **Estructura de Cuota Generada**:
+   ```typescript
+   interface Installment {
+     sequenceNumber: 1,
+     amount: 100.50,        // calculado con tasa total
+     dueDate: "2026-09-24", // basado en paymentFrequency
+     financingPlanId: "uuid-plan-1",
+     promotionId: "uuid-promo-1" | null,
+   }
+   ```
 
 ---
 
-# Riesgos Operativos
+## DTOs y Validaciones
 
-* Cálculos incorrectos
-* Inconsistencias financieras
-* Refinanciaciones erróneas
-* Duplicación de cuotas
+### CreateFinancingConfigDto
+
+```typescript
+{
+  name: string;                    // Requerido: "Financiación Estándar"
+  financingRate: number;           // Requerido: 0.12
+  isGlobal?: boolean;              // Opcional: default true
+  productIds?: string[];           // Requerido si isGlobal = false
+}
+```
+
+### CreateFinancingPlanDto
+
+```typescript
+{
+  name: string;                    // Requerido
+  financingConfigId: string;       // Requerido (UUID)
+  paymentFrequency: PaymentFrequency; // Requerido
+  installmentsCount: number;       // Requerido (≥ 1)
+  isGlobal?: boolean;              // Opcional: default true
+  productIds?: string[];           // Requerido si isGlobal = false
+}
+```
+
+### CreatePromotionDto
+
+```typescript
+{
+  name: string;                    // Requerido
+  financingPlanId?: string | null; // Opcional
+  discountPercentage?: number;      // Opcional. Positivo = descuento, negativo = recargo
+  paymentFrequency?: PaymentFrequency; // Opcional
+  installmentsCount?: number;      // Opcional
+  isGlobal?: boolean;              // Opcional: default false
+  productIds?: string[];           // Requerido si isGlobal = false
+}
+```
 
 ---
 
-# Auditoría
+## Consideraciones de Escalabilidad
 
-Registrar:
+### ✅ Ventajas del Diseño
 
-* cambios de financiación
-* refinanciaciones
-* modificaciones administrativas
-* ajustes manuales
+1. **Separación de Responsabilidades**:
+   - Configuración = tasa base
+   - Plan = estructura de pagos
+   - Promoción = modificaciones especiales
+
+2. **Reutilización**:
+   - Una configuración puede usarse en múltiples planes
+   - Un plan puede vincularse a múltiples promociones
+   - Promociones independientes del plan
+
+3. **Flexibilidad**:
+   - Aplicar a todo (global) o a productos específicos
+   - Modificar una configuración afecta a todos sus planes
+   - Desactivar sin eliminar
+
+4. **Auditoría**:
+   - Todos los cambios registrados con `updatedAt`
+   - `societyId` registrado en cada entidad
+   - Rastreo de decisiones comerciales
+
+### 📊 Limites Sugeridos (por productividad)
+
+- Máximo 5-10 configuraciones por sociedad
+- Máximo 20-30 planes por sociedad
+- Máximo 50 promociones activas por sociedad
+
+Si excedes estos límites, considera:
+- Archivado periódico de datos inactivos
+- Paginación en listados
+- Índices en `societyId`, `isActive`
+
+---
+
+## Errores Comunes y Soluciones
+
+### Error 1: "Falta societyId"
+
+**Causa**: Frontend envía `societyId` en el payload (MAL).
+
+**Solución**: El backend obtiene `societyId` del JWT.
+
+```typescript
+// ❌ MALO
+POST /financing/configs
+{ "societyId": "uuid", "name": "..." }
+
+// ✅ CORRECTO
+POST /financing/configs
+{ "name": "..." }
+// Backend extrae societyId del JWT
+```
+
+### Error 2: "No encontrado o sin acceso"
+
+**Causa**: Usuario de Sociedad A intenta acceder a datos de Sociedad B.
+
+**Solución**: Repository valida `societyId` en la query WHERE.
+
+```typescript
+// Repository siempre filtra por societyId
+where: { societyId: 'A', financingConfigId: 'uuid-from-B' }
+// Resultado: null (seguro, no expone existencia)
+```
+
+### Error 3: "No se puede eliminar: tiene X vinculados"
+
+**Causa**: Intentar eliminar una configuración/plan/promoción que tiene registros
+dependientes (FK `ON DELETE RESTRICT`).
+
+**Solución implementada**: `FinancingService` captura la violación de clave
+foránea de Postgres (código `23503`) y la traduce en un `400 Bad Request` con
+mensaje claro, en vez de dejar pasar un `500`:
+
+```typescript
+// FinancingService.deleteConfig / deletePlan / deletePromotion
+try {
+  await this.configRepo.delete(societyId, financingConfigId);
+} catch (error) {
+  if (error instanceof QueryFailedError && (error as any).code === '23503') {
+    throw new BadRequestException(
+      'No se puede eliminar: esta configuración tiene planes de financiación vinculados.',
+    );
+  }
+  throw error;
+}
+```
+
+---
+
+## Estado Actual (2026-08-25)
+
+✅ Completado:
+
+1. **FinancingService** y **FinancingController** únicos (módulo `financing`)
+2. Repositorios separados por entidad (Config / Plan / Promotion)
+3. **Endpoints REST** completos para las 3 entidades
+4. **Frontend**: forms de create/edit para las 3 entidades con validación y alertas del sistema (`ConfirmDialog`)
+5. Manejo de errores de FK en borrado (400 con mensaje claro)
+6. Campo `discountPercentage` con signo (descuento/recargo)
+
+🔴 Pendiente (Fase 2):
+
+1. **Integración en Sales**: `SalesService.createSale()` resuelva `FinancingPlan` + `FinancingConfiguration` + `Promotion` en vez de usar la tasa fija temporal (12%)
+2. Generación real de cuotas a partir del plan seleccionado
+
+---
+
+## Contacto y Cambios
+
+Esta documentación es viva y se actualiza conforme evoluciona el sistema.
+
+Último update: 2026-08-25
