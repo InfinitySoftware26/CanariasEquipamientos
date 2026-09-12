@@ -3,13 +3,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { getFailedVisits } from "@/services/failed-visits/failed-visits.service";
-import { FailedVisit } from "@/types/failed-visits/failed-visitis.type";
+import {
+  FailedVisit,
+  FailedVisitFilters,
+  FailedVisitStatus,
+} from "@/types/failed-visits/failed-visitis.type";
 
-type FailedVisitFilters = {
-  status?: string;
-};
-
-const STATUS_FILTERS: { label: string; value: "all" | string }[] = [
+const STATUS_FILTERS: { label: string; value: "all" | FailedVisitStatus }[] = [
   { label: "Todas", value: "all" },
   { label: "Pendientes", value: "pending" },
   { label: "Reprogramadas", value: "rescheduled" },
@@ -20,7 +20,7 @@ export function useFailedVisits() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [status, setStatus] = useState<"all" | string>("all");
+  const [status, setStatus] = useState<"all" | FailedVisitStatus>("all");
   const [search, setSearch] = useState("");
 
   const loadFailedVisits = useCallback(async () => {

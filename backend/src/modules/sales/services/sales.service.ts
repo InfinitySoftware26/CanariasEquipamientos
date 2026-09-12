@@ -30,7 +30,7 @@ import { FailDeliveryDto } from "../dto/fail-delivery.dto";
 import { Sale } from "../entities/sale.entity";
 import { SaleProduct } from "../entities/sale-product.entity";
 import { Installment } from "../../installments/entities/installment.entity";
-import { FinancingConfigService } from "../../financing-config/services/financing-config.service";
+import { FinancingService } from "../../financing/services/financing.service";
 import { SaleStatus } from "../../../common/enums/sale-status.enum";
 import { ValidationStep } from "../../../common/enums/validation-step.enum";
 import { ValidationStatus } from "../../../common/enums/validation-status.enum";
@@ -59,8 +59,8 @@ export class SalesService {
     private readonly saleProductRepo: Repository<SaleProduct>,
     @InjectRepository(Installment)
     private readonly installmentRepo: Repository<Installment>,
-    private readonly financingConfigService: FinancingConfigService,
-  ) {}
+    private readonly financingService: FinancingService,
+  ) { }
 
   // ─── QUERIES ──────────────────────────────────────────────────────────────
 
@@ -98,7 +98,7 @@ export class SalesService {
     const totalCommission =
       Math.round(
         closedSales.reduce((sum, s) => sum + Number(s.sellerCommission), 0) *
-          100,
+        100,
       ) / 100;
     const averageCommission = closedSales.length
       ? Math.round((totalCommission / closedSales.length) * 100) / 100
@@ -148,24 +148,18 @@ export class SalesService {
       0,
     );
 
-    const config = await this.financingConfigService.getConfigForProduct(
-      societyId,
-      dto.products[0].productId,
-    );
+    // TODO: Integración Phase 2 - Financiación
+    // Actualmente el cálculo de cuotas y tasas está simplificado.
+    // En Phase 2, se integrará FinancingPlan y Promotion para:
+    //   1. Validar installmentsCount contra el plan seleccionado
+    //   2. Obtener tasa base de FinancingConfiguration
+    //   3. Sumar tasa adicional de Promotion (si aplica)
+    //   4. Generar cuotas con la estructura completa
+    //
+    // Por ahora, se usa un valor fijo para no romper el flujo.
 
-    if (dto.installmentsCount > config.maxInstallments) {
-      throw new BadRequestException(
-        `La cantidad de cuotas no puede superar ${config.maxInstallments} para este producto`,
-      );
-    }
-
-    let rate: number;
-    if (dto.installmentsCount === 3) rate = Number(config.installments3Rate);
-    else if (dto.installmentsCount === 6)
-      rate = Number(config.installments6Rate);
-    else rate = Number(config.installments9Rate);
-
-    const totalWithInterest = Math.round(totalAmount * (1 + rate) * 100) / 100;
+    const fixedFinancingRate = 0.12; // Tasa temporal: 12%
+    const totalWithInterest = Math.round(totalAmount * (1 + fixedFinancingRate) * 100) / 100;
     const installmentAmount =
       Math.round((totalWithInterest / dto.installmentsCount) * 100) / 100;
 
@@ -406,35 +400,35 @@ export class SalesService {
   //-------CALCULO---------------------------------------------------------------
 
   private getNextInstallmentDate(
-  currentDate: Date,
-  frequency: PaymentFrequency,
-): Date {
-  const nextDate = new Date(currentDate);
+    currentDate: Date,
+    frequency: PaymentFrequency,
+  ): Date {
+    const nextDate = new Date(currentDate);
 
-  switch (frequency) {
-    case PaymentFrequency.DAILY:
-      do {
-        nextDate.setDate(nextDate.getDate() + 1);
-      } while (nextDate.getDay() === 0);
+    switch (frequency) {
+      case PaymentFrequency.DAILY:
+        do {
+          nextDate.setDate(nextDate.getDate() + 1);
+        } while (nextDate.getDay() === 0);
 
-      return nextDate;
+        return nextDate;
 
-    case PaymentFrequency.BIWEEKLY:
-      nextDate.setDate(nextDate.getDate() + 14);
-      return nextDate;
+      case PaymentFrequency.BIWEEKLY:
+        nextDate.setDate(nextDate.getDate() + 14);
+        return nextDate;
 
-    case PaymentFrequency.WEEKLY:
-      nextDate.setDate(nextDate.getDate() + 7);
-      return nextDate;
+      case PaymentFrequency.WEEKLY:
+        nextDate.setDate(nextDate.getDate() + 7);
+        return nextDate;
 
-    case PaymentFrequency.MONTHLY:
-      nextDate.setDate(nextDate.getDate() + 28);
-      return nextDate;
+      case PaymentFrequency.MONTHLY:
+        nextDate.setDate(nextDate.getDate() + 28);
+        return nextDate;
 
-    default:
-      return nextDate;
+      default:
+        return nextDate;
+    }
   }
-}
 
   // ─── ENTREGA ──────────────────────────────────────────────────────────────
 
