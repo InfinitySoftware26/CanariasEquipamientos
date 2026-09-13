@@ -72,7 +72,6 @@ POST /products
   "category": "TV",
   "price": 450000,
   "supplierId": "uuid",
-  "financingConfigurationId": null,
   "hasStockControl": false
 }
 ```
@@ -81,29 +80,10 @@ POST /products
 
 # Regla Financiera
 
-## Configuración Especial
-
-Si:
-
-```text id="5w9mwx"
-financingConfigurationId
-```
-
-posee valor:
-
-* utilizar configuración específica producto
-
----
-
-## Configuración Global
-
-Si:
-
-```text id="gq1fvg"
-financingConfigurationId = NULL
-```
-
-el sistema utilizará automáticamente la configuración financiera global activa de la sociedad.
+El producto no posee un `financingConfigurationId` propio. Ver
+`docs/Api/Financing.md` para el modelo real basado en `FinancingConfiguration` +
+`FinancingPlan` + `Promotion`, cada una asociable a productos específicos
+mediante relación M2M cuando `isGlobal = false`.
 
 ---
 

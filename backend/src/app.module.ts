@@ -10,7 +10,7 @@ import { StaffModule } from "./modules/staff/staff.module";
 import { ClientsModule } from "./modules/clients/clients.module";
 import { ZonesModule } from "./modules/zones/zones.module";
 import { ProductsModule } from "./modules/products/products.module";
-import { FinancingConfigModule } from "./modules/financing-config/financing-config.module";
+import { FinancingModule } from "./modules/financing/financing.module";
 import { SuppliersModule } from "./modules/suppliers/suppliers.module";
 import { SalesModule } from "./modules/sales/sales.module";
 import { InstallmentsModule } from "./modules/installments/installments.module";
@@ -47,7 +47,7 @@ import { JwtAuthGuard } from "@common/guards";
     ClientsModule,
     ZonesModule,
     ProductsModule,
-    FinancingConfigModule,
+    FinancingModule,
     SuppliersModule,
     SalesModule,
     InstallmentsModule,
@@ -72,4 +72,4 @@ import { JwtAuthGuard } from "@common/guards";
     { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],
 })
-export class AppModule {}
+export class AppModule { }

@@ -1,8 +1,8 @@
 export const RouteSheetStatus = {
-  PENDING: "Pendiente",
-  IN_PROGRESS: "En proceso",
-  COMPLETED: "Completada",
-  CANCELLED: "Cancelada",
+  PENDING: "pending",
+  IN_PROGRESS: "in_progress",
+  COMPLETED: "completed",
+  CANCELLED: "cancelled",
 } as const;
 
 export type RouteSheetStatus =

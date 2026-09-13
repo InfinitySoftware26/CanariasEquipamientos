@@ -38,7 +38,9 @@ Incluye:
 | PRODUCTS      | 1:N  |
 | CASHBOX       | 1:1  |
 | ROUTE_SHEETS  | 1:N  |
-| FINANCING     | 1:1  |
+| FINANCING_CONFIGURATIONS | 1:N |
+| FINANCING_PLANS | 1:N |
+| PROMOTIONS    | 1:N  |
 | NOTIFICATIONS | 1:N  |
 
 ---
@@ -117,6 +119,8 @@ Incluye:
 | SALE_PRODUCTS    | 1:N  |
 | INSTALLMENTS     | 1:N  |
 | PAYMENTS         | 1:N  |
+| FINANCING_PLANS  | N:1 (opcional) |
+| PROMOTIONS       | N:1 (opcional) |
 
 ---
 
@@ -265,10 +269,34 @@ Incluye:
 
 # FINANCING_CONFIGURATIONS
 
-| Relación | Tipo |
-| -------- | ---- |
-| PRODUCTS | 1:N  |
-| SOCIETY  | N:1  |
+| Relación     | Tipo |
+| ------------- | ---- |
+| SOCIETY       | N:1  |
+| PRODUCTS      | N:N  |
+| FINANCING_PLANS | 1:N |
+
+---
+
+# FINANCING_PLANS
+
+| Relación                | Tipo |
+| -------------------------- | ---- |
+| SOCIETY                    | N:1  |
+| FINANCING_CONFIGURATIONS   | N:1  |
+| PRODUCTS                   | N:N  |
+| PROMOTIONS                 | 1:N  |
+| SALES                      | 1:N  |
+
+---
+
+# PROMOTIONS
+
+| Relación        | Tipo |
+| ------------------ | ---- |
+| SOCIETY            | N:1  |
+| FINANCING_PLANS    | N:1 (opcional) |
+| PRODUCTS           | N:N  |
+| SALES              | 1:N  |
 
 ---
 
@@ -278,11 +306,13 @@ Incluye:
 
 # PRODUCTS
 
-| Relación      | Tipo |
-| ------------- | ---- |
-| SUPPLIERS     | N:1  |
-| SALE_PRODUCTS | 1:N  |
-| FINANCING     | N:1  |
+| Relación                 | Tipo |
+| --------------------------- | ---- |
+| SUPPLIERS                   | N:1  |
+| SALE_PRODUCTS                | 1:N  |
+| FINANCING_CONFIGURATIONS     | N:N  |
+| FINANCING_PLANS              | N:N  |
+| PROMOTIONS                   | N:N  |
 
 ---
 

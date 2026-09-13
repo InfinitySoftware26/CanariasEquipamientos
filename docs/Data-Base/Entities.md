@@ -587,96 +587,85 @@ Rendiciones financieras de cobradores.
 
 # FINANCING_CONFIGURATIONS
 
-Configuraciones de financiación.
+Tasa base de financiación. Puede aplicarse globalmente a la sociedad o a un
+subconjunto de productos (relación M2M vía `FINANCING_CONFIG_PRODUCTS`).
 
 ## Campos
 
-| Campo                 | Tipo     |
+| Campo             | Tipo     |
+| ----------------- | -------- |
+| financing_config_id | uuid   |
+| society_id         | uuid     |
+| name               | varchar  |
+| financing_rate     | decimal(5,4) |
+| is_global          | boolean  |
+| is_active          | boolean  |
+| created_at         | datetime |
+| updated_at         | datetime |
+
+---
+
+# FINANCING_PLANS
+
+Esquema de cuotas (cantidad + frecuencia) vinculado a una `FINANCING_CONFIGURATIONS`.
+Puede aplicarse globalmente o a productos específicos (M2M vía `FINANCING_PLAN_PRODUCTS`).
+
+## Campos
+
+| Campo               | Tipo     |
+| -------------------- | -------- |
+| financing_plan_id    | uuid     |
+| society_id           | uuid     |
+| name                 | varchar  |
+| financing_config_id  | uuid     |
+| payment_frequency    | enum (daily, weekly, biweekly, monthly) |
+| installments_count   | integer  |
+| is_global            | boolean  |
+| is_active            | boolean  |
+| created_at           | datetime |
+| updated_at           | datetime |
+
+---
+
+# PROMOTIONS
+
+Ajuste opcional sobre la tasa base (descuento o recargo). Puede vincularse a un
+`FINANCING_PLANS` puntual o ser independiente (M2M vía `PROMOTION_PRODUCTS`
+cuando no depende de un plan).
+
+## Campos
+
+| Campo                | Tipo     |
 | --------------------- | -------- |
-| financing_id          | uuid     |
-| product_id            | uuid     |
+| promotion_id          | uuid     |
 | society_id            | uuid     |
-| installments_count    | integer  |
-| interest_rate         | decimal  |
-| seller_commission_pct | decimal  |
+| name                  | varchar  |
+| financing_plan_id     | uuid, nullable |
+| discount_percentage   | decimal(5,4), nullable — positivo = descuento, negativo = recargo |
+| payment_frequency     | enum, nullable (solo si es independiente) |
+| installments_count    | integer, nullable (solo si es independiente) |
 | is_global             | boolean  |
+| is_active             | boolean  |
 | created_at            | datetime |
 | updated_at            | datetime |
 
-# Configuración Financiera Global
-
-El sistema permite definir configuraciones financieras globales por sociedad.
-
-Estas configuraciones incluyen:
-
-* cantidad de cuotas
-* interés financiero
-* comisión vendedor
-* frecuencia pagos
-* reglas financieras generales
-
 ---
 
-# Aplicación de Configuración
+# Configuración Financiera — Modelo Compuesto
 
-## Comportamiento por defecto
+El sistema resuelve la financiación combinando 3 entidades independientes en
+lugar de un único registro por producto:
 
-Todos los productos utilizarán automáticamente la configuración financiera global activa de su sociedad.
+1. **FINANCING_CONFIGURATIONS** define la tasa base.
+2. **FINANCING_PLANS** define cuotas y frecuencia, referenciando una configuración.
+3. **PROMOTIONS** aplica un ajuste opcional (descuento o recargo) sobre un plan
+   o de forma independiente.
 
----
+Todas las entidades soportan `is_global = true` (aplican a toda la sociedad) o
+`is_global = false` + relación M2M a `PRODUCTS` para overrides puntuales.
 
-# Configuración Especial por Producto
-
-Opcionalmente un producto podrá asociarse a una configuración financiera específica.
-
-Esto permitirá:
-
-* promociones especiales
-* financiación diferenciada
-* productos premium
-* campañas comerciales
-* planes especiales
-
----
-
-# Prioridad de Resolución
-
-El sistema resolverá la financiación en el siguiente orden:
-
-## 1. Configuración específica producto
-
-Si el producto posee:
-
-```text
-financing_configuration_id
-```
-
-se utilizará dicha configuración.
-
----
-
-## 2. Configuración global sociedad
-
-Si el producto NO posee configuración específica:
-
-```text
-financing_configuration_id = NULL
-```
-
-el sistema utilizará automáticamente la configuración financiera global activa de la sociedad.
-
----
-
-# Objetivo Arquitectónico
-
-Este modelo permite:
-
-* minimizar duplicación
-* centralizar configuración
-* soportar overrides
-* mejorar mantenibilidad
-* facilitar escalabilidad futura
-
+Ver reglas completas en `docs/Bussines-Rules/Financings.md` y flujo detallado en
+`docs/Financiacion/FLUJOS_FINANCIACION.md`.
 
 ---
 

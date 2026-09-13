@@ -100,29 +100,15 @@ Permite registrar nueva venta financiada.
 
 # Resolución Financiera
 
-## Prioridad
+La venta financiada resuelve tasa y cuotas combinando 3 entidades del módulo
+`financing` (ver `docs/Api/Financing.md`):
 
-### 1. Configuración producto
+1. **FinancingPlan** seleccionado (define cantidad de cuotas y frecuencia).
+2. **FinancingConfiguration** vinculada al plan (define la tasa base).
+3. **Promotion** opcional (aplica descuento o recargo con signo sobre la tasa base).
 
-Si el producto posee:
-
-```text
-financing_configuration_id
-```
-
-usar dicha configuración.
-
----
-
-### 2. Configuración global
-
-Si:
-
-```text
-financing_configuration_id = NULL
-```
-
-usar configuración financiera global activa de la sociedad.
+> Pendiente (Fase 2): `SalesService.createSale()` aún usa una tasa fija temporal
+> (12%) en lugar de resolver estas 3 entidades. Ver `Bussines-Rules/Financings.md`.
 
 ---
 

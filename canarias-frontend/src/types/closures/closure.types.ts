@@ -1,4 +1,4 @@
-export type DailyClosureStatus = "Pendiente" | "Validado" | "Rechazado";
+export type DailyClosureStatus = "pending" | "validated" | "rejected";
 
 export interface ClosureStaff {
   staffId: string;
@@ -39,7 +39,7 @@ export interface ClosureFilters {
 }
 
 export interface ValidateClosurePayload {
-  status: "Validado" | "Rechazado";
+  status: "validated" | "rejected";
   observations?: string;
 }
 
