@@ -8,7 +8,13 @@ export const RouteSheetStatus = {
 export type RouteSheetStatus =
   (typeof RouteSheetStatus)[keyof typeof RouteSheetStatus];
 
-export type RouteSheetItemType = "installment" | "delivery";
+export const RouteSheetItemType = {
+  INSTALLMENT: "installment",
+  DELIVERY: "delivery",
+} as const;
+
+export type RouteSheetItemType =
+  (typeof RouteSheetItemType)[keyof typeof RouteSheetItemType];
 
 export const RouteSheetItemResult = {
   PENDING: "pending",
@@ -19,49 +25,47 @@ export const RouteSheetItemResult = {
 export type RouteSheetItemResult =
   (typeof RouteSheetItemResult)[keyof typeof RouteSheetItemResult];
 
+export type RouteSheetCollectionState =
+  | "overdue"
+  | "due_today"
+  | "partial"
+  | "pending";
+
 export interface RouteSheet {
   routeSheetId: string;
+
   societyId: string;
+
   zoneId: string;
+
   staffId: string;
+
   assignedBy: string;
+
   routeDate: string;
+
   status: RouteSheetStatus;
-  zoneName?: string | null;
-  staffName?: string | null;
+
   notes?: string | null;
+
+  zoneName?: string | null;
+
+  staffName?: string | null;
+
   createdAt?: string;
+
   updatedAt?: string;
-}
-
-export interface RouteSheetDetail extends RouteSheet {
-  items: RouteSheetItem[];
-}
-
-export interface RouteSheetClient {
-  clientId: string;
-  name?: string | null;
-  surname?: string | null;
-  fullName?: string | null;
-  documentNumber?: string | null;
-  address?: string | null;
-  phone?: string | null;
-}
-
-export interface RouteSheetInstallment {
-  installmentId: string;
-  installmentNumber?: number | null;
-  amount?: number | string | null;
-  status?: string | null;
-  dueDate?: string | null;
 }
 
 export interface RouteSheetItem {
   itemId: string;
+
   routeSheetId: string;
+
   clientId: string;
 
   installmentId?: string | null;
+
   saleId?: string | null;
 
   itemType: RouteSheetItemType;
@@ -74,65 +78,103 @@ export interface RouteSheetItem {
 
   visitedAt?: string | null;
 
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: string;
 
-  /*
-   * Datos enriquecidos del cliente.
-   */
+  updatedAt?: string;
+
+  // ==========================================================
+  // CLIENTE
+  // ==========================================================
+
   clientName?: string | null;
+
   clientDocumentNumber?: string | null;
+
   clientAddress?: string | null;
+
   clientPhone?: string | null;
 
-  /*
-   * Datos de la cuota.
-   */
-  installmentAmount?: number | null;
+  // ==========================================================
+  // CUOTA
+  // ==========================================================
+
   installmentNumber?: number | null;
-  installmentStatus?: string | null;
+
+  installmentAmount?: number | null;
+
+  installmentRemainingAmount?: number | null;
+
   installmentDueDate?: string | null;
 
-  /*
-   * Datos de la venta.
-   */
+  // ==========================================================
+  // MORA
+  // ==========================================================
+
+  lateInterestAmount?: number | null;
+
+  daysLate?: number | null;
+
+  totalToCollect?: number | null;
+
+  collectionState?: RouteSheetCollectionState | null;
+
+  // ==========================================================
+  // COMPATIBILIDAD
+  // ==========================================================
+
   saleTotalAmount?: number | null;
 
   sale?: {
     saleId: string;
+
     totalAmount: string;
+
     installmentAmount: string;
+
     installmentsCount: number;
+
     paymentFrequency: string;
 
     products?: Array<{
       saleProductId: string;
+
       productId: string;
+
       quantity: number;
+
       unitPrice: string;
+
       subtotal: string;
 
       product?: {
         name: string;
+
         brand?: string;
+
         model?: string;
       };
     }>;
   } | null;
 }
 
-export interface RouteSheetItemSummary {
-  itemId: string;
-  itemType: RouteSheetItemType;
-  result: RouteSheetItemResult;
+export interface RouteSheetDetail extends RouteSheet {
+  items: RouteSheetItem[];
+}
 
-  clientName: string;
-  clientDocumentNumber: string;
+export interface GenerateRouteSheetsResult {
+  routeDate: string;
 
-  installmentAmount?: number;
-  installmentNumber?: number;
+  created: number;
 
-  collectedAmount?: number;
+  skipped: number;
 
-  visitedAt?: string;
+  routeSheets: RouteSheet[];
+
+  skippedGroups?: Array<{
+    zoneId: string;
+
+    staffId: string;
+
+    reason: string;
+  }>;
 }

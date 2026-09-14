@@ -1,16 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
-import { Loader2, Calendar, MapPin, User } from "lucide-react";
+import { Calendar, FileText, Loader2, MapPin, User } from "lucide-react";
 
 import { SaveButton } from "@/components/button/SaveButton";
 
 import { CreateRouteSheetPayload } from "@/types/rotue-sheets/createRouteSheets.type";
 
-import { getAvailableInstallments } from "@/services/route-sheets/routeSheets.service";
-
-import { AvailableRouteInstallment } from "@/types/rotue-sheets/available-installment.type";
+// ============================================================
+// TYPES
+// ============================================================
 
 interface Option {
   id: string;
@@ -19,10 +19,17 @@ interface Option {
 
 interface Props {
   zones: Option[];
+
   collectors: Option[];
+
   loading?: boolean;
+
   onSubmit: (data: CreateRouteSheetPayload) => Promise<void>;
 }
+
+// ============================================================
+// COMPONENT
+// ============================================================
 
 export function RouteSheetCreateForm({
   zones,
@@ -32,25 +39,18 @@ export function RouteSheetCreateForm({
 }: Props) {
   const [form, setForm] = useState<CreateRouteSheetPayload>({
     zoneId: "",
+
     staffId: "",
+
     routeDate: "",
-    installmentIds: [],
+
+    notes: "",
   });
 
-  const [availableInstallments, setAvailableInstallments] = useState<
-    AvailableRouteInstallment[]
-  >([]);
-
-  const [loadingInstallments, setLoadingInstallments] = useState(false);
-
-  const [installmentsError, setInstallmentsError] = useState<string | null>(
-    null,
-  );
-
-  const [createError, setCreateError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   // ==========================================================
-  // UPDATE FORM
+  // UPDATE
   // ==========================================================
 
   function update<K extends keyof CreateRouteSheetPayload>(
@@ -59,185 +59,60 @@ export function RouteSheetCreateForm({
   ) {
     setForm((prev) => ({
       ...prev,
+
       [key]: value,
     }));
 
-    // Si cambia algún dato principal,
-    // limpiamos el error anterior de creación.
-    setCreateError(null);
-  }
-
-  // ==========================================================
-  // CARGAR CUOTAS
-  // ==========================================================
-
-  useEffect(() => {
-    setForm((prev) => ({
-      ...prev,
-      installmentIds: [],
-    }));
-
-    setAvailableInstallments([]);
-    setInstallmentsError(null);
-    setCreateError(null);
-
-    if (!form.zoneId || !form.staffId || !form.routeDate) {
-      return;
+    if (error) {
+      setError(null);
     }
-
-    async function loadInstallments() {
-      try {
-        setLoadingInstallments(true);
-        setInstallmentsError(null);
-
-        console.log("==========================================");
-        console.log("📌 CONSULTANDO CUOTAS DISPONIBLES");
-        console.log("==========================================");
-        console.log("ZONE ID:", form.zoneId);
-        console.log("STAFF ID:", form.staffId);
-        console.log("ROUTE DATE:", form.routeDate);
-
-        const data = await getAvailableInstallments(
-          form.zoneId,
-          form.staffId,
-          form.routeDate,
-        );
-
-        console.log(
-          "📌 AVAILABLE INSTALLMENTS RESPONSE:",
-          JSON.stringify(data, null, 2),
-        );
-
-        setAvailableInstallments(data);
-
-        if (data.length === 0) {
-          setInstallmentsError(
-            "No hay cuotas disponibles para cobrar en esta zona y fecha.",
-          );
-        }
-      } catch (error) {
-        console.error("❌ Error obteniendo cuotas disponibles:", error);
-
-        setAvailableInstallments([]);
-
-        setInstallmentsError(
-          error instanceof Error
-            ? error.message
-            : "No se pudieron obtener las cuotas disponibles",
-        );
-      } finally {
-        setLoadingInstallments(false);
-      }
-    }
-
-    loadInstallments();
-  }, [form.zoneId, form.staffId, form.routeDate]);
-
-  // ==========================================================
-  // SELECCIONAR CUOTA
-  // ==========================================================
-
-  function toggleInstallment(installmentId: string) {
-    setCreateError(null);
-
-    setForm((prev) => {
-      const current = prev.installmentIds ?? [];
-
-      const alreadySelected = current.includes(installmentId);
-
-      return {
-        ...prev,
-        installmentIds: alreadySelected
-          ? current.filter((id) => id !== installmentId)
-          : [...current, installmentId],
-      };
-    });
-  }
-
-  // ==========================================================
-  // SELECCIONAR TODAS
-  // ==========================================================
-
-  function selectAllInstallments() {
-    setCreateError(null);
-
-    setForm((prev) => ({
-      ...prev,
-      installmentIds: availableInstallments.map(
-        (installment) => installment.installmentId,
-      ),
-    }));
-  }
-
-  // ==========================================================
-  // LIMPIAR
-  // ==========================================================
-
-  function clearInstallments() {
-    setCreateError(null);
-
-    setForm((prev) => ({
-      ...prev,
-      installmentIds: [],
-    }));
   }
 
   // ==========================================================
   // SUBMIT
   // ==========================================================
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
 
-    setCreateError(null);
+    setError(null);
 
-    if (!form.zoneId || !form.staffId || !form.routeDate) {
-      return;
-    }
-
-    if (!form.installmentIds || form.installmentIds.length === 0) {
-      setInstallmentsError(
-        "Debés seleccionar al menos una cuota para crear la hoja de ruta.",
-      );
+    if (!form.zoneId) {
+      setError("Seleccioná una zona.");
 
       return;
     }
 
-    const payload: CreateRouteSheetPayload = {
-      zoneId: form.zoneId,
-      staffId: form.staffId,
-      routeDate: form.routeDate,
-      installmentIds: [...form.installmentIds],
-    };
+    if (!form.staffId) {
+      setError("Seleccioná un cobrador.");
 
-    console.log("==========================================");
-    console.log("🚀 SUBMIT CREAR HOJA DE RUTA");
-    console.log("==========================================");
-    console.log("PAYLOAD:", payload);
-    console.log("ZONE ID:", payload.zoneId);
-    console.log("STAFF ID:", payload.staffId);
-    console.log("ROUTE DATE:", payload.routeDate);
-    console.log("INSTALLMENT IDS:", payload.installmentIds);
-    console.log("INSTALLMENT COUNT:", payload.installmentIds.length);
-    console.log("==========================================");
+      return;
+    }
+
+    if (!form.routeDate) {
+      setError("Seleccioná la fecha del recorrido.");
+
+      return;
+    }
 
     try {
-      await onSubmit(payload);
+      await onSubmit({
+        zoneId: form.zoneId,
 
-      console.log("✅ onSubmit finalizado correctamente");
-    } catch (error) {
-      console.error("❌ Error en onSubmit:", error);
+        staffId: form.staffId,
 
-      const message =
-        error instanceof Error
-          ? error.message
-          : "No se pudo crear la hoja de ruta.";
+        routeDate: form.routeDate,
 
-      setCreateError(message);
+        notes: form.notes?.trim() || undefined,
+      });
+    } catch (submitError) {
+      setError(
+        submitError instanceof Error
+          ? submitError.message
+          : "No se pudo crear la hoja de ruta.",
+      );
     }
   }
-
-  const hasSelectedInstallments = (form.installmentIds?.length ?? 0) > 0;
 
   // ==========================================================
   // RENDER
@@ -261,30 +136,29 @@ export function RouteSheetCreateForm({
         <h2 className="text-2xl font-bold">Nueva hoja de ruta</h2>
 
         <p className="mt-1 text-sm text-white/50">
-          Seleccioná la zona, el cobrador, la fecha y las cuotas que se deberán
-          cobrar.
+          Seleccioná la zona, el cobrador y la fecha. Las cuotas
+          correspondientes se agregarán automáticamente según la programación de
+          cobranza.
         </p>
       </div>
 
-      {/* ERROR CREACIÓN */}
+      {/* INFORMACIÓN */}
 
-      {createError && (
-        <div
-          className="
-            rounded-2xl
-            border
-            border-red-400/20
-            bg-red-400/5
-            p-5
-            text-sm
-            text-red-300
-          "
-        >
-          <p className="font-semibold">No se pudo crear la hoja de ruta</p>
-
-          <p className="mt-1">{createError}</p>
-        </div>
-      )}
+      <div
+        className="
+          rounded-2xl
+          border
+          border-cyan-400/20
+          bg-cyan-400/5
+          p-4
+        "
+      >
+        <p className="text-sm leading-6 text-cyan-100/80">
+          Ya no necesitás seleccionar las cuotas manualmente. El sistema buscará
+          las cuotas pendientes, vencidas o parciales que correspondan al
+          cobrador, la zona y la fecha elegida.
+        </p>
+      </div>
 
       {/* ZONA + COBRADOR */}
 
@@ -292,7 +166,9 @@ export function RouteSheetCreateForm({
         {/* ZONA */}
 
         <div className="space-y-2">
-          <label className="text-sm text-white/60">Zona</label>
+          <label htmlFor="route-zone" className="text-sm text-white/60">
+            Zona
+          </label>
 
           <div
             className="
@@ -309,9 +185,11 @@ export function RouteSheetCreateForm({
             <MapPin size={18} className="shrink-0 text-cyan-400" />
 
             <select
+              id="route-zone"
               required
               value={form.zoneId}
-              onChange={(e) => update("zoneId", e.target.value)}
+              onChange={(event) => update("zoneId", event.target.value)}
+              disabled={loading}
               className="
                 h-12
                 w-full
@@ -319,6 +197,8 @@ export function RouteSheetCreateForm({
                 bg-slate-900
                 text-white
                 outline-none
+                disabled:cursor-not-allowed
+                disabled:opacity-50
               "
             >
               <option value="" className="bg-slate-900 text-white">
@@ -341,7 +221,9 @@ export function RouteSheetCreateForm({
         {/* COBRADOR */}
 
         <div className="space-y-2">
-          <label className="text-sm text-white/60">Cobrador</label>
+          <label htmlFor="route-collector" className="text-sm text-white/60">
+            Cobrador
+          </label>
 
           <div
             className="
@@ -358,9 +240,11 @@ export function RouteSheetCreateForm({
             <User size={18} className="shrink-0 text-cyan-400" />
 
             <select
+              id="route-collector"
               required
               value={form.staffId}
-              onChange={(e) => update("staffId", e.target.value)}
+              onChange={(event) => update("staffId", event.target.value)}
+              disabled={loading}
               className="
                 h-12
                 w-full
@@ -368,6 +252,8 @@ export function RouteSheetCreateForm({
                 bg-slate-900
                 text-white
                 outline-none
+                disabled:cursor-not-allowed
+                disabled:opacity-50
               "
             >
               <option value="" className="bg-slate-900 text-white">
@@ -391,7 +277,9 @@ export function RouteSheetCreateForm({
       {/* FECHA */}
 
       <div className="space-y-2">
-        <label className="text-sm text-white/60">Fecha del recorrido</label>
+        <label htmlFor="route-date" className="text-sm text-white/60">
+          Fecha del recorrido
+        </label>
 
         <div
           className="
@@ -408,299 +296,130 @@ export function RouteSheetCreateForm({
           <Calendar size={18} className="shrink-0 text-cyan-400" />
 
           <input
+            id="route-date"
             required
             type="date"
             value={form.routeDate}
-            onChange={(e) => update("routeDate", e.target.value)}
+            onChange={(event) => update("routeDate", event.target.value)}
+            disabled={loading}
             className="
               h-12
               w-full
               bg-slate-900
               text-white
               outline-none
+              disabled:cursor-not-allowed
+              disabled:opacity-50
             "
           />
         </div>
       </div>
 
-      {/* CUOTAS */}
+      {/* OBSERVACIONES */}
 
-      <div className="space-y-4">
+      <div className="space-y-2">
+        <label htmlFor="route-notes" className="text-sm text-white/60">
+          Observaciones
+          <span className="ml-1 text-white/30">(opcional)</span>
+        </label>
+
         <div
           className="
             flex
-            flex-col
+            items-start
             gap-3
-            sm:flex-row
-            sm:items-center
-            sm:justify-between
+            rounded-2xl
+            border
+            border-white/10
+            bg-slate-900
+            px-4
+            py-3
           "
         >
-          <div>
-            <h3 className="text-lg font-semibold">Cuotas pendientes</h3>
+          <FileText size={18} className="mt-1 shrink-0 text-cyan-400" />
 
-            <p className="text-sm text-white/50">
-              Seleccioná las cuotas que el cobrador deberá gestionar en este
-              recorrido.
-            </p>
-          </div>
-
-          {availableInstallments.length > 0 && (
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={selectAllInstallments}
-                className="
-                  rounded-xl
-                  border
-                  border-white/10
-                  bg-white/5
-                  px-3
-                  py-2
-                  text-xs
-                  font-medium
-                  text-white
-                  transition
-                  hover:bg-white/10
-                "
-              >
-                Seleccionar todas
-              </button>
-
-              <button
-                type="button"
-                onClick={clearInstallments}
-                className="
-                  rounded-xl
-                  border
-                  border-white/10
-                  bg-white/5
-                  px-3
-                  py-2
-                  text-xs
-                  font-medium
-                  text-white/60
-                  transition
-                  hover:bg-white/10
-                  hover:text-white
-                "
-              >
-                Limpiar
-              </button>
-            </div>
-          )}
+          <textarea
+            id="route-notes"
+            value={form.notes ?? ""}
+            onChange={(event) => update("notes", event.target.value)}
+            disabled={loading}
+            rows={3}
+            placeholder="Observaciones sobre el recorrido..."
+            className="
+              min-h-20
+              w-full
+              resize-none
+              bg-transparent
+              text-sm
+              text-white
+              outline-none
+              placeholder:text-white/30
+              disabled:cursor-not-allowed
+              disabled:opacity-50
+            "
+          />
         </div>
-
-        {/* SIN PARÁMETROS */}
-
-        {!form.zoneId || !form.staffId || !form.routeDate ? (
-          <div
-            className="
-              rounded-2xl
-              border
-              border-dashed
-              border-white/10
-              bg-black/20
-              p-6
-              text-center
-              text-sm
-              text-white/40
-            "
-          >
-            Seleccioná zona, cobrador y fecha para consultar las cuotas
-            pendientes.
-          </div>
-        ) : loadingInstallments ? (
-          <div
-            className="
-              flex
-              items-center
-              justify-center
-              gap-3
-              rounded-2xl
-              border
-              border-white/10
-              bg-black/20
-              p-8
-              text-sm
-              text-white/50
-            "
-          >
-            <Loader2 size={20} className="animate-spin text-cyan-400" />
-            Buscando cuotas pendientes...
-          </div>
-        ) : installmentsError && availableInstallments.length === 0 ? (
-          <div
-            className="
-              rounded-2xl
-              border
-              border-red-400/20
-              bg-red-400/5
-              p-5
-              text-sm
-              text-red-300
-            "
-          >
-            {installmentsError}
-          </div>
-        ) : availableInstallments.length === 0 ? (
-          <div
-            className="
-              rounded-2xl
-              border
-              border-white/10
-              bg-black/20
-              p-6
-              text-center
-              text-sm
-              text-white/40
-            "
-          >
-            No hay cuotas pendientes disponibles para este cobrador, zona y
-            fecha.
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {availableInstallments.map((installment) => {
-              const selected =
-                form.installmentIds?.includes(installment.installmentId) ??
-                false;
-
-              return (
-                <label
-                  key={installment.installmentId}
-                  className={`
-                      flex
-                      cursor-pointer
-                      items-start
-                      gap-4
-                      rounded-2xl
-                      border
-                      p-4
-                      transition
-                      ${
-                        selected
-                          ? "border-cyan-400/40 bg-cyan-400/10"
-                          : "border-white/10 bg-black/20 hover:bg-white/5"
-                      }
-                    `}
-                >
-                  <input
-                    type="checkbox"
-                    checked={selected}
-                    onChange={() =>
-                      toggleInstallment(installment.installmentId)
-                    }
-                    className="
-                        mt-1
-                        h-4
-                        w-4
-                        shrink-0
-                        cursor-pointer
-                        accent-cyan-400
-                      "
-                  />
-
-                  <div className="min-w-0 flex-1">
-                    <div
-                      className="
-                          flex
-                          flex-col
-                          gap-1
-                          sm:flex-row
-                          sm:items-center
-                          sm:justify-between
-                        "
-                    >
-                      <p className="font-medium text-white">
-                        {installment.clientName}
-                      </p>
-
-                      <span className="font-semibold text-cyan-400">
-                        ${Number(installment.amount).toLocaleString("es-AR")}
-                      </span>
-                    </div>
-
-                    <div
-                      className="
-                          mt-2
-                          grid
-                          gap-1
-                          text-xs
-                          text-white/50
-                          sm:grid-cols-3
-                        "
-                    >
-                      <span>Cuota {installment.installmentNumber}</span>
-
-                      <span>Vencimiento: {installment.dueDate}</span>
-
-                      {installment.clientAddress && (
-                        <span className="truncate">
-                          {installment.clientAddress}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </label>
-              );
-            })}
-
-            {/* RESUMEN */}
-
-            <div
-              className="
-                flex
-                flex-col
-                gap-2
-                rounded-2xl
-                border
-                border-white/10
-                bg-black/20
-                p-4
-                sm:flex-row
-                sm:items-center
-                sm:justify-between
-              "
-            >
-              <span className="text-sm text-white/50">
-                Cuotas seleccionadas
-              </span>
-
-              <span className="font-semibold text-white">
-                {form.installmentIds?.length ?? 0} de{" "}
-                {availableInstallments.length}
-              </span>
-            </div>
-
-            {!hasSelectedInstallments && (
-              <p className="text-sm text-amber-300">
-                Debés seleccionar al menos una cuota para crear la hoja de ruta.
-              </p>
-            )}
-          </div>
-        )}
       </div>
 
-      {/* ERROR CREACIÓN */}
+      {/* ERROR */}
 
-      {createError && (
+      {error && (
         <div
           className="
             rounded-2xl
             border
             border-red-400/20
             bg-red-400/5
-            p-5
+            p-4
             text-sm
             text-red-300
           "
         >
-          <p className="font-semibold">No se pudo crear la hoja de ruta</p>
-
-          <p className="mt-1">{createError}</p>
+          {error}
         </div>
       )}
+
+      {/* RESUMEN */}
+
+      <div
+        className="
+          grid
+          gap-3
+          rounded-2xl
+          border
+          border-white/10
+          bg-black/20
+          p-4
+          text-sm
+          sm:grid-cols-3
+        "
+      >
+        <div>
+          <span className="block text-xs text-white/40">Zona</span>
+
+          <span className="mt-1 block font-medium text-white">
+            {zones.find((zone) => zone.id === form.zoneId)?.name ??
+              "Sin seleccionar"}
+          </span>
+        </div>
+
+        <div>
+          <span className="block text-xs text-white/40">Cobrador</span>
+
+          <span className="mt-1 block font-medium text-white">
+            {collectors.find((collector) => collector.id === form.staffId)
+              ?.name ?? "Sin seleccionar"}
+          </span>
+        </div>
+
+        <div>
+          <span className="block text-xs text-white/40">Fecha</span>
+
+          <span className="mt-1 block font-medium text-white">
+            {form.routeDate || "Sin seleccionar"}
+          </span>
+        </div>
+      </div>
 
       {/* BOTÓN */}
 
@@ -714,14 +433,7 @@ export function RouteSheetCreateForm({
       >
         <SaveButton
           type="submit"
-          disabled={
-            loading ||
-            loadingInstallments ||
-            !form.zoneId ||
-            !form.staffId ||
-            !form.routeDate ||
-            !hasSelectedInstallments
-          }
+          disabled={loading || !form.zoneId || !form.staffId || !form.routeDate}
           className="
             flex
             items-center
@@ -731,7 +443,8 @@ export function RouteSheetCreateForm({
           "
         >
           {loading && <Loader2 size={18} className="animate-spin" />}
-          Crear hoja de ruta
+
+          {loading ? "Creando..." : "Crear hoja de ruta"}
         </SaveButton>
       </div>
     </form>

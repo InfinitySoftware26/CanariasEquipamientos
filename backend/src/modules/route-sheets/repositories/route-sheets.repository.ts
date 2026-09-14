@@ -85,4 +85,19 @@ export class RouteSheetsRepository implements IRouteSheetsRepository {
   async updateStatus(id: string, status: RouteSheetStatus): Promise<void> {
     await this.repo.update({ routeSheetId: id }, { status });
   }
+  async updateStaff(
+    id: string,
+    staffId: string,
+    assignedBy: string,
+  ): Promise<void> {
+    await this.repo.update(
+      {
+        routeSheetId: id,
+      },
+      {
+        staffId,
+        assignedBy,
+      },
+    );
+  }
 }
