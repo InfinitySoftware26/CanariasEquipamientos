@@ -5,12 +5,6 @@ import { FinancingPlan } from '../entities/financing-plan.entity';
 import { IFinancingPlanRepository } from '../interfaces/financing-plan-repository.interface';
 import { CreateFinancingPlanDto } from '../dto/create-financing-plan.dto';
 import { UpdateFinancingPlanDto } from '../dto/update-financing-plan.dto';
-
-/**
- * FinancingPlanRepository
- *
- * Acceso a datos para FinancingPlan con garantía de aislamiento por societyId.
- */
 @Injectable()
 export class FinancingPlanRepository implements IFinancingPlanRepository {
     constructor(
@@ -25,7 +19,8 @@ export class FinancingPlanRepository implements IFinancingPlanRepository {
         const plan = this.repo.create({
             societyId,
             name: dto.name,
-            financingConfigId: dto.financingConfigId,
+            financingConfigId: dto.financingConfigId ?? null,
+            financingRate: dto.financingRate ?? null,
             paymentFrequency: dto.paymentFrequency,
             installmentsCount: dto.installmentsCount,
             isGlobal: dto.isGlobal ?? true,
@@ -71,27 +66,27 @@ export class FinancingPlanRepository implements IFinancingPlanRepository {
         financingPlanId: string,
         dto: UpdateFinancingPlanDto,
     ): Promise<FinancingPlan> {
-        await this.repo.update(
-            { societyId, financingPlanId },
-            {
-                name: dto.name,
-                financingConfigId: dto.financingConfigId,
-                paymentFrequency: dto.paymentFrequency,
-                installmentsCount: dto.installmentsCount,
-                isGlobal: dto.isGlobal,
-            },
-        );
+        const plan = await this.repo.findOneOrFail({
+            where: { societyId, financingPlanId },
+            relations: ['products'],
+        });
 
-        if (dto.productIds) {
-            const plan = await this.repo.findOneOrFail({
-                where: { societyId, financingPlanId },
-            });
-            await this.repo
-                .createQueryBuilder()
-                .relation(FinancingPlan, 'products')
-                .of(plan)
-                .set(dto.productIds);
+        if (dto.name !== undefined) plan.name = dto.name;
+        if (dto.paymentFrequency !== undefined) plan.paymentFrequency = dto.paymentFrequency;
+        if (dto.installmentsCount !== undefined) plan.installmentsCount = dto.installmentsCount;
+        if (dto.isGlobal !== undefined) plan.isGlobal = dto.isGlobal;
+        if (dto.financingConfigId !== undefined) plan.financingConfigId = dto.financingConfigId;
+        if (dto.financingRate !== undefined) plan.financingRate = dto.financingRate;
+
+        if (dto.productIds !== undefined) {
+            if (plan.isGlobal) {
+                plan.products = [];
+            } else {
+                plan.products = (dto.productIds || []).map((id) => ({ productId: id } as any));
+            }
         }
+
+        await this.repo.save(plan);
 
         return this.repo.findOneOrFail({
             where: { societyId, financingPlanId },

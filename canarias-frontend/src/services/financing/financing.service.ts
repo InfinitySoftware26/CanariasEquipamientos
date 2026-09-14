@@ -70,10 +70,6 @@ async function getErrorMessage(response: Response, fallback: string) {
   }
 }
 
-// ════════════════════════════════════════════════════════════════════════════
-// FINANCING CONFIGURATION CRUD
-// ════════════════════════════════════════════════════════════════════════════
-
 export async function getAllFinancingConfigurations(): Promise<
   FinancingConfiguration[]
 > {
@@ -183,10 +179,6 @@ export async function deleteFinancingConfiguration(
   }
 }
 
-// ════════════════════════════════════════════════════════════════════════════
-// FINANCING PLAN CRUD
-// ════════════════════════════════════════════════════════════════════════════
-
 export async function getFinancingPlans(): Promise<FinancingPlan[]> {
   const token = getToken();
 
@@ -278,10 +270,6 @@ export async function deleteFinancingPlan(
     );
   }
 }
-
-// ════════════════════════════════════════════════════════════════════════════
-// PROMOTION CRUD
-// ════════════════════════════════════════════════════════════════════════════
 
 export async function getPromotions(): Promise<Promotion[]> {
   const token = getToken();

@@ -5,7 +5,16 @@ import { Sale } from '../entities/sale.entity';
 import { ISalesRepository } from '../interfaces/sales-repository.interface';
 import { SaleStatus } from '../../../common/enums/sale-status.enum';
 
-const SALE_RELATIONS = ['client', 'products', 'products.product', 'staff', 'collector'];
+const SALE_RELATIONS = [
+  'client',
+  'products',
+  'products.product',
+  'staff',
+  'collector',
+  'financingPlan',
+  'financingPlan.financingConfiguration',
+  'promotion',
+];
 
 @Injectable()
 export class SalesRepository implements ISalesRepository {

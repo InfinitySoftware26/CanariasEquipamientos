@@ -1,5 +1,7 @@
 export type PaymentFrequency = "weekly" | "monthly" | "biweekly" | "daily";
 
+export type SaleMode = "plan" | "promotion" | "custom";
+
 export interface PreloadFormData {
   // 🧑 Cliente
   clientId?: string;
@@ -13,6 +15,15 @@ export interface PreloadFormData {
   zoneId: string;
 
   // 💰 Venta
+  saleMode: SaleMode;
+  financingPlanId?: string;
+  promotionId?: string;
+
+  // En modo personalizado
+  customRateType?: "config" | "custom";
+  financingConfigId?: string;
+  customRate?: string;
+
   productId: string;
   quantity: number;
   installmentsCount: number;

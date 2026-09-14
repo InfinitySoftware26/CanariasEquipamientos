@@ -1,5 +1,10 @@
 import { PreloadFormData } from "@/types/preloadForm.type";
 import { Zone } from "@/types/zones/zone.type";
+import {
+  FinancingConfiguration,
+  FinancingPlan,
+  Promotion,
+} from "@/types/financing/financing.types";
 import { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
 
 export type Product = {
@@ -14,6 +19,10 @@ export type StepSaleProps = {
   form: PreloadFormData;
   setForm: React.Dispatch<React.SetStateAction<PreloadFormData>>;
   products: Product[];
+  plans: FinancingPlan[];
+  promotions: Promotion[];
+  configs: FinancingConfiguration[];
+  zones: Zone[];
   handleSubmit: () => void;
   loading: boolean;
 };
@@ -43,6 +52,9 @@ export type PreloadSaleViewProps = {
   form: PreloadFormData;
   setForm: React.Dispatch<React.SetStateAction<PreloadFormData>>;
   products: Product[];
+  plans: FinancingPlan[];
+  promotions: Promotion[];
+  configs: FinancingConfiguration[];
   clientFound: boolean;
   searched: boolean;
   error: string | null;

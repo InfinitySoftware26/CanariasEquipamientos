@@ -13,6 +13,8 @@ import { DeliveryAttempt } from './entities/delivery-attempt.entity';
 import { SaleHistory } from './entities/sale-history.entity';
 import { Installment } from '../installments/entities/installment.entity';
 import { Staff } from '../staff/entities/staff.entity';
+import { FinancingPlan } from '../financing/entities/financing-plan.entity';
+import { Promotion } from '../financing/entities/promotion.entity';
 import { FinancingModule } from '../financing/financing.module';
 import { SALES_REPOSITORY } from './interfaces/sales-repository.interface';
 import { SALE_VALIDATIONS_REPOSITORY } from './interfaces/sale-validations-repository.interface';
@@ -29,6 +31,8 @@ import { SALE_HISTORY_REPOSITORY } from './interfaces/sale-history-repository.in
       SaleHistory,
       Installment,
       Staff,
+      FinancingPlan,
+      Promotion,
     ]),
     FinancingModule,
   ],

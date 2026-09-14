@@ -51,6 +51,15 @@ function formatFrequency(value?: string | null): string {
   );
 }
 
+function formatProductScope(
+  isGlobal: boolean,
+  products: FinancingPlan["products"] | Promotion["products"],
+): string {
+  return isGlobal
+    ? "✓ Global • Todos los productos"
+    : `✗ Específico • ${products.length} productos`;
+}
+
 type PendingDelete =
   | { type: "config"; id: string; name: string }
   | { type: "plan"; id: string; name: string }
@@ -72,7 +81,6 @@ export default function FinancingPage() {
   );
   const [deleting, setDeleting] = useState(false);
 
-  // Cargar datos al montar o cambiar de sociedad
   useEffect(() => {
     if (!selectedSocietyId) {
       router.replace("/select-society");
@@ -95,7 +103,6 @@ export default function FinancingPage() {
 
         if (!isMounted) return;
 
-        // Procesar resultados
         if (configsResult.status === "fulfilled") {
           setConfigs(configsResult.value);
         } else {
@@ -253,9 +260,7 @@ export default function FinancingPage() {
     );
   }
 
-  // Renderizar contenido del tab activo
   const tabContent = (() => {
-    // TAB: Configuraciones de Financiación
     if (activeTab === "configurations") {
       return configs.length === 0 ? (
         <Card className="border border-dashed border-white/10 bg-white/[0.02]">
@@ -346,7 +351,6 @@ export default function FinancingPage() {
       );
     }
 
-    // TAB: Planes de Financiación
     if (activeTab === "plans") {
       return plans.length === 0 ? (
         <Card className="border border-dashed border-white/10 bg-white/[0.02]">
@@ -384,10 +388,18 @@ export default function FinancingPage() {
                     {plan.installmentsCount} cuotas ·{" "}
                     {formatFrequency(plan.paymentFrequency)}
                   </p>
+                  <p className="mt-1 text-xs text-[#F5A300]">
+                    Tasa:{" "}
+                    {plan.financingRate !== null &&
+                    plan.financingRate !== undefined
+                      ? formatRate(plan.financingRate)
+                      : plan.financingConfiguration
+                        ? `${formatRate(plan.financingConfiguration.financingRate)} (${plan.financingConfiguration.name})`
+                        : "0%"}
+                  </p>
                 </div>
                 <p className="text-xs">
-                  {plan.isGlobal ? "✓ Global" : "✗ Específico"} •{" "}
-                  {plan.products.length} productos
+                  {formatProductScope(plan.isGlobal, plan.products)}
                 </p>
                 <div className="flex gap-2 border-t border-white/10 pt-3 opacity-0 transition group-hover:opacity-100">
                   <button
@@ -420,7 +432,6 @@ export default function FinancingPage() {
       );
     }
 
-    // TAB: Promociones
     if (activeTab === "promotions") {
       return promotions.length === 0 ? (
         <Card className="border border-dashed border-white/10 bg-white/[0.02]">
@@ -478,6 +489,9 @@ export default function FinancingPage() {
                   {promo.installmentsCount && promo.paymentFrequency
                     ? `${promo.installmentsCount} cuotas · ${formatFrequency(promo.paymentFrequency)}`
                     : "Configuración flexible"}
+                </p>
+                <p className="text-xs">
+                  {formatProductScope(promo.isGlobal, promo.products)}
                 </p>
                 <div className="flex gap-2 border-t border-white/10 pt-3 opacity-0 transition group-hover:opacity-100">
                   <button

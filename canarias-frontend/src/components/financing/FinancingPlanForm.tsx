@@ -21,14 +21,7 @@ import {
 } from "@/types/financing/financing.types";
 import { FinancingProductsSelector } from "./FinancingProductSelector";
 
-interface FinancingPlanFormState {
-  name: string;
-  financingConfigId: string;
-  paymentFrequency: PaymentFrequency;
-  installmentsCount: string;
-  isGlobal: boolean;
-  productIds: string[];
-}
+import { FinancingPlanFormState } from "@/hooks/financing/useFinancingPlanForm";
 
 interface FinancingPlanFormProps {
   form: FinancingPlanFormState;
@@ -78,29 +71,90 @@ export function FinancingPlanForm({
           />
         </FormField>
 
-        <FormField
-          label="Configuración de financiación"
-          error={errors.financingConfigId}
-        >
-          <Select
-            value={form.financingConfigId}
-            onValueChange={(value) => updateField("financingConfigId", value)}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Seleccioná una configuración" />
-            </SelectTrigger>
-            <SelectContent>
-              {configs.map((config) => (
-                <SelectItem
-                  key={config.financingConfigId}
-                  value={config.financingConfigId}
-                >
-                  {config.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </FormField>
+        <div className="space-y-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+          <p className="font-medium text-white">Modalidad de financiación</p>
+          <p className="text-xs text-white/50">
+            Elegí una configuración existente o ingresá un porcentaje directo
+            personalizado para este plan.
+          </p>
+
+          <div className="grid grid-cols-2 gap-2 pt-1">
+            <button
+              type="button"
+              disabled={loading}
+              onClick={() => updateField("rateType", "config")}
+              className={`flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-medium transition ${
+                form.rateType === "config"
+                  ? "border border-[#F5A300]/40 bg-[#F5A300]/20 text-[#F5A300]"
+                  : "border border-white/10 bg-white/5 text-white/70 hover:bg-white/10"
+              }`}
+            >
+              Configuración creada
+            </button>
+            <button
+              type="button"
+              disabled={loading}
+              onClick={() => updateField("rateType", "custom")}
+              className={`flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-medium transition ${
+                form.rateType === "custom"
+                  ? "border border-[#F5A300]/40 bg-[#F5A300]/20 text-[#F5A300]"
+                  : "border border-white/10 bg-white/5 text-white/70 hover:bg-white/10"
+              }`}
+            >
+              Porcentaje directo (%)
+            </button>
+          </div>
+
+          {form.rateType === "config" ? (
+            <FormField
+              label="Configuración de financiación"
+              error={errors.financingConfigId}
+            >
+              <Select
+                value={form.financingConfigId}
+                onValueChange={(value) =>
+                  updateField("financingConfigId", value)
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccioná una configuración" />
+                </SelectTrigger>
+                <SelectContent>
+                  {configs.map((config) => (
+                    <SelectItem
+                      key={config.financingConfigId}
+                      value={config.financingConfigId}
+                    >
+                      {config.name} ({Number(config.financingRate) * 100}%)
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FormField>
+          ) : (
+            <FormField
+              label="Porcentaje de financiación"
+              error={errors.financingRate}
+            >
+              <div className="relative">
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="Ej: 25 o 500"
+                  value={form.financingRate}
+                  onChange={(event) =>
+                    updateField("financingRate", event.target.value)
+                  }
+                  className="h-11 border-white/10 bg-white/5 pr-10 text-white"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40">
+                  %
+                </span>
+              </div>
+            </FormField>
+          )}
+        </div>
 
         <FormField label="Frecuencia de pago" error={errors.paymentFrequency}>
           <Select

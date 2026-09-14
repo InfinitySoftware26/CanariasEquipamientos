@@ -31,6 +31,20 @@ export function SaleInformationCard({ sale }: SaleInformationCardProps) {
           value={`${sale.client?.name ?? "-"} ${sale.client?.surname ?? ""}`}
         />
 
+        {sale.financingPlan && (
+          <Info
+            title="Plan de financiación"
+            value={sale.financingPlan.name}
+          />
+        )}
+
+        {sale.promotion && (
+          <Info
+            title="Promoción"
+            value={sale.promotion.name}
+          />
+        )}
+
         {isSeller ? (
           <>
             <Info
