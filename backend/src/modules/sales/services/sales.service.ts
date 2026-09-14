@@ -143,25 +143,138 @@ export class SalesService {
   async createSale(dto: CreateSaleDto, user: JwtPayload): Promise<Sale> {
     const { staffId, societyId, name } = this.extractUser(user);
 
+    if (!dto.products || dto.products.length === 0) {
+      throw new BadRequestException("La venta debe tener al menos un producto");
+    }
+
     const totalAmount = dto.products.reduce(
       (sum, p) => sum + p.unitPrice * p.quantity,
       0,
     );
 
-    // TODO: Integración Phase 2 - Financiación
-    // Actualmente el cálculo de cuotas y tasas está simplificado.
-    // En Phase 2, se integrará FinancingPlan y Promotion para:
-    //   1. Validar installmentsCount contra el plan seleccionado
-    //   2. Obtener tasa base de FinancingConfiguration
-    //   3. Sumar tasa adicional de Promotion (si aplica)
-    //   4. Generar cuotas con la estructura completa
-    //
-    // Por ahora, se usa un valor fijo para no romper el flujo.
+    let effectiveRate = 0; // Sin recargo por defecto para ventas personalizadas
+    let installmentsCount = dto.installmentsCount;
+    let paymentFrequency = dto.paymentFrequency;
 
-    const fixedFinancingRate = 0.12; // Tasa temporal: 12%
-    const totalWithInterest = Math.round(totalAmount * (1 + fixedFinancingRate) * 100) / 100;
+    if (dto.financingPlanId) {
+      const plan = await this.financingService.findOnePlan(
+        societyId,
+        dto.financingPlanId,
+      );
+
+      if (!plan.isActive) {
+        throw new BadRequestException(
+          "El plan de financiación seleccionado no está activo",
+        );
+      }
+
+      if (!plan.isGlobal) {
+        const allowedProductIds = new Set(
+          plan.products?.map((p) => p.productId) ?? [],
+        );
+        const allAllowed = dto.products.every((p) =>
+          allowedProductIds.has(p.productId),
+        );
+        if (!allAllowed) {
+          throw new BadRequestException(
+            "Uno o más productos no están permitidos en este plan de financiación",
+          );
+        }
+      }
+
+      if (plan.financingRate !== null && plan.financingRate !== undefined) {
+        effectiveRate = Number(plan.financingRate);
+      } else if (plan.financingConfiguration) {
+        effectiveRate = Number(plan.financingConfiguration.financingRate);
+      } else {
+        effectiveRate = 0;
+      }
+
+      installmentsCount = plan.installmentsCount;
+      paymentFrequency = plan.paymentFrequency;
+    } else if (dto.promotionId) {
+      const promotion = await this.financingService.findOnePromotion(
+        societyId,
+        dto.promotionId,
+      );
+
+      if (!promotion.isActive) {
+        throw new BadRequestException(
+          "La promoción seleccionada no está activa",
+        );
+      }
+
+      if (!promotion.isGlobal) {
+        const allowedProductIds = new Set(
+          promotion.products?.map((p) => p.productId) ?? [],
+        );
+        const allAllowed = dto.products.every((p) =>
+          allowedProductIds.has(p.productId),
+        );
+        if (!allAllowed) {
+          throw new BadRequestException(
+            "Uno o más productos no están permitidos en esta promoción",
+          );
+        }
+      }
+
+      if (promotion.financingPlanId) {
+        const basePlan =
+          promotion.plan ||
+          (await this.financingService.findOnePlan(
+            societyId,
+            promotion.financingPlanId,
+          ));
+
+        let baseRate = 0;
+        if (
+          basePlan.financingRate !== null &&
+          basePlan.financingRate !== undefined
+        ) {
+          baseRate = Number(basePlan.financingRate);
+        } else if (basePlan.financingConfiguration) {
+          baseRate = Number(basePlan.financingConfiguration.financingRate);
+        }
+
+        const discount = Number(promotion.discountPercentage ?? 0);
+        effectiveRate = Math.max(0, baseRate + discount);
+        installmentsCount =
+          promotion.installmentsCount ?? basePlan.installmentsCount;
+        paymentFrequency =
+          promotion.paymentFrequency ?? basePlan.paymentFrequency;
+      } else {
+        effectiveRate = Math.max(0, Number(promotion.discountPercentage ?? 0));
+        if (promotion.installmentsCount) {
+          installmentsCount = promotion.installmentsCount;
+        }
+        if (promotion.paymentFrequency) {
+          paymentFrequency = promotion.paymentFrequency;
+        }
+      }
+    } else {
+      // Modo personalizado (manual o vía configuración guardada)
+      if (dto.financingConfigId) {
+        const config = await this.financingService.findOneConfig(
+          societyId,
+          dto.financingConfigId,
+        );
+        if (!config.isActive) {
+          throw new BadRequestException(
+            "La configuración de financiación seleccionada no está activa",
+          );
+        }
+        effectiveRate = Number(config.financingRate);
+      } else if (dto.financingRate !== undefined && dto.financingRate !== null) {
+        effectiveRate = Number(dto.financingRate);
+      } else {
+        effectiveRate = 0;
+      }
+    }
+
+    const totalWithInterest =
+      Math.round(totalAmount * (1 + effectiveRate) * 100) / 100;
     const installmentAmount =
-      Math.round((totalWithInterest / dto.installmentsCount) * 100) / 100;
+      Math.round((totalWithInterest / installmentsCount) * 100) / 100;
 
     // Comisión del vendedor: se calcula sobre el valor del producto (totalAmount),
     // sin los intereses de financiación que paga el cliente.
@@ -174,12 +287,14 @@ export class SalesService {
       clientId: dto.clientId,
       staffId,
       societyId,
+      financingPlanId: dto.financingPlanId ?? null,
+      promotionId: dto.promotionId ?? null,
       totalAmount,
       sellerCommissionRate: SELLER_COMMISSION_RATE,
       sellerCommission,
       installmentAmount,
-      installmentsCount: dto.installmentsCount,
-      paymentFrequency: dto.paymentFrequency,
+      installmentsCount,
+      paymentFrequency,
       saleDate,
       observation: dto.observation,
       status: SaleStatus.PENDING_ADMIN_VALIDATION,

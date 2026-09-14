@@ -26,28 +26,12 @@ import { Roles } from '../../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 import { StaffRole } from '../../../common/enums/staff-role.enum';
 import { JwtPayload } from '../../auth/interfaces/jwt-payload.interface';
-
-/**
- * FinancingController
- *
- * Controlador único para el módulo de Financiación. Expone endpoints para
- * las 3 entidades: Configuraciones, Planes y Promociones.
- *
- * Todos los endpoints validan societyId del usuario autenticado.
- *
- * Rutas:
- *   /financing/configs      → FinancingConfiguration
- *   /financing/plans        → FinancingPlan
- *   /financing/promotions   → Promotion
- */
 @ApiTags('financing')
 @ApiBearerAuth('access-token')
 @UseGuards(JwtAuthGuard, RolesGuard, SocietyGuard)
 @Controller('financing')
 export class FinancingController {
     constructor(private readonly financingService: FinancingService) { }
-
-    // ─── FINANCING CONFIGURATION ──────────────────────────────────────────────
 
     @Get('configs')
     @ApiOperation({ summary: 'Listar configuraciones de financiación' })
@@ -96,8 +80,6 @@ export class FinancingController {
         return this.financingService.deleteConfig(user.societyId, id);
     }
 
-    // ─── FINANCING PLAN ────────────────────────────────────────────────────────
-
     @Get('plans')
     @ApiOperation({ summary: 'Listar planes de financiación' })
     async findAllPlans(@CurrentUser() user: JwtPayload) {
@@ -144,8 +126,6 @@ export class FinancingController {
     ) {
         return this.financingService.deletePlan(user.societyId, id);
     }
-
-    // ─── PROMOTION ─────────────────────────────────────────────────────────────
 
     @Get('promotions')
     @ApiOperation({ summary: 'Listar promociones' })

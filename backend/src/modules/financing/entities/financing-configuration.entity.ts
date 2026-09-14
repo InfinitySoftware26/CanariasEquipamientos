@@ -8,21 +8,6 @@ import {
   JoinTable,
 } from "typeorm";
 import { Product } from "../../products/entities/product.entity";
-
-/**
- * FinancingConfiguration
- *
- * Define una tasa de financiación base que se puede aplicar:
- * - Globalmente a todos los productos de una sociedad (isGlobal = true)
- * - A productos específicos (isGlobal = false + M2M relationship)
- *
- * Las cuotas y frecuencias de pago se definen en FinancingPlan.
- * Las ganancias adicionales se definen en Promotion.
- *
- * Ejemplo:
- *   Financiación Base "Estándar": 12% tasa → aplica a todos los productos de la sociedad
- *   Financiación Base "Premium": 8% tasa → aplica solo a TV, Laptop, etc.
- */
 @Entity("FINANCING_CONFIGURATIONS")
 export class FinancingConfiguration {
   @PrimaryGeneratedColumn("uuid", { name: "financing_config_id" })
@@ -37,9 +22,9 @@ export class FinancingConfiguration {
   @Column({
     name: "financing_rate",
     type: "decimal",
-    precision: 5,
+    precision: 10,
     scale: 4,
-    comment: "Tasa de financiación base (ej: 0.12 = 12%)",
+    comment: "Tasa de financiación base (ej: 0.12 = 12%, 5.0 = 500%)",
   })
   financingRate!: number;
 

@@ -1,4 +1,4 @@
-import { IsArray, IsBoolean, IsEnum, IsInt, IsOptional, IsString, IsUUID, Max, Min, ArrayUnique } from "class-validator";
+import { IsArray, IsBoolean, IsEnum, IsInt, IsNumber, IsOptional, IsString, IsUUID, Max, Min, ArrayUnique } from "class-validator";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { PaymentFrequency } from "../../../common/enums/payment-frequency.enum";
 
@@ -7,9 +7,19 @@ export class CreateFinancingPlanDto {
   @IsString()
   name!: string;
 
-  @ApiProperty({ description: "Financiación que define el porcentaje de ganancia." })
+  @ApiPropertyOptional({ description: "Financiación que define el porcentaje de ganancia." })
+  @IsOptional()
   @IsUUID()
-  financingConfigId!: string;
+  financingConfigId?: string;
+
+  @ApiPropertyOptional({
+    example: 0.25,
+    description: "Porcentaje de financiación independiente (ej: 0.25 = 25%, 5.0 = 500%). Requerido si no se especifica financingConfigId.",
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  financingRate?: number;
 
   @ApiProperty({ enum: PaymentFrequency, example: PaymentFrequency.WEEKLY })
   @IsEnum(PaymentFrequency)

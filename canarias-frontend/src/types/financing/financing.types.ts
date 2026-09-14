@@ -1,12 +1,3 @@
-/**
- * Tipos del módulo de Financiación.
- *
- * Refleja exactamente las 3 entidades del backend (módulo `financing`):
- * - FinancingConfiguration: tasa base de financiación (global o por producto)
- * - FinancingPlan: esquema de cuotas + frecuencia de pago (vinculado a una configuración)
- * - Promotion: ganancia adicional / descuento especial (vinculada o no a un plan)
- */
-
 export type PaymentFrequency = "daily" | "weekly" | "biweekly" | "monthly";
 
 export interface FinancingProduct {
@@ -32,8 +23,9 @@ export interface FinancingPlan {
   financingPlanId: string;
   societyId: string;
   name: string;
-  financingConfigId: string;
-  financingConfiguration?: FinancingConfiguration;
+  financingConfigId: string | null;
+  financingConfiguration?: FinancingConfiguration | null;
+  financingRate: number | null;
   paymentFrequency: PaymentFrequency;
   installmentsCount: number;
   isGlobal: boolean;
@@ -59,8 +51,6 @@ export interface Promotion {
   updatedAt: string;
 }
 
-// ─── PAYLOADS: FINANCING CONFIGURATION ──────────────────────────────────────
-
 export interface CreateFinancingConfigPayload {
   name: string;
   financingRate: number;
@@ -74,11 +64,10 @@ export interface UpdateFinancingConfigPayload {
   isActive?: boolean;
 }
 
-// ─── PAYLOADS: FINANCING PLAN ────────────────────────────────────────────────
-
 export interface CreateFinancingPlanPayload {
   name: string;
-  financingConfigId: string;
+  financingConfigId?: string | null;
+  financingRate?: number | null;
   paymentFrequency: PaymentFrequency;
   installmentsCount: number;
   isGlobal?: boolean;
@@ -87,14 +76,13 @@ export interface CreateFinancingPlanPayload {
 
 export interface UpdateFinancingPlanPayload {
   name?: string;
-  financingConfigId?: string;
+  financingConfigId?: string | null;
+  financingRate?: number | null;
   paymentFrequency?: PaymentFrequency;
   installmentsCount?: number;
   isGlobal?: boolean;
   productIds?: string[];
 }
-
-// ─── PAYLOADS: PROMOTION ─────────────────────────────────────────────────────
 
 export interface CreatePromotionPayload {
   name: string;

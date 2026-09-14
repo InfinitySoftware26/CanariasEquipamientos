@@ -76,8 +76,8 @@ export function usePromotionForm() {
 
         if (form.discountPercentage) {
             const discount = Number(form.discountPercentage);
-            if (Number.isNaN(discount) || discount < -100 || discount > 100) {
-                nextErrors.discountPercentage = "Ingrese un porcentaje válido entre -100 y 100";
+            if (Number.isNaN(discount) || discount < -100) {
+                nextErrors.discountPercentage = "Ingrese un porcentaje válido (≥ -100%)";
             }
         }
 

@@ -34,7 +34,6 @@ export class CreatePromotionDto {
   @IsOptional()
   @IsNumber()
   @Min(-1)
-  @Max(1)
   discountPercentage?: number;
 
   @ApiPropertyOptional({ enum: PaymentFrequency })

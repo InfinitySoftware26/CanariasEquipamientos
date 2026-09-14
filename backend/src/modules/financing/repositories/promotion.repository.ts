@@ -5,12 +5,6 @@ import { Promotion } from '../entities/promotion.entity';
 import { IPromotionRepository } from '../interfaces/promotion-repository.interface';
 import { CreatePromotionDto } from '../dto/create-promotion.dto';
 import { UpdatePromotionDto } from '../dto/update-promotion.dto';
-
-/**
- * PromotionRepository
- *
- * Acceso a datos para Promotion con garantía de aislamiento por societyId.
- */
 @Injectable()
 export class PromotionRepository implements IPromotionRepository {
     constructor(
@@ -42,14 +36,14 @@ export class PromotionRepository implements IPromotionRepository {
 
         return this.repo.findOneOrFail({
             where: { promotionId: saved.promotionId },
-            relations: ['products', 'plan'],
+            relations: ['products', 'plan', 'plan.financingConfiguration', 'plan.products'],
         });
     }
 
     async findAllBySociety(societyId: string): Promise<Promotion[]> {
         return this.repo.find({
             where: { societyId },
-            relations: ['products', 'plan'],
+            relations: ['products', 'plan', 'plan.financingConfiguration', 'plan.products'],
             order: { createdAt: 'DESC' },
         });
     }
@@ -60,7 +54,7 @@ export class PromotionRepository implements IPromotionRepository {
     ): Promise<Promotion | null> {
         return this.repo.findOne({
             where: { societyId, promotionId },
-            relations: ['products', 'plan'],
+            relations: ['products', 'plan', 'plan.financingConfiguration', 'plan.products'],
         });
     }
 
@@ -69,32 +63,31 @@ export class PromotionRepository implements IPromotionRepository {
         promotionId: string,
         dto: UpdatePromotionDto,
     ): Promise<Promotion> {
-        await this.repo.update(
-            { societyId, promotionId },
-            {
-                name: dto.name,
-                financingPlanId: dto.financingPlanId,
-                discountPercentage: dto.discountPercentage,
-                paymentFrequency: dto.paymentFrequency,
-                installmentsCount: dto.installmentsCount,
-                isGlobal: dto.isGlobal,
-            },
-        );
+        const promotion = await this.repo.findOneOrFail({
+            where: { societyId, promotionId },
+            relations: ['products'],
+        });
 
-        if (dto.productIds) {
-            const promotion = await this.repo.findOneOrFail({
-                where: { societyId, promotionId },
-            });
-            await this.repo
-                .createQueryBuilder()
-                .relation(Promotion, 'products')
-                .of(promotion)
-                .set(dto.productIds);
+        if (dto.name !== undefined) promotion.name = dto.name;
+        if (dto.financingPlanId !== undefined) promotion.financingPlanId = dto.financingPlanId;
+        if (dto.discountPercentage !== undefined) promotion.discountPercentage = dto.discountPercentage;
+        if (dto.paymentFrequency !== undefined) promotion.paymentFrequency = dto.paymentFrequency;
+        if (dto.installmentsCount !== undefined) promotion.installmentsCount = dto.installmentsCount;
+        if (dto.isGlobal !== undefined) promotion.isGlobal = dto.isGlobal;
+
+        if (dto.productIds !== undefined) {
+            if (promotion.isGlobal) {
+                promotion.products = [];
+            } else {
+                promotion.products = (dto.productIds || []).map((id) => ({ productId: id } as any));
+            }
         }
+
+        await this.repo.save(promotion);
 
         return this.repo.findOneOrFail({
             where: { societyId, promotionId },
-            relations: ['products', 'plan'],
+            relations: ['products', 'plan', 'plan.financingConfiguration', 'plan.products'],
         });
     }
 
