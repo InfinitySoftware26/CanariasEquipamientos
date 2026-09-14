@@ -315,7 +315,6 @@ export class SalesService {
 
       staffId,
       societyId,
-
       totalAmount,
 
       sellerCommissionRate: SELLER_COMMISSION_RATE,
@@ -325,7 +324,6 @@ export class SalesService {
       installmentAmount,
       installmentsCount,
       paymentFrequency,
-
       saleDate,
 
       observation: dto.observation,

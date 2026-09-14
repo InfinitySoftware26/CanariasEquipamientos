@@ -20,6 +20,17 @@ export interface Client {
   createdBySocietyName: string;
   societyId: string;
 
+  // Datos socioeconómicos (devueltos por el backend, opcionales)
+  profession?: string;
+  monthlyIncome?: string;
+  paymentMethod?: string;
+  incomeDependents?: string;
+  additionalIncome?: string;
+  housingSituation?: string;
+  contractDuration?: string;
+  cuil?: string;
+  activeCredit?: boolean;
+
   observations?: string;
 
   supportDni: boolean;

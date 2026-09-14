@@ -9,9 +9,11 @@ import {
     UpdateFinancingPlanPayload,
 } from "@/types/financing/financing.types";
 
-interface FinancingPlanFormState {
+export interface FinancingPlanFormState {
     name: string;
+    rateType: "config" | "custom";
     financingConfigId: string;
+    financingRate: string;
     paymentFrequency: PaymentFrequency;
     installmentsCount: string;
     isGlobal: boolean;
@@ -20,7 +22,9 @@ interface FinancingPlanFormState {
 
 const initialState: FinancingPlanFormState = {
     name: "",
+    rateType: "config",
     financingConfigId: "",
+    financingRate: "",
     paymentFrequency: "monthly",
     installmentsCount: "",
     isGlobal: true,
@@ -36,14 +40,39 @@ export function useFinancingPlanForm() {
         field: K,
         value: FinancingPlanFormState[K],
     ) => {
-        setForm((current) => ({ ...current, [field]: value }));
-        setErrors((current) => ({ ...current, [field]: "" }));
+        setForm((current) => {
+            const next = { ...current, [field]: value };
+            if (field === "rateType") {
+                if (value === "config") {
+                    next.financingRate = "";
+                } else {
+                    next.financingConfigId = "";
+                }
+            } else if (field === "financingConfigId" && value) {
+                next.rateType = "config";
+                next.financingRate = "";
+            } else if (field === "financingRate" && value !== "") {
+                next.rateType = "custom";
+                next.financingConfigId = "";
+            }
+            return next;
+        });
+        setErrors((current) => ({
+            ...current,
+            [field]: "",
+            ...(field === "rateType" || field === "financingConfigId" || field === "financingRate"
+                ? { financingConfigId: "", financingRate: "" }
+                : {}),
+        }));
     };
 
     const loadPlan = (plan: FinancingPlan) => {
+        const hasCustomRate = plan.financingRate !== null && plan.financingRate !== undefined;
         setForm({
             name: plan.name,
-            financingConfigId: plan.financingConfigId,
+            rateType: hasCustomRate ? "custom" : "config",
+            financingConfigId: plan.financingConfigId ?? "",
+            financingRate: hasCustomRate ? String(Number(plan.financingRate) * 100) : "",
             paymentFrequency: plan.paymentFrequency,
             installmentsCount: String(plan.installmentsCount),
             isGlobal: plan.isGlobal,
@@ -59,8 +88,15 @@ export function useFinancingPlanForm() {
             nextErrors.name = "El nombre es obligatorio";
         }
 
-        if (!form.financingConfigId) {
-            nextErrors.financingConfigId = "Debe seleccionar una configuración de financiación";
+        if (form.rateType === "config") {
+            if (!form.financingConfigId) {
+                nextErrors.financingConfigId = "Debe seleccionar una configuración de financiación";
+            }
+        } else {
+            const rate = Number(form.financingRate);
+            if (form.financingRate === "" || Number.isNaN(rate) || rate < 0) {
+                nextErrors.financingRate = "Ingrese un porcentaje de financiación válido (≥ 0%)";
+            }
         }
 
         const installments = Number(form.installmentsCount);
@@ -79,7 +115,8 @@ export function useFinancingPlanForm() {
 
     const toCreatePayload = (): CreateFinancingPlanPayload => ({
         name: form.name.trim(),
-        financingConfigId: form.financingConfigId,
+        financingConfigId: form.rateType === "config" && form.financingConfigId ? form.financingConfigId : null,
+        financingRate: form.rateType === "custom" && form.financingRate !== "" ? Number(form.financingRate) / 100 : null,
         paymentFrequency: form.paymentFrequency,
         installmentsCount: Number(form.installmentsCount),
         isGlobal: form.isGlobal,
@@ -88,7 +125,8 @@ export function useFinancingPlanForm() {
 
     const toUpdatePayload = (): UpdateFinancingPlanPayload => ({
         name: form.name.trim(),
-        financingConfigId: form.financingConfigId,
+        financingConfigId: form.rateType === "config" && form.financingConfigId ? form.financingConfigId : null,
+        financingRate: form.rateType === "custom" && form.financingRate !== "" ? Number(form.financingRate) / 100 : null,
         paymentFrequency: form.paymentFrequency,
         installmentsCount: Number(form.installmentsCount),
         isGlobal: form.isGlobal,

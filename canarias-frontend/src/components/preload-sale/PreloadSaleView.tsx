@@ -14,6 +14,9 @@ export function PreloadSaleView({
   form,
   setForm,
   products,
+  plans,
+  promotions,
+  configs,
   clientFound,
   error,
   loading,
@@ -71,10 +74,14 @@ export function PreloadSaleView({
 
           societyId: form.societyId || undefined,
         });
-
+        console.log("Cliente creado:", created);
         clientId = created.clientId;
 
         setForm({
+          ...form,
+          clientId,
+        });
+        console.log("Form después de setForm:", {
           ...form,
           clientId,
         });
@@ -85,7 +92,7 @@ export function PreloadSaleView({
       console.error("Error creando cliente:", e);
     }
   };
-
+console.log("FORM en PreloadSaleView:", form);
   return (
     <div className="space-y-6">
       {step === 1 && (
@@ -146,6 +153,10 @@ export function PreloadSaleView({
           form={form}
           setForm={setForm}
           products={products}
+          plans={plans}
+          promotions={promotions}
+          configs={configs}
+          zones={zones}
           handleSubmit={handleSubmit}
           loading={loading}
         />

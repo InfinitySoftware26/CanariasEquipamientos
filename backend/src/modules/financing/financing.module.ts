@@ -11,17 +11,6 @@ import { Promotion } from './entities/promotion.entity';
 import { FINANCING_CONFIG_REPOSITORY } from './interfaces/financing-config-repository.interface';
 import { FINANCING_PLAN_REPOSITORY } from './interfaces/financing-plan-repository.interface';
 import { PROMOTION_REPOSITORY } from './interfaces/promotion-repository.interface';
-
-/**
- * FinancingModule
- *
- * Módulo único de Financiación. Agrupa las 3 entidades relacionadas:
- * - FinancingConfiguration: tasa base de financiación (global o por producto)
- * - FinancingPlan: esquemas de cuotas + frecuencia de pago
- * - Promotion: ganancias adicionales / descuentos especiales
- *
- * Expone un único FinancingService y un único FinancingController.
- */
 @Module({
     imports: [
         TypeOrmModule.forFeature([

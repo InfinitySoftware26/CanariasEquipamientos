@@ -26,15 +26,25 @@ export class FinancingPlan {
   @Column({ name: "name", type: "varchar", length: 150 })
   name!: string;
 
-  @Column({ name: "financing_config_id", type: "uuid" })
-  financingConfigId!: string;
+  @Column({ name: "financing_config_id", type: "uuid", nullable: true })
+  financingConfigId!: string | null;
 
-  @ManyToOne(() => FinancingConfiguration, { onDelete: "RESTRICT" })
+  @ManyToOne(() => FinancingConfiguration, { nullable: true, onDelete: "RESTRICT" })
   @JoinColumn({
     name: "financing_config_id",
     referencedColumnName: "financingConfigId",
   })
-  financingConfiguration!: FinancingConfiguration;
+  financingConfiguration!: FinancingConfiguration | null;
+
+  @Column({
+    name: "financing_rate",
+    type: "decimal",
+    precision: 10,
+    scale: 4,
+    nullable: true,
+    comment: "Tasa de financiación directa del plan (ej: 0.12 = 12%, 5.0 = 500%) cuando no usa financing_config_id",
+  })
+  financingRate!: number | null;
 
   @Column({
     name: "payment_frequency",

@@ -1,3 +1,5 @@
+import { FinancingPlan, Promotion } from "../financing/financing.types";
+
 export interface SaleClient {
   clientId: string;
   name: string;
@@ -72,6 +74,14 @@ export interface Sale {
 
   societyId: string;
 
+  financingPlanId?: string | null;
+
+  financingPlan?: FinancingPlan | null;
+
+  promotionId?: string | null;
+
+  promotion?: Promotion | null;
+
   // IMPORTES
   totalAmount: string;
 
@@ -102,13 +112,13 @@ export interface Sale {
 
   // ESTADO
   status:
-    | "pending_admin_validation"
-    | "pending_environmental_visit"
-    | "pending_delivery"
-    | "delivered"
-    | "closed"
-    | "rejected_admin"
-    | "environmental_rejected";
+  | "pending_admin_validation"
+  | "pending_environmental_visit"
+  | "pending_delivery"
+  | "delivered"
+  | "closed"
+  | "rejected_admin"
+  | "environmental_rejected";
 
   assignedCollectorId?: string | null;
 

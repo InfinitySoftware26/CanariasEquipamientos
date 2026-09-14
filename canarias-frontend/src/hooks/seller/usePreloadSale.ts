@@ -10,10 +10,21 @@ import {
   searchClientByDocument,
 } from "@/services/client.service";
 import { createSale } from "@/services/sales.service";
+import {
+  getAllFinancingConfigurations,
+  getFinancingPlans,
+  getPromotions,
+} from "@/services/financing/financing.service";
 import { Product } from "@/types/preload-sale/preload.type";
+import {
+  FinancingConfiguration,
+  FinancingPlan,
+  Promotion,
+} from "@/types/financing/financing.types";
 import { Client } from "@/types/cretateClient.type";
 import { useZones } from "@/hooks/zones/useZones";
 import { useInfoDialog } from "@/hooks/ui/useConfirmDialog";
+import { mapClientToFormData } from "@/utils/preload-sale/mapClientToForm";
 
 const initialForm: PreloadFormData = {
   name: "",
@@ -24,6 +35,17 @@ const initialForm: PreloadFormData = {
   locality: "",
   phone: "",
   zoneId: "",
+
+  // Modalidad comercial de venta
+  saleMode: "plan",
+  financingPlanId: "",
+  promotionId: "",
+
+  // En modo personalizado
+  customRateType: "config",
+  financingConfigId: "",
+  customRate: "0",
+
   productId: "",
   quantity: 1,
   installmentsCount: 3,
@@ -69,6 +91,10 @@ export function usePreloadSale() {
   const [products, setProducts] = useState<Product[]>([]);
   const [productsLoading, setProductsLoading] = useState(false);
 
+  const [plans, setPlans] = useState<FinancingPlan[]>([]);
+  const [promotions, setPromotions] = useState<Promotion[]>([]);
+  const [configs, setConfigs] = useState<FinancingConfiguration[]>([]);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -98,19 +124,38 @@ export function usePreloadSale() {
   const loadedRef = useRef(false);
   const submittingRef = useRef(false);
 
-  // ---------------- PRODUCTS ----------------
+  // ---------------- PRODUCTS & FINANCING DATA ----------------
 
-  async function loadProducts() {
+  async function loadData() {
     try {
       setProductsLoading(true);
       setError(null);
 
-      const data = await getProducts();
+      const [productsData, plansData, promosData, configsData] = await Promise.allSettled([
+        getProducts(),
+        getFinancingPlans(),
+        getPromotions(),
+        getAllFinancingConfigurations(),
+      ]);
 
-      setProducts(Array.isArray(data) ? data : []);
+      if (productsData.status === "fulfilled") {
+        setProducts(Array.isArray(productsData.value) ? productsData.value : []);
+      }
+      if (plansData.status === "fulfilled") {
+        const activePlans = (Array.isArray(plansData.value) ? plansData.value : []).filter((p) => p.isActive);
+        setPlans(activePlans);
+      }
+      if (promosData.status === "fulfilled") {
+        const activePromos = (Array.isArray(promosData.value) ? promosData.value : []).filter((p) => p.isActive);
+        setPromotions(activePromos);
+      }
+      if (configsData.status === "fulfilled") {
+        const activeConfigs = (Array.isArray(configsData.value) ? configsData.value : []).filter((c) => c.isActive);
+        setConfigs(activeConfigs);
+      }
     } catch (err) {
       console.error(err);
-      setError("No se pudieron cargar los productos");
+      setError("No se pudieron cargar los productos o datos de financiación");
     } finally {
       setProductsLoading(false);
     }
@@ -121,7 +166,7 @@ export function usePreloadSale() {
 
     loadedRef.current = true;
 
-    loadProducts();
+    loadData();
   }, []);
 
   // ---------------- CLIENT SEARCH ----------------
@@ -159,18 +204,8 @@ export function usePreloadSale() {
 
       setForm((prev) => ({
         ...prev,
-
-        clientId: client.clientId,
-
-        name: client.name ?? "",
-        surname: client.surname ?? "",
-
+        ...mapClientToFormData(client),
         documentNumber: client.documentNumber ?? prev.documentNumber,
-
-        address: client.address ?? "",
-        zoneId: client.zoneId ?? "",
-
-        phone: client.phone ?? "",
       }));
 
       setClientConfirmType("existing");
@@ -317,8 +352,27 @@ export function usePreloadSale() {
       }
 
       // ---------------- LOGUEAR PAYLOAD VENTA ----------------
-      console.log("Payload venta:", {
+      const isPlanMode = form.saleMode === "plan";
+      const isPromoMode = form.saleMode === "promotion";
+      const isCustomMode = form.saleMode === "custom";
+
+      let customConfigId: string | undefined;
+      let customRateValue: number | undefined;
+
+      if (isCustomMode) {
+        if (form.customRateType === "config" && form.financingConfigId) {
+          customConfigId = form.financingConfigId;
+        } else if (form.customRateType === "custom" && form.customRate !== "") {
+          customRateValue = Number(form.customRate) / 100;
+        }
+      }
+
+      const payload = {
         clientId: finalClientId,
+        financingPlanId: isPlanMode ? (form.financingPlanId || undefined) : undefined,
+        promotionId: isPromoMode ? (form.promotionId || undefined) : undefined,
+        financingConfigId: customConfigId,
+        financingRate: customRateValue,
         installmentsCount: form.installmentsCount,
         paymentFrequency: form.paymentFrequency,
         observation: form.observations,
@@ -329,27 +383,13 @@ export function usePreloadSale() {
             unitPrice: Number(selectedProduct.price),
           },
         ],
-      });
+      };
+
+      console.log("Payload venta:", payload);
 
       // ---------------- CREATE SALE ----------------
 
-      await createSale({
-        clientId: finalClientId,
-
-        installmentsCount: form.installmentsCount,
-
-        paymentFrequency: form.paymentFrequency,
-
-        observation: form.observations,
-
-        products: [
-          {
-            productId: form.productId,
-            quantity: form.quantity,
-            unitPrice: Number(selectedProduct.price),
-          },
-        ],
-      });
+      await createSale(payload);
 
       router.push("/dashboard/seller");
     } catch (err) {
@@ -368,6 +408,10 @@ export function usePreloadSale() {
 
     products,
     productsLoading,
+
+    plans,
+    promotions,
+    configs,
 
     loading,
     error,

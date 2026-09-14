@@ -15,6 +15,8 @@ import { CollectionScheduleType } from "../../../common/enums/collection-schedul
 
 import { Client } from "../../clients/entities/client.entity";
 import { Staff } from "../../staff/entities/staff.entity";
+import { FinancingPlan } from "../../financing/entities/financing-plan.entity";
+import { Promotion } from "../../financing/entities/promotion.entity";
 import { SaleProduct } from "./sale-product.entity";
 
 @Entity("SALES")
@@ -35,6 +37,20 @@ export class Sale {
     name: "client_id",
   })
   client!: Client;
+
+  @Column({ name: "financing_plan_id", type: "uuid", nullable: true })
+  financingPlanId!: string | null;
+
+  @ManyToOne(() => FinancingPlan, { nullable: true })
+  @JoinColumn({ name: "financing_plan_id" })
+  financingPlan!: FinancingPlan | null;
+
+  @Column({ name: "promotion_id", type: "uuid", nullable: true })
+  promotionId!: string | null;
+
+  @ManyToOne(() => Promotion, { nullable: true })
+  @JoinColumn({ name: "promotion_id" })
+  promotion!: Promotion | null;
 
   @OneToMany(() => SaleProduct, (sp) => sp.sale)
   products!: SaleProduct[];

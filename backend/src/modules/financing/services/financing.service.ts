@@ -21,22 +21,6 @@ import { UpdatePromotionDto } from '../dto/update-promotion.dto';
 import { FinancingConfiguration } from '../entities/financing-configuration.entity';
 import { FinancingPlan } from '../entities/financing-plan.entity';
 import { Promotion } from '../entities/promotion.entity';
-
-/**
- * FinancingService
- *
- * Servicio único que gestiona las 3 entidades del módulo de financiación:
- * - FinancingConfiguration: tasa base de financiación (global o por producto)
- * - FinancingPlan: esquemas de cuotas + frecuencia de pago (vinculados a una configuración)
- * - Promotion: ganancias adicionales / descuentos especiales (vinculadas o no a un plan)
- *
- * Todos los métodos validan societyId (seguridad multi-sociedad).
- *
- * Ejemplo de flujo:
- *   1. Admin crea FinancingConfiguration "Estándar" (12% tasa global)
- *   2. Admin crea FinancingPlan "3 cuotas mensuales" vinculado a esa config
- *   3. Admin crea Promotion "+5% en 6 cuotas" vinculada a ese plan
- */
 @Injectable()
 export class FinancingService {
     constructor(
@@ -47,10 +31,6 @@ export class FinancingService {
         @Inject(PROMOTION_REPOSITORY)
         private readonly promotionRepo: IPromotionRepository,
     ) { }
-    /**
-     * Convierte una violación de FK de Postgres (23503) en un error de negocio claro.
-     * Cualquier otro error se relanza tal cual.
-     */
     private async runDelete(operation: () => Promise<void>, dependencyMessage: string): Promise<void> {
         try {
             await operation();
@@ -66,8 +46,6 @@ export class FinancingService {
             throw error;
         }
     }
-    // ─── FINANCING CONFIGURATION ──────────────────────────────────────────────
-
     async createConfig(
         societyId: string,
         dto: CreateFinancingConfigDto,
@@ -78,6 +56,7 @@ export class FinancingService {
             );
         }
 
+        console.log('Creando configuración de financiación', { societyId, name: dto.name });
         return this.configRepo.create(societyId, dto);
     }
 
@@ -104,25 +83,35 @@ export class FinancingService {
         dto: UpdateFinancingConfigDto,
     ): Promise<FinancingConfiguration> {
         await this.findOneConfig(societyId, financingConfigId);
+        console.log('Actualizando configuración de financiación', { societyId, financingConfigId });
         return this.configRepo.update(societyId, financingConfigId, dto);
     }
 
     async deleteConfig(societyId: string, financingConfigId: string): Promise<void> {
         await this.findOneConfig(societyId, financingConfigId);
+        console.log('Eliminando configuración de financiación', { societyId, financingConfigId });
         await this.runDelete(
             () => this.configRepo.delete(societyId, financingConfigId),
             'No se puede eliminar: esta configuración tiene planes de financiación vinculados.',
         );
     }
 
-    // ─── FINANCING PLAN ────────────────────────────────────────────────────────
-
     async createPlan(
         societyId: string,
         dto: CreateFinancingPlanDto,
     ): Promise<FinancingPlan> {
-        // Garantiza que la configuración vinculada exista y pertenezca a la sociedad
-        await this.findOneConfig(societyId, dto.financingConfigId);
+        const hasConfig = Boolean(dto.financingConfigId);
+        const hasDirectRate = dto.financingRate !== undefined && dto.financingRate !== null;
+
+        if ((hasConfig && hasDirectRate) || (!hasConfig && !hasDirectRate)) {
+            throw new BadRequestException(
+                'Debes seleccionar una configuración de financiación O ingresar un porcentaje de financiación directo, no ambos.',
+            );
+        }
+
+        if (hasConfig && dto.financingConfigId) {
+            await this.findOneConfig(societyId, dto.financingConfigId);
+        }
 
         if (!dto.isGlobal && (!dto.productIds || dto.productIds.length === 0)) {
             throw new BadRequestException(
@@ -130,6 +119,7 @@ export class FinancingService {
             );
         }
 
+        console.log('Creando plan de financiación', { societyId, name: dto.name });
         return this.planRepo.create(societyId, dto);
     }
 
@@ -155,24 +145,33 @@ export class FinancingService {
         financingPlanId: string,
         dto: UpdateFinancingPlanDto,
     ): Promise<FinancingPlan> {
-        await this.findOnePlan(societyId, financingPlanId);
+        const currentPlan = await this.findOnePlan(societyId, financingPlanId);
+
+        const targetConfig = dto.financingConfigId !== undefined ? dto.financingConfigId : currentPlan.financingConfigId;
+        const targetRate = dto.financingRate !== undefined ? dto.financingRate : currentPlan.financingRate;
+
+        if (targetConfig && targetRate !== null && targetRate !== undefined) {
+            throw new BadRequestException(
+                'El plan no puede tener simultáneamente configuración de financiación y tasa directa.',
+            );
+        }
 
         if (dto.financingConfigId) {
             await this.findOneConfig(societyId, dto.financingConfigId);
         }
 
+        console.log('Actualizando plan de financiación', { societyId, financingPlanId });
         return this.planRepo.update(societyId, financingPlanId, dto);
     }
 
     async deletePlan(societyId: string, financingPlanId: string): Promise<void> {
         await this.findOnePlan(societyId, financingPlanId);
+        console.log('Eliminando plan de financiación', { societyId, financingPlanId });
         await this.runDelete(
             () => this.planRepo.delete(societyId, financingPlanId),
             'No se puede eliminar: este plan tiene promociones o ventas vinculadas.',
         );
     }
-
-    // ─── PROMOTION ─────────────────────────────────────────────────────────────
 
     async createPromotion(
         societyId: string,
@@ -188,6 +187,7 @@ export class FinancingService {
             );
         }
 
+        console.log('Creando promoción de financiación', { societyId, name: dto.name });
         return this.promotionRepo.create(societyId, dto);
     }
 
@@ -219,11 +219,13 @@ export class FinancingService {
             await this.findOnePlan(societyId, dto.financingPlanId);
         }
 
+        console.log('Actualizando promoción de financiación', { societyId, promotionId });
         return this.promotionRepo.update(societyId, promotionId, dto);
     }
 
     async deletePromotion(societyId: string, promotionId: string): Promise<void> {
         await this.findOnePromotion(societyId, promotionId);
+        console.log('Eliminando promoción de financiación', { societyId, promotionId });
         await this.runDelete(
             () => this.promotionRepo.delete(societyId, promotionId),
             'No se puede eliminar: esta promoción tiene ventas vinculadas.',

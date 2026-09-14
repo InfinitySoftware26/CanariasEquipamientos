@@ -41,7 +41,7 @@ export class Promotion {
   @Column({
     name: "discount_percentage",
     type: "decimal",
-    precision: 5,
+    precision: 10,
     scale: 4,
     nullable: true,
     comment: "Ajuste sobre la tasa base: negativo = descuento al cliente, positivo = recargo",

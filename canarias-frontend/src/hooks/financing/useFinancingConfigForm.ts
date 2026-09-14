@@ -57,8 +57,8 @@ export function useFinancingConfigForm() {
 
         const rate = Number(form.financingRate);
 
-        if (form.financingRate === "" || Number.isNaN(rate) || rate < 0 || rate > 100) {
-            nextErrors.financingRate = "Ingrese una tasa válida entre 0 y 100";
+        if (form.financingRate === "" || Number.isNaN(rate) || rate < 0) {
+            nextErrors.financingRate = "Ingrese un porcentaje válido (mayor o igual a 0)";
         }
 
         if (!form.isGlobal && form.productIds.length === 0) {
