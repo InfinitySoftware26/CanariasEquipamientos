@@ -55,6 +55,8 @@ import { Client } from "../../clients/entities/client.entity";
 
 import { Installment } from "../../installments/entities/installment.entity";
 
+import { InstallmentsService } from "../../installments/services/installments.service";
+
 import { Sale } from "../../sales/entities/sale.entity";
 
 import { JwtPayload } from "../../auth/interfaces/jwt-payload.interface";
@@ -90,7 +92,7 @@ const ALLOWED_TRANSITIONS: Record<RouteSheetStatus, RouteSheetStatus[]> = {
 };
 
 // ============================================================
-// CANDIDATO INTERNO
+// CANDIDATO DE COBRANZA
 // ============================================================
 
 interface RouteCandidate {
@@ -105,6 +107,22 @@ interface RouteCandidate {
   daysLate: number;
 
   totalToCollect: number;
+}
+
+// ============================================================
+// CANDIDATO DE ENTREGA
+// ============================================================
+
+interface DeliveryCandidate {
+  sale: Sale;
+
+  client: Client;
+
+  /**
+   * Si firstInstallmentOnDelivery === true,
+   * referencia la cuota Nº 1.
+   */
+  firstInstallment: Installment | null;
 }
 
 @Injectable()
@@ -130,6 +148,8 @@ export class RouteSheetsService {
 
     @InjectRepository(Installment)
     private readonly installmentRepo: Repository<Installment>,
+
+    private readonly installmentsService: InstallmentsService,
 
     @InjectRepository(Sale)
     private readonly saleRepo: Repository<Sale>,
@@ -219,12 +239,24 @@ export class RouteSheetsService {
               installmentId: item.installmentId,
             },
           });
+
+          if (installment) {
+            await this.refreshLateInterest(
+              installment,
+              this.formatDate(routeSheet.routeDate),
+            );
+          }
         }
 
         const remainingAmount = Number(installment?.remainingAmount ?? 0);
 
         const lateInterestAmount = Number(installment?.lateInterestAmount ?? 0);
 
+        /**
+         * Para DELIVERY la cuota 1 vence
+         * el mismo día de entrega, por lo que
+         * normalmente daysLate será 0.
+         */
         const daysLate = installment
           ? this.calculateDaysLate(installment.dueDate, routeSheet.routeDate)
           : 0;
@@ -256,6 +288,8 @@ export class RouteSheetsService {
           installmentRemainingAmount: installment ? remainingAmount : null,
 
           installmentDueDate: installment?.dueDate ?? null,
+
+          installmentStatus: installment?.status ?? null,
 
           lateInterestAmount: installment ? lateInterestAmount : null,
 
@@ -316,10 +350,11 @@ export class RouteSheetsService {
     }
 
     /**
-     * Esta ruta representa una hoja EXTRAORDINARIA.
+     * Hoja extraordinaria.
      *
-     * No agregamos automáticamente cuotas.
-     * Administración podrá incorporarlas mediante:
+     * No incorpora cuotas automáticamente.
+     * Administración puede agregar una cuota
+     * utilizando:
      *
      * POST /route-sheets/:id/installments
      */
@@ -343,7 +378,7 @@ export class RouteSheetsService {
   }
 
   // ============================================================
-  // GENERACIÓN NORMAL DEL DÍA
+  // GENERACIÓN MANUAL DEL DÍA
   // ============================================================
 
   async generateDaily(routeDate: string, user: JwtPayload) {
@@ -354,12 +389,29 @@ export class RouteSheetsService {
   // MOTOR DE GENERACIÓN
   // ============================================================
 
+  /**
+   * Tiene DOS fuentes independientes de trabajo:
+   *
+   * 1. Entregas programadas:
+   *    PENDING_DELIVERY + deliveryDate.
+   *
+   * 2. Cobranzas recurrentes:
+   *    venta CLOSED + cuota 2+ + programación.
+   *
+   * Ambas se agrupan después por:
+   *
+   * zona + cobrador.
+   */
   async generateDailyForSociety(
     societyId: string,
     routeDate: string,
     assignedBy?: string,
   ) {
-    const candidates = await this.getRouteCandidates(societyId, routeDate);
+    const [collectionCandidates, deliveryCandidates] = await Promise.all([
+      this.getRouteCandidates(societyId, routeDate),
+
+      this.getDeliveryCandidates(societyId, routeDate),
+    ]);
 
     const groups = new Map<
       string,
@@ -368,11 +420,17 @@ export class RouteSheetsService {
 
         staffId: string;
 
-        candidates: RouteCandidate[];
+        collectionCandidates: RouteCandidate[];
+
+        deliveryCandidates: DeliveryCandidate[];
       }
     >();
 
-    for (const candidate of candidates) {
+    // ==========================================================
+    // COBRANZAS RECURRENTES
+    // ==========================================================
+
+    for (const candidate of collectionCandidates) {
       const staffId = candidate.sale.assignedCollectorId;
 
       const zoneId = candidate.client.zoneId;
@@ -386,7 +444,7 @@ export class RouteSheetsService {
       const existingGroup = groups.get(key);
 
       if (existingGroup) {
-        existingGroup.candidates.push(candidate);
+        existingGroup.collectionCandidates.push(candidate);
 
         continue;
       }
@@ -396,7 +454,43 @@ export class RouteSheetsService {
 
         staffId,
 
-        candidates: [candidate],
+        collectionCandidates: [candidate],
+
+        deliveryCandidates: [],
+      });
+    }
+
+    // ==========================================================
+    // ENTREGAS
+    // ==========================================================
+
+    for (const candidate of deliveryCandidates) {
+      const staffId = candidate.sale.assignedCollectorId;
+
+      const zoneId = candidate.client.zoneId;
+
+      if (!staffId || !zoneId) {
+        continue;
+      }
+
+      const key = `${zoneId}:${staffId}`;
+
+      const existingGroup = groups.get(key);
+
+      if (existingGroup) {
+        existingGroup.deliveryCandidates.push(candidate);
+
+        continue;
+      }
+
+      groups.set(key, {
+        zoneId,
+
+        staffId,
+
+        collectionCandidates: [],
+
+        deliveryCandidates: [candidate],
       });
     }
 
@@ -409,6 +503,10 @@ export class RouteSheetsService {
 
       reason: string;
     }> = [];
+
+    // ==========================================================
+    // CREAR / COMPLETAR HOJAS
+    // ==========================================================
 
     for (const group of groups.values()) {
       try {
@@ -425,18 +523,35 @@ export class RouteSheetsService {
         );
 
         /**
-         * Idempotencia.
+         * Si ya existe una hoja activa para:
          *
-         * Si el cron corre nuevamente,
-         * no crea otra hoja igual.
+         * cobrador + zona + fecha
+         *
+         * NO creamos otra.
+         *
+         * Pero sí verificamos si aparecieron
+         * nuevos items después de su creación.
+         *
+         * Ejemplo:
+         * - a las 06:00 se generó por cobranzas;
+         * - después Administración coordinó
+         *   una entrega para esa misma fecha.
          */
         if (existing) {
+          await this.generateInstallmentItems(
+            existing,
+            group.collectionCandidates,
+          );
+
+          await this.generateDeliveryItems(existing, group.deliveryCandidates);
+
           skippedGroups.push({
             zoneId: group.zoneId,
 
             staffId: group.staffId,
 
-            reason: "Ya existe una hoja activa para esa zona, cobrador y fecha",
+            reason:
+              "La hoja ya existía; se verificaron y agregaron nuevos items pendientes",
           });
 
           continue;
@@ -451,9 +566,9 @@ export class RouteSheetsService {
 
           /**
            * Manual:
-           * UUID del admin.
+           * UUID del administrador.
            *
-           * Automática:
+           * Cron:
            * null.
            */
           assignedBy: assignedBy ?? null,
@@ -463,13 +578,16 @@ export class RouteSheetsService {
           status: RouteSheetStatus.PENDING,
 
           notes: assignedBy
-            ? "Hoja generada manualmente desde la programación de cobranzas"
+            ? "Hoja generada manualmente"
             : "Hoja generada automáticamente por el sistema",
         });
 
-        await this.generateInstallmentItems(routeSheet, group.candidates);
+        await this.generateInstallmentItems(
+          routeSheet,
+          group.collectionCandidates,
+        );
 
-        await this.generatePendingDeliveryItems(routeSheet);
+        await this.generateDeliveryItems(routeSheet, group.deliveryCandidates);
 
         routeSheets.push(routeSheet);
       } catch (error) {
@@ -494,10 +612,147 @@ export class RouteSheetsService {
       routeSheets,
 
       skippedGroups,
+
+      collectionsFound: collectionCandidates.length,
+
+      deliveriesFound: deliveryCandidates.length,
     };
   }
+
   // ============================================================
-  // SELECCIÓN AUTOMÁTICA DE CUOTAS
+  // CANDIDATOS DE ENTREGA
+  // ============================================================
+
+  /**
+   * Una entrega es completamente independiente
+   * de la cobranza recurrente.
+   *
+   * Esto es necesario porque puede existir:
+   *
+   * - una entrega programada hoy;
+   * - cero cuotas 2+ para cobrar.
+   *
+   * Aun así el cobrador necesita su hoja.
+   */
+  private async getDeliveryCandidates(
+    societyId: string,
+    routeDate: string,
+  ): Promise<DeliveryCandidate[]> {
+    const sales = await this.saleRepo
+      .createQueryBuilder("sale")
+
+      .where("sale.society_id = :societyId", {
+        societyId,
+      })
+
+      .andWhere("sale.status = :status", {
+        status: SaleStatus.PENDING_DELIVERY,
+      })
+
+      .andWhere("sale.assigned_collector_id IS NOT NULL")
+
+      /**
+       * IMPORTANTE:
+       *
+       * En Sale la columna real está definida:
+       *
+       * name: "deliverydate"
+       *
+       * Por eso usamos deliverydate y NO
+       * delivery_date.
+       */
+      .andWhere("sale.deliverydate = :routeDate", {
+        routeDate,
+      })
+
+      .getMany();
+
+    if (sales.length === 0) {
+      return [];
+    }
+
+    const clientIds = [...new Set(sales.map((sale) => sale.clientId))];
+
+    const clients = await this.clientRepo.find({
+      where: {
+        clientId: In(clientIds),
+      },
+    });
+
+    const clientsById = new Map(
+      clients.map((client) => [client.clientId, client]),
+    );
+
+    const candidates: DeliveryCandidate[] = [];
+
+    for (const sale of sales) {
+      const client = clientsById.get(sale.clientId);
+
+      if (!client || !client.zoneId) {
+        continue;
+      }
+
+      /**
+       * Evita que una misma venta tenga
+       * dos entregas activas.
+       */
+      const existing = await this.itemsRepo.findActiveDeliveryBySale(
+        sale.saleId,
+      );
+
+      if (existing) {
+        continue;
+      }
+
+      let firstInstallment: Installment | null = null;
+
+      /**
+       * Si la cuota 1 debe cobrarse en la entrega,
+       * buscamos específicamente installmentNumber = 1.
+       */
+      if (sale.firstInstallmentOnDelivery) {
+        firstInstallment = await this.installmentRepo.findOne({
+          where: {
+            saleId: sale.saleId,
+
+            installmentNumber: 1,
+          },
+        });
+
+        /**
+         * Si falta la cuota 1 tenemos una inconsistencia.
+         *
+         * No enviamos al cobrador una entrega
+         * donde no pueda registrar correctamente
+         * el dinero.
+         */
+        if (!firstInstallment) {
+          continue;
+        }
+
+        /**
+         * Tampoco enviamos una cuota que haya sido
+         * refinanciada/reemplazada.
+         */
+        if (firstInstallment.isRefinanced) {
+          continue;
+        }
+      }
+
+      candidates.push({
+        sale,
+
+        client,
+
+        firstInstallment,
+      });
+    }
+
+    return candidates;
+  }
+
+  // ============================================================
+  // SELECCIÓN AUTOMÁTICA DE CUOTAS 2+
   // ============================================================
 
   private async getRouteCandidates(
@@ -526,16 +781,34 @@ export class RouteSheetsService {
       .andWhere("installment.remaining_amount > 0")
 
       /**
-       * No cobramos antes del vencimiento.
+       * No cobramos una cuota futura.
        *
-       * Una cuota vencida continúa siendo candidata
-       * en la siguiente visita programada.
+       * Las vencidas continúan siendo candidatas
+       * hasta que sean abonadas.
        */
       .andWhere("installment.due_date <= :routeDate", {
         routeDate,
       })
 
-      .andWhere("sale.assigned_collector_id IS NOT NULL");
+      .andWhere("sale.assigned_collector_id IS NOT NULL")
+
+      /**
+       * REGLA DE NEGOCIO:
+       *
+       * La cobranza recurrente sólo comienza
+       * después de que:
+       *
+       * 1. se entregó el producto;
+       * 2. se cobró cuota 1;
+       * 3. Administración recibió el dinero;
+       * 4. Administración cerró la venta.
+       *
+       * Por eso las cuotas 2+ automáticas sólo
+       * pertenecen a ventas CLOSED.
+       */
+      .andWhere("sale.status = :closedStatus", {
+        closedStatus: SaleStatus.CLOSED,
+      });
 
     if (zoneId) {
       query.andWhere("client.zone_id = :zoneId", {
@@ -602,7 +875,15 @@ export class RouteSheetsService {
       }
 
       // ======================================================
-      // CUOTA 1 = ENTREGA
+      // SEGURIDAD ADICIONAL: VENTA CERRADA
+      // ======================================================
+
+      if (sale.status !== SaleStatus.CLOSED) {
+        continue;
+      }
+
+      // ======================================================
+      // CUOTA 1 PERTENECE AL FLUJO DE ENTREGA
       // ======================================================
 
       const minimumInstallmentNumber = sale.firstInstallmentOnDelivery ? 2 : 1;
@@ -612,7 +893,7 @@ export class RouteSheetsService {
       }
 
       // ======================================================
-      // DÍA DE COBRANZA
+      // DÍA COORDINADO POR ADMINISTRACIÓN
       // ======================================================
 
       if (!this.saleMatchesRouteDate(sale, routeDate)) {
@@ -620,15 +901,23 @@ export class RouteSheetsService {
       }
 
       // ======================================================
-      // UNA CUOTA POR VENTA
+      // UNA SOLA CUOTA POR VENTA
       // ======================================================
 
+      /**
+       * Si cuotas 2, 3 y 4 están vencidas:
+       *
+       * se manda solamente la más antigua.
+       *
+       * Hasta que no se pague esa cuota,
+       * no se pasa a la siguiente.
+       */
       if (selectedSales.has(sale.saleId)) {
         continue;
       }
 
       // ======================================================
-      // NO DUPLICAR EN OTRA HOJA ACTIVA
+      // NO DUPLICAR EN HOJA ACTIVA
       // ======================================================
 
       const activeItem = await this.itemsRepo.findActiveByInstallment(
@@ -672,24 +961,10 @@ export class RouteSheetsService {
   private saleMatchesRouteDate(sale: Sale, routeDate: string): boolean {
     const date = this.parseDate(routeDate);
 
-    // ======================================================
-    // FECHA MANUAL COORDINADA
-    // ======================================================
-
-    if (sale.manualCollectionDate) {
-      const manualDate = this.formatDate(sale.manualCollectionDate);
-
-      if (manualDate === routeDate) {
-        return true;
-      }
-    }
-
     /**
-     * Una venta sin programación no debe entrar
-     * automáticamente.
-     *
-     * Si necesita cobrarse, Administración puede
-     * agregarla manualmente.
+     * Si Administración todavía no configuró
+     * una modalidad de cobranza, no existe
+     * automatización recurrente.
      */
     if (!sale.collectionScheduleType) {
       return false;
@@ -729,23 +1004,44 @@ export class RouteSheetsService {
       }
 
       /**
-       * Para rango mensual necesitamos que Administración
-       * haya coordinado el día concreto.
+       * Para un rango mensual necesitamos
+       * una fecha concreta acordada.
        *
-       * Esto evita meter al cliente todos los días,
-       * por ejemplo, del 1 al 10.
+       * Ejemplo:
+       *
+       * rango permitido = 1 al 10
+       * día coordinado = 7
+       *
+       * No generamos una visita todos
+       * los días del 1 al 10.
        */
       if (!sale.manualCollectionDate) {
         return false;
       }
 
-      const manualDate = this.formatDate(sale.manualCollectionDate);
+      const manualDate = this.parseDate(sale.manualCollectionDate);
 
-      if (manualDate !== routeDate) {
+      /*
+       * manualCollectionDate funciona como fecha ancla.
+       *
+       * Ejemplo:
+       * primera fecha coordinada = 07/10/2026
+       * rango permitido = 1 al 10
+       *
+       * La automatización vuelve a generar la visita
+       * el día 7 de cada mes posterior.
+       */
+      if (date.getTime() < manualDate.getTime()) {
         return false;
       }
 
+      const coordinatedDay = manualDate.getDate();
+
       const day = date.getDate();
+
+      if (day !== coordinatedDay) {
+        return false;
+      }
 
       return day >= Number(startDay) && day <= Number(endDay);
     }
@@ -754,63 +1050,23 @@ export class RouteSheetsService {
   }
 
   // ============================================================
-  // ITEMS AUTOMÁTICOS DE CUOTA
+  // ITEMS AUTOMÁTICOS DE CUOTA 2+
   // ============================================================
 
   private async generateInstallmentItems(
     routeSheet: RouteSheet,
     candidates: RouteCandidate[],
   ) {
-    const items: Partial<RouteSheetItem>[] = candidates.map((candidate) => ({
-      routeSheetId: routeSheet.routeSheetId,
-
-      clientId: candidate.client.clientId,
-
-      saleId: candidate.sale.saleId,
-
-      installmentId: candidate.installment.installmentId,
-
-      itemType: RouteSheetItemType.INSTALLMENT,
-
-      result: RouteSheetItemResult.PENDING,
-    }));
-
-    return this.itemsRepo.createMany(items);
-  }
-
-  // ============================================================
-  // ENTREGAS PENDIENTES
-  // ============================================================
-
-  private async generatePendingDeliveryItems(routeSheet: RouteSheet) {
-    const pendingDeliveries = await this.saleRepo
-      .createQueryBuilder("sale")
-
-      .innerJoin(Client, "client", "client.client_id = sale.client_id")
-
-      .where("sale.society_id = :societyId", {
-        societyId: routeSheet.societyId,
-      })
-
-      .andWhere("client.zone_id = :zoneId", {
-        zoneId: routeSheet.zoneId,
-      })
-
-      .andWhere("sale.status = :status", {
-        status: SaleStatus.PENDING_DELIVERY,
-      })
-
-      .andWhere("sale.assigned_collector_id = :staffId", {
-        staffId: routeSheet.staffId,
-      })
-
-      .getMany();
-
     const items: Partial<RouteSheetItem>[] = [];
 
-    for (const sale of pendingDeliveries) {
-      const existing = await this.itemsRepo.findActiveDeliveryBySale(
-        sale.saleId,
+    for (const candidate of candidates) {
+      /**
+       * Volvemos a validar antes de insertar
+       * para mantener idempotencia incluso
+       * si el método se ejecutó dos veces.
+       */
+      const existing = await this.itemsRepo.findActiveByInstallment(
+        candidate.installment.installmentId,
       );
 
       if (existing) {
@@ -820,9 +1076,62 @@ export class RouteSheetsService {
       items.push({
         routeSheetId: routeSheet.routeSheetId,
 
-        clientId: sale.clientId,
+        clientId: candidate.client.clientId,
 
-        saleId: sale.saleId,
+        saleId: candidate.sale.saleId,
+
+        installmentId: candidate.installment.installmentId,
+
+        itemType: RouteSheetItemType.INSTALLMENT,
+
+        result: RouteSheetItemResult.PENDING,
+      });
+    }
+
+    if (items.length === 0) {
+      return [];
+    }
+
+    return this.itemsRepo.createMany(items);
+  }
+
+  // ============================================================
+  // ITEMS DE ENTREGA + CUOTA 1
+  // ============================================================
+
+  private async generateDeliveryItems(
+    routeSheet: RouteSheet,
+    candidates: DeliveryCandidate[],
+  ) {
+    const items: Partial<RouteSheetItem>[] = [];
+
+    for (const candidate of candidates) {
+      const existing = await this.itemsRepo.findActiveDeliveryBySale(
+        candidate.sale.saleId,
+      );
+
+      if (existing) {
+        continue;
+      }
+
+      /**
+       * Este item representa UNA SOLA VISITA:
+       *
+       * - entregar producto;
+       * - cobrar primera cuota.
+       *
+       * Por eso no creamos dos items distintos.
+       *
+       * installmentId queda apuntando a cuota 1.
+       */
+      items.push({
+        routeSheetId: routeSheet.routeSheetId,
+
+        clientId: candidate.client.clientId,
+
+        saleId: candidate.sale.saleId,
+
+        installmentId: candidate.firstInstallment?.installmentId ?? null,
 
         itemType: RouteSheetItemType.DELIVERY,
 
@@ -835,6 +1144,145 @@ export class RouteSheetsService {
     }
 
     return this.itemsRepo.createMany(items);
+  }
+
+  // ============================================================
+  // CUOTAS DISPONIBLES PARA AGREGAR MANUALMENTE
+  // ============================================================
+
+  async getAvailableInstallmentsForRouteSheet(
+    routeSheetId: string,
+    user: JwtPayload,
+  ) {
+    const routeSheet = await this.findById(routeSheetId);
+
+    if (routeSheet.societyId !== user.societyId) {
+      throw new ForbiddenException(
+        "La hoja de ruta no pertenece a esta sociedad",
+      );
+    }
+
+    if (
+      routeSheet.status === RouteSheetStatus.COMPLETED ||
+      routeSheet.status === RouteSheetStatus.CANCELLED
+    ) {
+      return [];
+    }
+
+    const installments = await this.installmentRepo.find({
+      where: {
+        societyId: user.societyId,
+        status: In(OPEN_INSTALLMENT_STATUSES),
+      },
+      order: {
+        dueDate: "ASC",
+        installmentNumber: "ASC",
+      },
+    });
+
+    if (installments.length === 0) {
+      return [];
+    }
+
+    const saleIds = [
+      ...new Set(installments.map((installment) => installment.saleId)),
+    ];
+
+    const clientIds = [
+      ...new Set(installments.map((installment) => installment.clientId)),
+    ];
+
+    const [sales, clients] = await Promise.all([
+      this.saleRepo.find({
+        where: {
+          saleId: In(saleIds),
+        },
+      }),
+
+      this.clientRepo.find({
+        where: {
+          clientId: In(clientIds),
+        },
+      }),
+    ]);
+
+    const salesById = new Map(sales.map((sale) => [sale.saleId, sale]));
+    const clientsById = new Map(
+      clients.map((client) => [client.clientId, client]),
+    );
+
+    const routeDate = this.formatDate(routeSheet.routeDate);
+    const available = [];
+
+    for (const installment of installments) {
+      if (installment.isRefinanced) {
+        continue;
+      }
+
+      if (Number(installment.remainingAmount) <= 0) {
+        continue;
+      }
+
+      const sale = salesById.get(installment.saleId);
+      const client = clientsById.get(installment.clientId);
+
+      if (!sale || !client) {
+        continue;
+      }
+
+      if (sale.status !== SaleStatus.CLOSED) {
+        continue;
+      }
+
+      if (client.zoneId !== routeSheet.zoneId) {
+        continue;
+      }
+
+      if (sale.assignedCollectorId !== routeSheet.staffId) {
+        continue;
+      }
+
+      if (
+        sale.firstInstallmentOnDelivery &&
+        Number(installment.installmentNumber) === 1
+      ) {
+        continue;
+      }
+
+      const activeItem = await this.itemsRepo.findActiveByInstallment(
+        installment.installmentId,
+      );
+
+      if (activeItem) {
+        continue;
+      }
+
+      await this.refreshLateInterest(installment, routeDate);
+
+      const remainingAmount = Number(installment.remainingAmount ?? 0);
+      const lateInterestAmount = Number(installment.lateInterestAmount ?? 0);
+
+      available.push({
+        installmentId: installment.installmentId,
+        installmentNumber: installment.installmentNumber,
+        amount: Number(installment.amount ?? 0),
+        remainingAmount,
+        dueDate: installment.dueDate,
+        installmentStatus: installment.status,
+        lateInterestAmount,
+        daysLate: this.calculateDaysLate(
+          installment.dueDate,
+          routeSheet.routeDate,
+        ),
+        totalToCollect: this.roundMoney(remainingAmount + lateInterestAmount),
+        clientId: client.clientId,
+        clientName: client.name ?? null,
+        clientDocumentNumber: client.documentNumber ?? null,
+        saleId: sale.saleId,
+      });
+    }
+
+    return available;
   }
 
   // ============================================================
@@ -878,7 +1326,7 @@ export class RouteSheetsService {
     }
 
     // ======================================================
-    // CUOTA VIEJA REFINANCIADA
+    // CUOTA REFINANCIADA
     // ======================================================
 
     if (installment.isRefinanced) {
@@ -888,7 +1336,7 @@ export class RouteSheetsService {
     }
 
     // ======================================================
-    // ESTADO
+    // ESTADO COBRABLE
     // ======================================================
 
     if (!OPEN_INSTALLMENT_STATUSES.includes(installment.status)) {
@@ -922,6 +1370,39 @@ export class RouteSheetsService {
     }
 
     // ======================================================
+    // VENTA / COBRADOR / CUOTA 1
+    // ======================================================
+
+    const sale = await this.saleRepo.findOne({
+      where: {
+        saleId: installment.saleId,
+      },
+    });
+
+    if (!sale) {
+      throw new NotFoundException("Venta no encontrada");
+    }
+
+    if (sale.status !== SaleStatus.CLOSED) {
+      throw new BadRequestException(
+        "Sólo se pueden agregar cuotas de ventas cerradas",
+      );
+    }
+
+    if (sale.assignedCollectorId !== routeSheet.staffId) {
+      throw new BadRequestException("La venta está asignada a otro cobrador");
+    }
+
+    if (
+      sale.firstInstallmentOnDelivery &&
+      Number(installment.installmentNumber) === 1
+    ) {
+      throw new BadRequestException(
+        "La cuota 1 pertenece al flujo de entrega y no puede agregarse como cobranza manual",
+      );
+    }
+
+    // ======================================================
     // NO DUPLICAR
     // ======================================================
 
@@ -936,7 +1417,7 @@ export class RouteSheetsService {
     }
 
     // ======================================================
-    // ACTUALIZAR MORA A LA FECHA DE ESA HOJA
+    // ACTUALIZAR MORA
     // ======================================================
 
     await this.refreshLateInterest(
@@ -966,7 +1447,7 @@ export class RouteSheetsService {
   }
 
   // ============================================================
-  // REASIGNAR COBRADOR DE ESTA HOJA
+  // REASIGNAR COBRADOR
   // ============================================================
 
   async reassignCollector(
@@ -1015,7 +1496,7 @@ export class RouteSheetsService {
   }
 
   // ============================================================
-  // ACTUALIZAR ESTADO
+  // ACTUALIZAR ESTADO DE LA HOJA
   // ============================================================
 
   async updateStatus(
@@ -1043,6 +1524,10 @@ export class RouteSheetsService {
       );
     }
 
+    /**
+     * Una hoja sólo puede terminarse
+     * cuando todas las visitas fueron atendidas.
+     */
     if (status === RouteSheetStatus.COMPLETED) {
       const items = await this.itemsRepo.findByRouteSheet(id);
 
@@ -1122,66 +1607,45 @@ export class RouteSheetsService {
     installment: Installment,
     routeDate: string,
   ) {
-    const daysLate = this.calculateDaysLate(installment.dueDate, routeDate);
+    /**
+     * La mora tiene una única fuente de verdad: InstallmentsService.
+     *
+     * RouteSheetsService no recalcula desde cero para no restaurar
+     * mora ya pagada ni pisar ajustes manuales.
+     */
+    const referenceDate = this.parseDate(routeDate);
 
-    const remainingAmount = Number(installment.remainingAmount ?? 0);
-
-    const dailyRate = Number(installment.dailyLateInterestRate ?? 0);
-
-    if (daysLate <= 0 || dailyRate <= 0 || remainingAmount <= 0) {
-      return {
-        daysLate: 0,
-
-        lateInterestAmount: Number(installment.lateInterestAmount ?? 0),
-
-        totalToCollect: this.roundMoney(
-          remainingAmount + Number(installment.lateInterestAmount ?? 0),
-        ),
-      };
-    }
-
-    const lateInterestAmount = this.roundMoney(
-      remainingAmount * dailyRate * daysLate,
+    await this.installmentsService.calculateLateInterest(
+      installment.installmentId,
+      referenceDate,
     );
 
-    const calculationDate = this.parseDate(routeDate);
-
-    await this.installmentRepo.update(
-      {
-        installmentId: installment.installmentId,
-      },
-      {
-        lateInterestAmount,
-
-        lateInterestCalculatedAt: calculationDate,
-
-        ...(installment.status === InstallmentStatus.PENDING
-          ? {
-              status: InstallmentStatus.OVERDUE,
-            }
-          : {}),
-      },
+    const refreshed = await this.installmentsService.findById(
+      installment.installmentId,
     );
 
-    installment.lateInterestAmount = lateInterestAmount;
+    const remainingAmount = Number(refreshed.remainingAmount ?? 0);
 
-    installment.lateInterestCalculatedAt = calculationDate;
+    const lateInterestAmount = Number(refreshed.lateInterestAmount ?? 0);
 
-    if (installment.status === InstallmentStatus.PENDING) {
-      installment.status = InstallmentStatus.OVERDUE;
-    }
+    const daysLate = this.calculateDaysLate(refreshed.dueDate, routeDate);
+
+    installment.status = refreshed.status;
+    installment.remainingAmount = refreshed.remainingAmount;
+    installment.lateInterestAmount = refreshed.lateInterestAmount;
+    installment.lateInterestCalculatedAt = refreshed.lateInterestCalculatedAt;
 
     return {
       daysLate,
 
-      lateInterestAmount,
+      lateInterestAmount: this.roundMoney(lateInterestAmount),
 
       totalToCollect: this.roundMoney(remainingAmount + lateInterestAmount),
     };
   }
 
   // ============================================================
-  // ESTADO VISUAL
+  // ESTADO VISUAL DE CUOTA
   // ============================================================
 
   private getCollectionState(
@@ -1229,10 +1693,22 @@ export class RouteSheetsService {
   }
 
   // ============================================================
-  // HELPERS
+  // HELPERS DE FECHA
   // ============================================================
 
-  private parseDate(value: string): Date {
+  private parseDate(value: string | Date): Date {
+    if (value instanceof Date) {
+      return new Date(
+        value.getFullYear(),
+        value.getMonth(),
+        value.getDate(),
+        0,
+        0,
+        0,
+        0,
+      );
+    }
+
     const [year, month, day] = value.slice(0, 10).split("-").map(Number);
 
     return new Date(year, month - 1, day, 0, 0, 0, 0);
@@ -1251,6 +1727,10 @@ export class RouteSheetsService {
 
     return `${year}-${month}-${day}`;
   }
+
+  // ============================================================
+  // DINERO
+  // ============================================================
 
   private roundMoney(value: number): number {
     return Math.round(value * 100) / 100;

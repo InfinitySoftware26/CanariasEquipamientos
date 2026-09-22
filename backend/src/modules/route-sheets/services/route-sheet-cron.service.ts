@@ -1,6 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 
 import { Cron } from "@nestjs/schedule";
+
 import { RouteSheetsAutomationService } from "./route-sheet-automation.service";
 
 @Injectable()
@@ -16,15 +17,27 @@ export class RouteSheetsCronService {
   // ============================================================
 
   /**
-   * 06:00 todos los días.
+   * Se ejecuta todos los días a las 06:00
+   * horario de Argentina.
+   *
+   * Flujo:
+   *
+   * 1. Busca entregas programadas para hoy.
+   * 2. Busca cobranzas recurrentes correspondientes a hoy.
+   * 3. Agrupa por zona + cobrador.
+   * 4. Crea o completa la hoja correspondiente.
+   *
+   * Formato cron:
    *
    * segundo minuto hora día mes díaSemana
    *
    * 0 0 6 * * *
    */
-  @Cron("*/30 * * * * *", {
-    name: "daily-route-sheets-test",
+  @Cron("0 0 6 * * *", {
+    name: "daily-route-sheets",
+
     timeZone: "America/Argentina/Buenos_Aires",
+
     waitForCompletion: true,
   })
   async generateDailyRouteSheets() {
@@ -39,7 +52,9 @@ export class RouteSheetsCronService {
       this.logger.log(
         [
           "Generación finalizada",
+
           `fecha=${routeDate}`,
+
           `sociedades=${result.societiesProcessed}`,
         ].join(" | "),
       );

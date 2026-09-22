@@ -38,22 +38,50 @@ export class Sale {
   })
   client!: Client;
 
-  @Column({ name: "financing_plan_id", type: "uuid", nullable: true })
+  // ─────────────────────────────────────────
+  // FINANCIACIÓN
+  // ─────────────────────────────────────────
+
+  @Column({
+    name: "financing_plan_id",
+    type: "uuid",
+    nullable: true,
+  })
   financingPlanId!: string | null;
 
-  @ManyToOne(() => FinancingPlan, { nullable: true })
-  @JoinColumn({ name: "financing_plan_id" })
+  @ManyToOne(() => FinancingPlan, {
+    nullable: true,
+  })
+  @JoinColumn({
+    name: "financing_plan_id",
+  })
   financingPlan!: FinancingPlan | null;
 
-  @Column({ name: "promotion_id", type: "uuid", nullable: true })
+  @Column({
+    name: "promotion_id",
+    type: "uuid",
+    nullable: true,
+  })
   promotionId!: string | null;
 
-  @ManyToOne(() => Promotion, { nullable: true })
-  @JoinColumn({ name: "promotion_id" })
+  @ManyToOne(() => Promotion, {
+    nullable: true,
+  })
+  @JoinColumn({
+    name: "promotion_id",
+  })
   promotion!: Promotion | null;
+
+  // ─────────────────────────────────────────
+  // PRODUCTOS
+  // ─────────────────────────────────────────
 
   @OneToMany(() => SaleProduct, (sp) => sp.sale)
   products!: SaleProduct[];
+
+  // ─────────────────────────────────────────
+  // VENDEDOR
+  // ─────────────────────────────────────────
 
   @Column({
     name: "staff_id",
@@ -67,11 +95,19 @@ export class Sale {
   })
   staff!: Staff;
 
+  // ─────────────────────────────────────────
+  // SOCIEDAD
+  // ─────────────────────────────────────────
+
   @Column({
     name: "society_id",
     type: "uuid",
   })
   societyId!: string;
+
+  // ─────────────────────────────────────────
+  // IMPORTES
+  // ─────────────────────────────────────────
 
   @Column({
     name: "total_amount",
@@ -133,24 +169,6 @@ export class Sale {
   saleDate!: Date;
 
   // ─────────────────────────────────────────
-  // FINANCIACIÓN
-  // ─────────────────────────────────────────
-
-  @Column({
-    name: "financing_plan_id",
-    type: "uuid",
-    nullable: true,
-  })
-  financingPlanId!: string | null;
-
-  @Column({
-    name: "promotion_id",
-    type: "uuid",
-    nullable: true,
-  })
-  promotionId!: string | null;
-
-  // ─────────────────────────────────────────
   // CONFIGURACIÓN DE COBRANZA
   // ─────────────────────────────────────────
 
@@ -201,7 +219,7 @@ export class Sale {
   paymentRangeEndDay!: number | null;
 
   /**
-   * Día concreto que Administración coordinó
+   * Día concreto coordinado por Administración
    * con el cliente dentro del rango.
    */
   @Column({
@@ -213,7 +231,8 @@ export class Sale {
 
   /**
    * true:
-   * la cuota 1 vence el día de entrega.
+   * la cuota 1 vence y se cobra al momento
+   * de la entrega del producto.
    *
    * false:
    * se toma firstDueDate.
@@ -226,10 +245,11 @@ export class Sale {
   firstInstallmentOnDelivery!: boolean;
 
   /**
-   * Fecha manual para la segunda cuota.
+   * Fecha inicial de la segunda cuota.
    *
-   * A partir de acá se continúa según
-   * la frecuencia del plan.
+   * La automatización de cobranza comienza
+   * desde esta cuota cuando la cuota 1
+   * se cobra durante la entrega.
    */
   @Column({
     name: "second_due_date",
@@ -241,7 +261,7 @@ export class Sale {
   /**
    * Ejemplo:
    *
-   * 0.002 = 0,2% diario
+   * 0.002 = 0,2 % diario.
    */
   @Column({
     name: "daily_late_interest_rate",
@@ -272,7 +292,7 @@ export class Sale {
     type: "uuid",
     nullable: true,
   })
-  assignedCollectorId!: string;
+  assignedCollectorId!: string | null;
 
   @ManyToOne(() => Staff, {
     nullable: true,
@@ -280,15 +300,64 @@ export class Sale {
   @JoinColumn({
     name: "assigned_collector_id",
   })
-  collector!: Staff;
+  collector!: Staff | null;
 
   @Column({
+    type: "text",
     nullable: true,
   })
-  observation!: string;
+  observation!: string | null;
 
   // ─────────────────────────────────────────
-  // ENTREGA
+  // DOCUMENTACIÓN PARA EL COBRADOR
+  // ─────────────────────────────────────────
+
+  /**
+   * Se marca durante la etapa de visita ambiental.
+   *
+   * Indica que Administración confirmó que
+   * la documentación necesaria fue entregada
+   * al cobrador.
+   */
+  @Column({
+    name: "collector_documents_delivered",
+    type: "boolean",
+    default: false,
+  })
+  collectorDocumentsDelivered!: boolean;
+
+  /**
+   * Fecha y hora exacta en la que se confirmó
+   * la entrega de documentación.
+   */
+  @Column({
+    name: "collector_documents_delivered_at",
+    type: "timestamptz",
+    nullable: true,
+  })
+  collectorDocumentsDeliveredAt!: Date | null;
+
+  /**
+   * Usuario de Administración / Manager que
+   * confirmó la entrega de documentación.
+   */
+  @Column({
+    name: "collector_documents_delivered_by",
+    type: "uuid",
+    nullable: true,
+  })
+  collectorDocumentsDeliveredBy!: string | null;
+
+  @ManyToOne(() => Staff, {
+    nullable: true,
+  })
+  @JoinColumn({
+    name: "collector_documents_delivered_by",
+  })
+  collectorDocumentsDeliveredByStaff!: Staff | null;
+
+  // ─────────────────────────────────────────
+  // ENTREGA DEL PRODUCTO
   // ─────────────────────────────────────────
 
   @Column({
@@ -297,6 +366,10 @@ export class Sale {
     nullable: true,
   })
   deliveryDate!: string | null;
+
+  // ─────────────────────────────────────────
+  // AUDITORÍA
+  // ─────────────────────────────────────────
 
   @CreateDateColumn({
     name: "created_at",

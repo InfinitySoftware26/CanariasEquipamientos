@@ -6,6 +6,7 @@ import {
   GenerateRouteSheetsResult,
   RouteSheet,
   RouteSheetDetail,
+  AvailableRouteSheetInstallment,
 } from "@/types/rotue-sheets/routeSheets.types";
 
 import {
@@ -298,4 +299,30 @@ export async function reassignRouteSheetCollector(
   }
 
   return parseResponse<RouteSheetDetail>(response);
+}
+
+// ============================================================
+// CUOTAS DISPONIBLES PARA AGREGAR MANUALMENTE
+// ============================================================
+
+export async function getAvailableInstallmentsForRouteSheet(
+  routeSheetId: string,
+): Promise<AvailableRouteSheetInstallment[]> {
+  const response = await apiFetch(
+    `/route-sheets/${routeSheetId}/available-installments`,
+    { headers: authHeaders() },
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      await getErrorMessage(
+        response,
+        "No se pudieron obtener las cuotas disponibles",
+      ),
+    );
+  }
+
+  const result =
+    await parseResponse<AvailableRouteSheetInstallment[]>(response);
+  return Array.isArray(result) ? result : [];
 }

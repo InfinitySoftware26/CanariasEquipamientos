@@ -98,6 +98,8 @@ export interface Sale {
   // FECHAS
   firstDueDate?: string | null;
 
+  secondDueDate?: string | null;
+
   saleDate: string;
 
   observation?: string | null;
@@ -112,15 +114,38 @@ export interface Sale {
 
   // ESTADO
   status:
-  | "pending_admin_validation"
-  | "pending_environmental_visit"
-  | "pending_delivery"
-  | "delivered"
-  | "closed"
-  | "rejected_admin"
-  | "environmental_rejected";
+    | "pending_admin_validation"
+    | "pending_environmental_visit"
+    | "pending_delivery"
+    | "delivered"
+    | "closed"
+    | "rejected_admin"
+    | "environmental_rejected";
 
+  // COBRADOR
   assignedCollectorId?: string | null;
+
+  // DOCUMENTACIÓN DEL COBRADOR
+  collectorDocumentsDelivered?: boolean;
+
+  collectorDocumentsDeliveredAt?: string | null;
+
+  collectorDocumentsDeliveredBy?: string | null;
+
+  // CONFIGURACIÓN DE COBRANZA
+  collectionScheduleType?: "fixed_weekday" | "monthly_range" | null;
+
+  collectionWeekday?: number | null;
+
+  paymentRangeStartDay?: number | null;
+
+  paymentRangeEndDay?: number | null;
+
+  manualCollectionDate?: string | null;
+
+  firstInstallmentOnDelivery?: boolean;
+
+  dailyLateInterestRate?: string | number | null;
 
   products?: SaleProductDetail[];
 }

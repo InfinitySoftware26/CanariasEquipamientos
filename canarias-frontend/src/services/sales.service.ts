@@ -287,3 +287,34 @@ export async function scheduleDeliveryDate(
 
   return true;
 }
+export async function markCollectorDocuments(
+  saleId: string,
+  delivered: boolean,
+  notes?: string,
+) {
+  const token = useAuthStore.getState().accessToken;
+
+  const res = await apiFetch(`/sales/${saleId}/collector-documents`, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      delivered,
+      notes,
+    }),
+  });
+
+  if (!res.ok) {
+    const error = await res.json();
+
+    throw new Error(
+      error.message || "No se pudo actualizar la entrega de documentación",
+    );
+  }
+
+  const text = await res.text();
+
+  return text ? JSON.parse(text) : null;
+}

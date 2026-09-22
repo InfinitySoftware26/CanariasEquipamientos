@@ -40,6 +40,7 @@ import { Sale } from "../entities/sale.entity";
 import { SaleProduct } from "../entities/sale-product.entity";
 
 import { Installment } from "../../installments/entities/installment.entity";
+import { Society } from "../../societies/entities/society.entity";
 
 import { FinancingService } from "../../financing/services/financing.service";
 
@@ -53,6 +54,7 @@ import { CommissionPeriod } from "../../../common/enums/commission-period.enum";
 import { CollectionScheduleType } from "../../../common/enums/collection-schedule-type.enum";
 
 import { JwtPayload } from "../../auth/interfaces/jwt-payload.interface";
+import { MarkCollectorDocumentsDto } from "../dto/mark-collector-documents.dto";
 
 const SELLER_COMMISSION_RATE = 0.1;
 
@@ -76,6 +78,9 @@ export class SalesService {
 
     @InjectRepository(Installment)
     private readonly installmentRepo: Repository<Installment>,
+
+    @InjectRepository(Society)
+    private readonly societyRepo: Repository<Society>,
 
     private readonly financingService: FinancingService,
   ) {}
@@ -469,8 +474,37 @@ export class SalesService {
 
     const sale = await this.findById(saleId);
 
+    /*
+     * REGLA DE NEGOCIO:
+     *
+     * La cobranza recurrente se configura únicamente
+     * después de:
+     *
+     * 1. entregar el producto;
+     * 2. cobrar la cuota 1;
+     * 3. Administración recibir el dinero;
+     * 4. Administración cerrar la venta.
+     */
+    if (sale.status !== SaleStatus.CLOSED) {
+      throw new BadRequestException(
+        "La venta debe estar cerrada antes de configurar la cobranza recurrente",
+      );
+    }
+
+    if (!sale.assignedCollectorId) {
+      throw new BadRequestException(
+        "La venta debe tener un cobrador asignado antes de configurar la cobranza recurrente",
+      );
+    }
+
     const scheduleType =
       dto.collectionScheduleType ?? sale.collectionScheduleType;
+
+    if (!scheduleType) {
+      throw new BadRequestException(
+        "Debes indicar el tipo de programación de cobranza",
+      );
+    }
 
     // ─────────────────────────────────────────
     // DÍA FIJO
@@ -518,53 +552,61 @@ export class SalesService {
         );
       }
 
-      if (dto.manualCollectionDate) {
-        const manualDate = this.parseDate(dto.manualCollectionDate);
+      const manualCollectionDate = dto.manualCollectionDate
+        ? this.parseDate(dto.manualCollectionDate)
+        : sale.manualCollectionDate
+          ? this.parseDate(sale.manualCollectionDate)
+          : null;
 
-        const day = manualDate.getDate();
-
-        if (day < rangeStart || day > rangeEnd) {
-          throw new BadRequestException(
-            "La fecha coordinada debe estar dentro del rango mensual configurado",
-          );
-        }
-      }
-    }
-
-    // ─────────────────────────────────────────
-    // PRIMERA CUOTA
-    // ─────────────────────────────────────────
-
-    const firstOnDelivery =
-      dto.firstInstallmentOnDelivery ?? sale.firstInstallmentOnDelivery ?? true;
-
-    if (
-      firstOnDelivery === false &&
-      !dto.firstDueDate &&
-      !sale.firstDueDate &&
-      !dto.secondDueDate &&
-      !sale.secondDueDate
-    ) {
-      throw new BadRequestException(
-        "Si la primera cuota no coincide con la entrega, debes indicar la fecha de la primera cuota",
-      );
-    }
-
-    // ─────────────────────────────────────────
-    // VALIDAR FECHAS
-    // ─────────────────────────────────────────
-
-    if (dto.firstDueDate && dto.secondDueDate) {
-      const first = this.parseDate(dto.firstDueDate);
-
-      const second = this.parseDate(dto.secondDueDate);
-
-      if (second.getTime() < first.getTime()) {
+      if (!manualCollectionDate) {
         throw new BadRequestException(
-          "La segunda cuota no puede vencer antes que la primera",
+          "Debes indicar la fecha concreta coordinada con el cliente dentro del rango mensual",
+        );
+      }
+
+      const day = manualCollectionDate.getDate();
+
+      if (day < rangeStart || day > rangeEnd) {
+        throw new BadRequestException(
+          "La fecha coordinada debe estar dentro del rango mensual configurado",
         );
       }
     }
+
+    // ─────────────────────────────────────────
+    // SEGUNDA CUOTA
+    // ─────────────────────────────────────────
+
+    if (dto.secondDueDate && sale.firstDueDate) {
+      const first = this.parseDate(sale.firstDueDate);
+
+      const second = this.parseDate(dto.secondDueDate);
+
+      if (second.getTime() <= first.getTime()) {
+        throw new BadRequestException(
+          "La segunda cuota debe vencer después de la primera",
+        );
+      }
+    }
+
+    // ─────────────────────────────────────────
+    // MORA POR SUCURSAL + OVERRIDE POR VENTA
+    // ─────────────────────────────────────────
+
+    const society = await this.societyRepo.findOne({
+      where: {
+        societyId: sale.societyId,
+      },
+    });
+
+    const currentSaleRate = Number(sale.dailyLateInterestRate ?? 0);
+
+    const effectiveLateInterestRate =
+      dto.dailyLateInterestRate !== undefined
+        ? dto.dailyLateInterestRate
+        : currentSaleRate > 0
+          ? currentSaleRate
+          : Number(society?.defaultDailyLateInterestRate ?? 0);
 
     // ─────────────────────────────────────────
     // ACTUALIZACIÓN
@@ -573,10 +615,7 @@ export class SalesService {
     const updateData: Partial<Sale> = {
       collectionScheduleType: scheduleType,
 
-      firstInstallmentOnDelivery: firstOnDelivery,
-
-      dailyLateInterestRate:
-        dto.dailyLateInterestRate ?? Number(sale.dailyLateInterestRate ?? 0),
+      dailyLateInterestRate: effectiveLateInterestRate,
     };
 
     if (scheduleType === CollectionScheduleType.FIXED_WEEKDAY) {
@@ -599,18 +638,18 @@ export class SalesService {
       updateData.paymentRangeEndDay =
         dto.paymentRangeEndDay ?? sale.paymentRangeEndDay;
 
-      if (dto.manualCollectionDate) {
-        updateData.manualCollectionDate = this.parseDate(
-          dto.manualCollectionDate,
-        );
-      } else {
-        updateData.manualCollectionDate = sale.manualCollectionDate ?? null;
-      }
+      updateData.manualCollectionDate = dto.manualCollectionDate
+        ? this.parseDate(dto.manualCollectionDate)
+        : (sale.manualCollectionDate ?? null);
     }
 
-    if (dto.firstDueDate) {
-      updateData.firstDueDate = this.parseDate(dto.firstDueDate);
-    }
+    /*
+     * A esta altura la cuota 1 ya forma parte
+     * del historial financiero y NO se modifica.
+     *
+     * firstInstallmentOnDelivery / firstDueDate
+     * quedan fuera de esta etapa.
+     */
 
     if (dto.secondDueDate) {
       updateData.secondDueDate = this.parseDate(dto.secondDueDate);
@@ -621,15 +660,14 @@ export class SalesService {
     const updatedSale = await this.findById(saleId);
 
     /*
-     * Si ya estaba coordinada la entrega,
-     * reconstruimos las cuotas.
+     * No regeneramos todo el plan.
      *
-     * generateInstallments se protege para
-     * no tocar cuotas que ya tengan pagos.
+     * La cuota 1 ya tiene un pago registrado.
+     * Reprogramamos solamente cuota 2 en adelante.
      */
-    if (updatedSale.deliveryDate) {
-      await this.generateInstallments(updatedSale, updatedSale.deliveryDate);
-    }
+    await this.rescheduleFutureInstallments(updatedSale);
+
+    const finalSale = await this.findById(saleId);
 
     await this.historyRepo.create({
       saleId,
@@ -637,23 +675,27 @@ export class SalesService {
       action: "COLLECTION_SCHEDULE_CONFIGURED",
 
       snapshot: {
-        collectionScheduleType: updatedSale.collectionScheduleType,
+        collectionScheduleType: finalSale.collectionScheduleType,
 
-        collectionWeekday: updatedSale.collectionWeekday,
+        collectionWeekday: finalSale.collectionWeekday,
 
-        paymentRangeStartDay: updatedSale.paymentRangeStartDay,
+        paymentRangeStartDay: finalSale.paymentRangeStartDay,
 
-        paymentRangeEndDay: updatedSale.paymentRangeEndDay,
+        paymentRangeEndDay: finalSale.paymentRangeEndDay,
 
-        manualCollectionDate: updatedSale.manualCollectionDate,
+        manualCollectionDate: finalSale.manualCollectionDate,
 
-        firstInstallmentOnDelivery: updatedSale.firstInstallmentOnDelivery,
+        firstInstallmentOnDelivery: finalSale.firstInstallmentOnDelivery,
 
-        firstDueDate: updatedSale.firstDueDate,
+        firstDueDate: finalSale.firstDueDate,
 
-        secondDueDate: updatedSale.secondDueDate,
+        secondDueDate: finalSale.secondDueDate,
 
-        dailyLateInterestRate: updatedSale.dailyLateInterestRate,
+        dailyLateInterestRate: finalSale.dailyLateInterestRate,
+
+        automationStartsFromInstallment: finalSale.firstInstallmentOnDelivery
+          ? 2
+          : 1,
       } as object,
 
       performedBy: staffId,
@@ -661,7 +703,7 @@ export class SalesService {
       performedByName: name,
     });
 
-    return updatedSale;
+    return finalSale;
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -673,15 +715,71 @@ export class SalesService {
     dto: ValidateSaleDto,
     user: JwtPayload,
   ): Promise<void> {
-    const { staffId, name } = this.extractUser(user);
+    const { staffId, name, role } = this.extractUser(user);
 
     const sale = await this.findById(saleId);
+
+    // ============================================================
+    // ESTADO
+    // ============================================================
 
     if (sale.status !== SaleStatus.PENDING_ENVIRONMENTAL_VISIT) {
       throw new BadRequestException(
         `La venta debe estar en estado ${SaleStatus.PENDING_ENVIRONMENTAL_VISIT}`,
       );
     }
+
+    // ============================================================
+    // COBRADOR ASIGNADO
+    // ============================================================
+
+    if (
+      role === StaffRole.COLLECTOR &&
+      sale.assignedCollectorId &&
+      sale.assignedCollectorId !== staffId
+    ) {
+      throw new ForbiddenException("No eres el cobrador asignado a esta venta");
+    }
+
+    // ============================================================
+    // VALIDACIÓN DE RECHAZO
+    // ============================================================
+
+    if (dto.status === "rejected" && !dto.observations?.trim()) {
+      throw new BadRequestException(
+        "Debe ingresar una observación indicando el motivo del rechazo",
+      );
+    }
+
+    // ============================================================
+    // DOCUMENTACIÓN DE LA VISITA
+    // ============================================================
+
+    /**
+     * Si la visita se aprueba,
+     * el cobrador debe indicar expresamente
+     * qué documentación recibió.
+     *
+     * No obligamos a que todos los checks sean true,
+     * porque puede faltar documentación y eso debe
+     * quedar registrado mediante observaciones.
+     */
+
+    if (dto.status === "approved") {
+      if (
+        dto.dniCopyReceived === undefined ||
+        dto.salaryReceiptReceived === undefined ||
+        dto.otherDocumentsReceived === undefined
+      ) {
+        throw new BadRequestException(
+          "Debe completar el checklist de documentación recibida antes de aprobar la visita",
+        );
+      }
+    }
+
+    // ============================================================
+    // NUEVO ESTADO
+    // ============================================================
 
     const newStatus =
       dto.status === "approved"
@@ -690,16 +788,30 @@ export class SalesService {
 
     await this.salesRepo.updateStatus(saleId, newStatus);
 
-    /*
-     * Si la entrega ya se había coordinado,
-     * podemos generar/recalcular el calendario.
+    // ============================================================
+    // CUOTAS
+    // ============================================================
+
+    /**
+     * Normalmente deliveryDate todavía no existe,
+     * porque Administración la coordina después
+     * de que la visita ambiental fue aprobada.
+     *
+     * Dejamos este comportamiento por compatibilidad
+     * con ventas anteriores.
      */
+
     if (dto.status === "approved" && sale.deliveryDate) {
       await this.generateInstallments(sale, sale.deliveryDate);
     }
 
+    // ============================================================
+    // VALIDACIÓN AUDITABLE
+    // ============================================================
+
     await this.validationsRepo.create({
       saleId,
+
       staffId,
 
       step: ValidationStep.ENVIRONMENTAL_VISIT,
@@ -711,8 +823,18 @@ export class SalesService {
 
       observations: dto.observations,
 
+      dniCopyReceived: dto.dniCopyReceived,
+
+      salaryReceiptReceived: dto.salaryReceiptReceived,
+
+      otherDocumentsReceived: dto.otherDocumentsReceived,
+
       validatedAt: new Date(),
     });
+
+    // ============================================================
+    // HISTORIAL
+    // ============================================================
 
     await this.historyRepo.create({
       saleId,
@@ -727,7 +849,15 @@ export class SalesService {
 
         newStatus,
 
-        observations: dto.observations,
+        observations: dto.observations ?? null,
+
+        documents: {
+          dniCopyReceived: dto.dniCopyReceived ?? null,
+
+          salaryReceiptReceived: dto.salaryReceiptReceived ?? null,
+
+          otherDocumentsReceived: dto.otherDocumentsReceived ?? null,
+        },
       } as object,
 
       performedBy: staffId,
@@ -735,7 +865,6 @@ export class SalesService {
       performedByName: name,
     });
   }
-
   // ─────────────────────────────────────────────────────────────
   // GENERACIÓN DE CUOTAS
   // ─────────────────────────────────────────────────────────────
@@ -839,6 +968,8 @@ export class SalesService {
 
         paymentFrequency: sale.paymentFrequency,
 
+        dailyLateInterestRate: Number(sale.dailyLateInterestRate ?? 0),
+
         status: InstallmentStatus.PENDING,
       });
     }
@@ -848,6 +979,138 @@ export class SalesService {
     );
 
     await this.installmentRepo.save(entities);
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // REPROGRAMAR CUOTAS FUTURAS
+  // ─────────────────────────────────────────────────────────────
+
+  private async rescheduleFutureInstallments(sale: Sale): Promise<void> {
+    const installments = await this.installmentRepo.find({
+      where: {
+        saleId: sale.saleId,
+      },
+
+      order: {
+        installmentNumber: "ASC",
+      },
+    });
+
+    if (installments.length <= 1) {
+      return;
+    }
+
+    const firstInstallment = installments.find(
+      (installment) => Number(installment.installmentNumber) === 1,
+    );
+
+    if (!firstInstallment) {
+      throw new BadRequestException(
+        "No se encontró la primera cuota de la venta",
+      );
+    }
+
+    const futureInstallments = installments.filter(
+      (installment) => Number(installment.installmentNumber) >= 2,
+    );
+
+    /*
+     * No modificamos cuotas 2+ que ya tengan
+     * movimientos financieros.
+     */
+    const hasFuturePayments = futureInstallments.some(
+      (installment) =>
+        Number(installment.paidAmount ?? 0) > 0 ||
+        installment.status === InstallmentStatus.PAID ||
+        installment.status === InstallmentStatus.PARTIAL,
+    );
+
+    if (hasFuturePayments) {
+      throw new BadRequestException(
+        "No se puede cambiar la programación porque existen cuotas futuras con pagos registrados",
+      );
+    }
+
+    let secondDueDate: Date;
+
+    /*
+     * Prioridad 1:
+     * fecha explícita para cuota 2.
+     */
+    if (sale.secondDueDate) {
+      secondDueDate = this.parseDate(sale.secondDueDate);
+    } else if (
+      /*
+       * Prioridad 2:
+       * rango mensual + fecha concreta coordinada.
+       */
+      sale.collectionScheduleType === CollectionScheduleType.MONTHLY_RANGE &&
+      sale.manualCollectionDate
+    ) {
+      secondDueDate = this.parseDate(sale.manualCollectionDate);
+    } else if (
+      /*
+       * Prioridad 3:
+       * próximo día fijo acordado.
+       */
+      sale.collectionScheduleType === CollectionScheduleType.FIXED_WEEKDAY &&
+      sale.collectionWeekday !== null &&
+      sale.collectionWeekday !== undefined
+    ) {
+      const firstDueDate = this.parseDate(firstInstallment.dueDate);
+
+      const today = this.normalizeDate(new Date());
+
+      const baseDate =
+        today.getTime() > firstDueDate.getTime() ? today : firstDueDate;
+
+      secondDueDate = this.getNextWeekday(baseDate, sale.collectionWeekday);
+    } else {
+      /*
+       * Fallback:
+       * frecuencia normal del plan.
+       */
+      secondDueDate = this.getNextInstallmentDate(
+        this.parseDate(firstInstallment.dueDate),
+        sale.paymentFrequency,
+      );
+    }
+
+    let currentDueDate = new Date(secondDueDate);
+
+    for (const installment of futureInstallments) {
+      const installmentNumber = Number(installment.installmentNumber);
+
+      if (installmentNumber === 2) {
+        currentDueDate = new Date(secondDueDate);
+      } else {
+        currentDueDate = this.getNextInstallmentDate(
+          currentDueDate,
+          sale.paymentFrequency,
+        );
+      }
+
+      await this.installmentRepo.update(
+        {
+          installmentId: installment.installmentId,
+        },
+        {
+          dueDate: new Date(currentDueDate),
+
+          dailyLateInterestRate: Number(sale.dailyLateInterestRate ?? 0),
+
+          lateInterestAmount: 0,
+
+          lateInterestCalculatedAt: null,
+
+          status: InstallmentStatus.PENDING,
+        },
+      );
+    }
+
+    await this.salesRepo.update(sale.saleId, {
+      secondDueDate: new Date(secondDueDate),
+    });
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -1167,28 +1430,62 @@ export class SalesService {
       );
     }
 
-    const updateData: Partial<Sale> = {
-      status: SaleStatus.CLOSED,
-    };
-
-    if (dto.deliveryDate) {
-      updateData.deliveryDate = dto.deliveryDate;
-    }
-
-    await this.salesRepo.update(saleId, updateData);
-
-    const updatedSale = await this.findById(saleId);
+    let firstInstallment: Installment | null = null;
 
     /*
-     * Si se corrigió la fecha de entrega
-     * al momento del cierre, regeneramos
-     * solo si todavía no existen pagos.
+     * Si el negocio cobra cuota 1 con la entrega,
+     * Administración sólo puede cerrar cuando ese
+     * dinero ya fue registrado en el sistema.
      */
-    const finalDeliveryDate = dto.deliveryDate ?? updatedSale.deliveryDate;
+    if (sale.firstInstallmentOnDelivery) {
+      firstInstallment = await this.installmentRepo.findOne({
+        where: {
+          saleId,
 
-    if (finalDeliveryDate) {
-      await this.generateInstallments(updatedSale, finalDeliveryDate);
+          installmentNumber: 1,
+        },
+      });
+
+      if (!firstInstallment) {
+        throw new BadRequestException(
+          "No se encontró la primera cuota de la venta",
+        );
+      }
+
+      if (
+        firstInstallment.status !== InstallmentStatus.PAID ||
+        Number(firstInstallment.remainingAmount) > 0
+      ) {
+        throw new BadRequestException(
+          "No se puede cerrar la venta hasta que la primera cuota haya sido cobrada completamente",
+        );
+      }
     }
+
+    const finalDeliveryDate = dto.deliveryDate ?? sale.deliveryDate;
+
+    if (!finalDeliveryDate) {
+      throw new BadRequestException(
+        "La venta no tiene una fecha de entrega registrada",
+      );
+    }
+
+    await this.salesRepo.update(saleId, {
+      status: SaleStatus.CLOSED,
+
+      deliveryDate: finalDeliveryDate,
+    });
+
+    /*
+     * IMPORTANTE:
+     *
+     * No regeneramos cuotas acá.
+     *
+     * El cierre representa que Administración
+     * recibió/confirmó el dinero de la entrega.
+     * La programación de cuota 2+ se realiza
+     * después con configureCollectionSchedule().
+     */
 
     await this.historyRepo.create({
       saleId,
@@ -1200,7 +1497,17 @@ export class SalesService {
 
         newStatus: SaleStatus.CLOSED,
 
-        deliveryDate: finalDeliveryDate ?? null,
+        deliveryDate: finalDeliveryDate,
+
+        firstInstallmentId: firstInstallment?.installmentId ?? null,
+
+        firstInstallmentStatus: firstInstallment?.status ?? null,
+
+        firstInstallmentPaidAmount: firstInstallment
+          ? Number(firstInstallment.paidAmount)
+          : null,
+
+        deliveryCollectionConfirmed: true,
       } as object,
 
       performedBy: staffId,
@@ -1329,6 +1636,18 @@ export class SalesService {
     return date;
   }
 
+  private normalizeDate(value: Date): Date {
+    return new Date(
+      value.getFullYear(),
+      value.getMonth(),
+      value.getDate(),
+      0,
+      0,
+      0,
+      0,
+    );
+  }
+
   private extractUser(user: JwtPayload) {
     return {
       staffId: user.sub,
@@ -1437,5 +1756,106 @@ export class SalesService {
       from,
       to,
     };
+  }
+  async markCollectorDocumentsDelivered(
+    saleId: string,
+    dto: MarkCollectorDocumentsDto,
+    user: JwtPayload,
+  ): Promise<Sale> {
+    const { staffId, name } = this.extractUser(user);
+
+    const sale = await this.findById(saleId);
+
+    // ============================================================
+    // SOCIEDAD
+    // ============================================================
+
+    if (sale.societyId !== user.societyId) {
+      throw new ForbiddenException("La venta no pertenece a esta sociedad");
+    }
+
+    // ============================================================
+    // ETAPA VÁLIDA
+    // ============================================================
+
+    /**
+     * La entrega de documentación al cobrador
+     * pertenece al tramo de visita ambiental.
+     *
+     * Permitimos marcarla mientras la venta está:
+     *
+     * - pendiente de visita ambiental
+     * - pendiente de entrega
+     *
+     * Esto da margen operativo si Administración
+     * confirma los papeles inmediatamente después
+     * de aprobar la visita.
+     */
+    if (
+      sale.status !== SaleStatus.PENDING_ENVIRONMENTAL_VISIT &&
+      sale.status !== SaleStatus.PENDING_DELIVERY
+    ) {
+      throw new BadRequestException(
+        "La entrega de documentación sólo puede registrarse durante la etapa ambiental o antes de la entrega",
+      );
+    }
+
+    // ============================================================
+    // COBRADOR ASIGNADO
+    // ============================================================
+
+    if (!sale.assignedCollectorId) {
+      throw new BadRequestException(
+        "La venta debe tener un cobrador asignado antes de registrar la entrega de documentación",
+      );
+    }
+
+    // ============================================================
+    // ACTUALIZACIÓN
+    // ============================================================
+
+    const delivered = dto.delivered;
+
+    const deliveredAt = delivered ? new Date() : null;
+
+    const deliveredBy = delivered ? staffId : null;
+
+    await this.salesRepo.update(saleId, {
+      collectorDocumentsDelivered: delivered,
+
+      collectorDocumentsDeliveredAt: deliveredAt,
+
+      collectorDocumentsDeliveredBy: deliveredBy,
+    });
+
+    // ============================================================
+    // HISTORIAL
+    // ============================================================
+
+    await this.historyRepo.create({
+      saleId,
+
+      action: delivered
+        ? "COLLECTOR_DOCUMENTS_DELIVERED"
+        : "COLLECTOR_DOCUMENTS_DELIVERY_REVOKED",
+
+      snapshot: {
+        collectorDocumentsDelivered: delivered,
+
+        collectorDocumentsDeliveredAt: deliveredAt,
+
+        collectorDocumentsDeliveredBy: deliveredBy,
+
+        collectorId: sale.assignedCollectorId,
+
+        notes: dto.notes ?? null,
+      } as object,
+
+      performedBy: staffId,
+
+      performedByName: name,
+    });
+
+    return this.findById(saleId);
   }
 }

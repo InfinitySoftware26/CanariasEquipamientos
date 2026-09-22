@@ -1,4 +1,5 @@
 import { ApiPropertyOptional } from "@nestjs/swagger";
+
 import {
   IsBoolean,
   IsDateString,
@@ -85,7 +86,8 @@ export class ConfigureCollectionScheduleDto {
 
   @ApiPropertyOptional({
     example: 0.002,
-    description: "Interés diario por mora en fracción. 0.002 = 0,2% diario",
+    description:
+      "Override opcional de la mora para esta venta. Si no se envía, se usa la tasa configurada en la sucursal.",
   })
   @IsOptional()
   @IsNumber()

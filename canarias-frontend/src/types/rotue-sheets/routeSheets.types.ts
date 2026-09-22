@@ -40,7 +40,7 @@ export interface RouteSheet {
 
   staffId: string;
 
-  assignedBy: string;
+  assignedBy: string | null;
 
   routeDate: string;
 
@@ -59,44 +59,21 @@ export interface RouteSheet {
 
 export interface RouteSheetItem {
   itemId: string;
-
   routeSheetId: string;
+
+  itemType: "installment" | "delivery";
+
+  result: "pending" | "completed" | "failed";
 
   clientId: string;
 
+  saleId?: string | null;
   installmentId?: string | null;
 
-  saleId?: string | null;
-
-  itemType: RouteSheetItemType;
-
-  result: RouteSheetItemResult;
-
-  collectedAmount?: number | null;
-
-  notes?: string | null;
-
-  visitedAt?: string | null;
-
-  createdAt?: string;
-
-  updatedAt?: string;
-
-  // ==========================================================
-  // CLIENTE
-  // ==========================================================
-
   clientName?: string | null;
-
   clientDocumentNumber?: string | null;
-
   clientAddress?: string | null;
-
   clientPhone?: string | null;
-
-  // ==========================================================
-  // CUOTA
-  // ==========================================================
 
   installmentNumber?: number | null;
 
@@ -106,9 +83,7 @@ export interface RouteSheetItem {
 
   installmentDueDate?: string | null;
 
-  // ==========================================================
-  // MORA
-  // ==========================================================
+  installmentStatus?: "pending" | "partial" | "paid" | "overdue" | null;
 
   lateInterestAmount?: number | null;
 
@@ -116,49 +91,74 @@ export interface RouteSheetItem {
 
   totalToCollect?: number | null;
 
-  collectionState?: RouteSheetCollectionState | null;
+  collectedAmount?: number | null;
 
-  // ==========================================================
-  // COMPATIBILIDAD
-  // ==========================================================
+  productDelivered?: boolean | null;
 
-  saleTotalAmount?: number | null;
+  paymentReceived?: boolean | null;
+
+  notes?: string | null;
+
+  visitedAt?: string | null;
 
   sale?: {
-    saleId: string;
+    saleId?: string;
 
-    totalAmount: string;
+    totalAmount?: number;
 
-    installmentAmount: string;
+    installmentAmount?: number;
 
-    installmentsCount: number;
-
-    paymentFrequency: string;
+    installmentsCount?: number;
 
     products?: Array<{
-      saleProductId: string;
+      saleProductId?: string;
 
-      productId: string;
-
-      quantity: number;
-
-      unitPrice: string;
-
-      subtotal: string;
+      quantity?: number;
 
       product?: {
-        name: string;
+        productId?: string;
+
+        name?: string;
 
         brand?: string;
-
-        model?: string;
       };
     }>;
   } | null;
 }
-
 export interface RouteSheetDetail extends RouteSheet {
   items: RouteSheetItem[];
+}
+
+export interface RouteSheetFilters {
+  zoneId?: string;
+
+  staffId?: string;
+
+  status?: RouteSheetStatus;
+
+  routeDate?: string;
+}
+
+export interface CreateRouteSheetPayload {
+  zoneId: string;
+
+  staffId: string;
+
+  routeDate: string;
+
+  notes?: string;
+}
+
+export interface AddRouteSheetInstallmentPayload {
+  installmentId: string;
+}
+
+export interface ReassignRouteSheetPayload {
+  staffId: string;
+}
+
+export interface GenerateRouteSheetsPayload {
+  routeDate: string;
 }
 
 export interface GenerateRouteSheetsResult {
@@ -170,11 +170,47 @@ export interface GenerateRouteSheetsResult {
 
   routeSheets: RouteSheet[];
 
-  skippedGroups?: Array<{
+  skippedGroups: Array<{
     zoneId: string;
 
     staffId: string;
 
     reason: string;
   }>;
+
+  collectionsFound?: number;
+
+  deliveriesFound?: number;
+}
+
+export interface AvailableRouteSheetInstallment {
+  installmentId: string;
+  installmentNumber: number;
+  amount: number;
+  remainingAmount: number;
+  dueDate: string;
+  lateInterestAmount: number;
+  totalToCollect: number;
+  clientId: string;
+  clientName: string | null;
+  clientDocumentNumber: string | null;
+  saleId: string;
+}
+
+export interface UpdateRouteSheetItemPayload {
+  result: "completed" | "failed";
+
+  collectedAmount?: number;
+
+  failedVisitReason?:
+    | "client_absent"
+    | "refused_payment"
+    | "wrong_address"
+    | "other";
+
+  notes?: string;
+
+  productDelivered?: boolean;
+
+  paymentReceived?: boolean;
 }

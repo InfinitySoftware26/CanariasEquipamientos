@@ -17,6 +17,7 @@ import {
   ApiOperation,
   ApiBearerAuth,
   ApiQuery,
+  ApiResponse,
 } from "@nestjs/swagger";
 
 import { SalesService } from "../services/sales.service";
@@ -41,6 +42,7 @@ import { StaffRole } from "../../../common/enums/staff-role.enum";
 import { CommissionPeriod } from "../../../common/enums/commission-period.enum";
 
 import { JwtPayload } from "../../auth/interfaces/jwt-payload.interface";
+import { MarkCollectorDocumentsDto } from "../dto/mark-collector-documents.dto";
 
 @ApiTags("sales")
 @ApiBearerAuth("access-token")
@@ -392,5 +394,36 @@ export class SalesController {
     dto: UpdateObservationDto,
   ) {
     return this.salesService.updateObservation(id, dto.observation);
+  }
+
+  @Patch(":id/collector-documents")
+  @Roles(StaffRole.ADMIN, StaffRole.MANAGER, StaffRole.SUPER_ADMIN)
+  @ApiOperation({
+    summary: "Registrar la entrega de documentación al cobrador",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Estado de entrega de documentación actualizado correctamente",
+  })
+  @ApiResponse({
+    status: 400,
+    description:
+      "La venta no se encuentra en una etapa válida o no tiene cobrador asignado",
+  })
+  @ApiResponse({
+    status: 403,
+    description: "La venta no pertenece a la sociedad del usuario",
+  })
+  async markCollectorDocumentsDelivered(
+    @Param("id", ParseUUIDPipe)
+    saleId: string,
+
+    @Body()
+    dto: MarkCollectorDocumentsDto,
+
+    @CurrentUser()
+    user: JwtPayload,
+  ) {
+    return this.salesService.markCollectorDocumentsDelivered(saleId, dto, user);
   }
 }

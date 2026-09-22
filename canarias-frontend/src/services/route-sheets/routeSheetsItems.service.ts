@@ -1,70 +1,88 @@
 import { useAuthStore } from "@/store/auth.store";
+
+import {
+  RouteSheetItem,
+  UpdateRouteSheetItemPayload,
+} from "@/types/rotue-sheets/routeSheets.types";
 import { apiFetch } from "../apiFetch.service";
 
-import { RouteSheetItem } from "@/types/rotue-sheets/routeSheets.types";
-import { UpdateRouteSheetItemPayload } from "@/types/rotue-sheets/updateRouteSheets";
-
-function getToken(): string {
-  const accessToken = useAuthStore.getState().accessToken;
-
-  if (!accessToken) {
-    throw new Error("NO_TOKEN");
-  }
-
-  return accessToken;
-}
+// ============================================================
+// OBTENER ITEMS DE UNA HOJA
+// ============================================================
 
 export async function getRouteSheetItems(
   routeSheetId: string,
 ): Promise<RouteSheetItem[]> {
+  const token = useAuthStore.getState().accessToken;
+
   const response = await apiFetch(
-    `/route-sheet-items?routeSheetId=${encodeURIComponent(routeSheetId)}`,
+    `/route-sheet-items?routeSheetId=${routeSheetId}`,
     {
+      method: "GET",
+
       headers: {
-        Authorization: `Bearer ${getToken()}`,
+        Authorization: `Bearer ${token}`,
       },
     },
   );
 
   if (!response.ok) {
-    const text = await response.text().catch(() => "");
+    const error = await response.json().catch(() => null);
 
     throw new Error(
-      text || `Error obteniendo ítems de la hoja (${response.status})`,
+      error?.message || "No se pudieron obtener los items de la hoja de ruta",
     );
   }
 
-  const json = await response.json();
-
-  return (
-    Array.isArray(json) ? json : Array.isArray(json?.data) ? json.data : []
-  ) as RouteSheetItem[];
+  return response.json();
 }
+
+// ============================================================
+// ACTUALIZAR RESULTADO DE UNA VISITA
+// ============================================================
 
 export async function updateRouteSheetItem(
   itemId: string,
   payload: UpdateRouteSheetItemPayload,
-): Promise<boolean> {
+): Promise<void> {
+  const token = useAuthStore.getState().accessToken;
+
   const response = await apiFetch(`/route-sheet-items/${itemId}`, {
     method: "PATCH",
+
     headers: {
-      Authorization: `Bearer ${getToken()}`,
+      Authorization: `Bearer ${token}`,
+
       "Content-Type": "application/json",
     },
+
     body: JSON.stringify(payload),
   });
 
   if (!response.ok) {
-    const json = await response.json().catch(() => null);
-
-    const message = Array.isArray(json?.message)
-      ? json.message.join(", ")
-      : json?.message;
+    const error = await response.json().catch(() => null);
 
     throw new Error(
-      message || `Error actualizando visita (${response.status})`,
+      error?.message || "No se pudo actualizar el resultado de la visita",
     );
   }
+}
 
-  return true;
+// ============================================================
+// QUITAR ITEM PENDIENTE DE UNA HOJA
+// ============================================================
+
+export async function removeRouteSheetItem(itemId: string): Promise<void> {
+  const token = useAuthStore.getState().accessToken;
+  const response = await apiFetch(`/route-sheet-items/${itemId}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => null);
+    throw new Error(
+      error?.message || "No se pudo quitar el item de la hoja de ruta",
+    );
+  }
 }

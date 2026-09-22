@@ -1,21 +1,21 @@
 import {
+  Body,
   Controller,
   Get,
-  Patch,
-  Post,
-  Body,
-  Param,
-  UseGuards,
-  ParseUUIDPipe,
   HttpCode,
   HttpStatus,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+  UseGuards,
 } from "@nestjs/common";
 
 import {
-  ApiTags,
-  ApiOperation,
   ApiBearerAuth,
+  ApiOperation,
   ApiProperty,
+  ApiTags,
 } from "@nestjs/swagger";
 
 import { IsNumber, IsPositive } from "class-validator";
@@ -58,9 +58,9 @@ class PayInstallmentDto {
 export class InstallmentsController {
   constructor(private readonly installmentsService: InstallmentsService) {}
 
-  // ─────────────────────────────────────────────
+  // ============================================================
   // CUOTAS VENCIDAS
-  // ─────────────────────────────────────────────
+  // ============================================================
 
   @Get("overdue")
   @Roles(StaffRole.ADMIN, StaffRole.MANAGER, StaffRole.COLLECTOR)
@@ -74,9 +74,9 @@ export class InstallmentsController {
     return this.installmentsService.findOverdue(user.societyId);
   }
 
-  // ─────────────────────────────────────────────
+  // ============================================================
   // CUOTAS POR VENTA
-  // ─────────────────────────────────────────────
+  // ============================================================
 
   @Get("sale/:saleId")
   @ApiOperation({
@@ -89,9 +89,9 @@ export class InstallmentsController {
     return this.installmentsService.findBySale(saleId);
   }
 
-  // ─────────────────────────────────────────────
+  // ============================================================
   // CUOTAS POR CLIENTE
-  // ─────────────────────────────────────────────
+  // ============================================================
 
   @Get("client/:clientId")
   @Roles(StaffRole.ADMIN, StaffRole.MANAGER, StaffRole.COLLECTOR)
@@ -108,14 +108,30 @@ export class InstallmentsController {
     return this.installmentsService.findByClient(clientId, user.societyId);
   }
 
-  // ─────────────────────────────────────────────
+  // ============================================================
+  // TOTAL ACTUAL A COBRAR
+  // ============================================================
+
+  @Get(":id/total-to-collect")
+  @Roles(StaffRole.ADMIN, StaffRole.MANAGER, StaffRole.COLLECTOR)
+  @ApiOperation({
+    summary: "Obtener capital, mora y total actual a cobrar de una cuota",
+  })
+  getTotalToCollect(
+    @Param("id", ParseUUIDPipe)
+    id: string,
+  ) {
+    return this.installmentsService.getTotalToCollect(id);
+  }
+
+  // ============================================================
   // ACTUALIZAR VENCIDAS
-  // ─────────────────────────────────────────────
+  // ============================================================
 
   @Post("refresh-overdue")
   @Roles(StaffRole.ADMIN, StaffRole.MANAGER, StaffRole.SUPER_ADMIN)
   @ApiOperation({
-    summary: "Actualizar automáticamente las cuotas vencidas",
+    summary: "Actualizar automáticamente las cuotas vencidas y calcular mora",
   })
   refreshOverdue(
     @CurrentUser()
@@ -124,11 +140,9 @@ export class InstallmentsController {
     return this.installmentsService.updateOverdueInstallments(user.societyId);
   }
 
-  // ─────────────────────────────────────────────
+  // ============================================================
   // REFINANCIAR VENTA
-  // IMPORTANTE:
-  // esta ruta debe ir antes de :id
-  // ─────────────────────────────────────────────
+  // ============================================================
 
   @Post("sale/:saleId/refinance")
   @Roles(StaffRole.ADMIN, StaffRole.MANAGER, StaffRole.SUPER_ADMIN)
@@ -148,15 +162,14 @@ export class InstallmentsController {
     return this.installmentsService.refinance(saleId, dto, user.societyId);
   }
 
-  // ─────────────────────────────────────────────
+  // ============================================================
   // REGISTRAR PAGO
-  // ─────────────────────────────────────────────
+  // ============================================================
 
   @Patch(":id/pay")
   @Roles(StaffRole.ADMIN, StaffRole.MANAGER, StaffRole.COLLECTOR)
-  @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
-    summary: "Registrar pago de cuota",
+    summary: "Registrar pago de cuota. Imputa primero mora y luego capital.",
   })
   pay(
     @Param("id", ParseUUIDPipe)
@@ -168,9 +181,9 @@ export class InstallmentsController {
     return this.installmentsService.payInstallment(id, dto.amount);
   }
 
-  // ─────────────────────────────────────────────
+  // ============================================================
   // CAMBIAR FECHA
-  // ─────────────────────────────────────────────
+  // ============================================================
 
   @Patch(":id/due-date")
   @Roles(StaffRole.ADMIN, StaffRole.MANAGER, StaffRole.SUPER_ADMIN)
@@ -188,15 +201,15 @@ export class InstallmentsController {
     return this.installmentsService.updateDueDate(id, dto.dueDate);
   }
 
-  // ─────────────────────────────────────────────
-  // INTERÉS DIARIO POR MORA
-  // ─────────────────────────────────────────────
+  // ============================================================
+  // MORA
+  // ============================================================
 
   @Patch(":id/late-interest")
   @Roles(StaffRole.ADMIN, StaffRole.MANAGER, StaffRole.SUPER_ADMIN)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
-    summary: "Modificar interés diario por mora de una cuota",
+    summary: "Modificar manualmente tasa y/o monto de mora de una cuota",
   })
   updateLateInterest(
     @Param("id", ParseUUIDPipe)
@@ -205,9 +218,6 @@ export class InstallmentsController {
     @Body()
     dto: UpdateLateInterestDto,
   ) {
-    return this.installmentsService.updateLateInterestRate(
-      id,
-      dto.dailyLateInterestRate,
-    );
+    return this.installmentsService.updateLateInterest(id, dto);
   }
 }

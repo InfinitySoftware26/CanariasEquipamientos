@@ -1,8 +1,8 @@
 import {
-  Injectable,
-  Inject,
-  NotFoundException,
   BadRequestException,
+  Inject,
+  Injectable,
+  NotFoundException,
 } from "@nestjs/common";
 
 import { InjectRepository } from "@nestjs/typeorm";
@@ -20,9 +20,27 @@ import { Installment } from "../entities/installment.entity";
 
 import { RefinanceInstallmentsDto } from "../dto/refinance-installments.dto";
 
+import { UpdateLateInterestDto } from "../dto/update-late-interest.dto";
+
 import { InstallmentStatus } from "../../../common/enums/installment-status.enum";
 
 import { PaymentFrequency } from "../../../common/enums/payment-frequency.enum";
+
+export interface InstallmentPaymentResult {
+  installmentId: string;
+
+  receivedAmount: number;
+
+  appliedToLateInterest: number;
+
+  appliedToCapital: number;
+
+  remainingLateInterest: number;
+
+  remainingCapital: number;
+
+  status: InstallmentStatus;
+}
 
 @Injectable()
 export class InstallmentsService {
@@ -36,39 +54,54 @@ export class InstallmentsService {
     private readonly dataSource: DataSource,
   ) {}
 
-  // ─────────────────────────────────────────────
+  // ============================================================
   // CONSULTAS
-  // ─────────────────────────────────────────────
+  // ============================================================
 
-  findBySale(saleId: string): Promise<Installment[]> {
-    return this.installmentsRepo.findBySale(saleId);
+  async findBySale(saleId: string): Promise<Installment[]> {
+    let installments = await this.installmentsRepo.findBySale(saleId);
+
+    for (const installment of installments) {
+      await this.refreshIfNecessary(installment);
+    }
+
+    installments = await this.installmentsRepo.findBySale(saleId);
+
+    return installments;
   }
 
-  findByClient(clientId: string, societyId: string): Promise<Installment[]> {
-    return this.installmentsRepo.findByClient(clientId, societyId);
+  async findByClient(
+    clientId: string,
+    societyId: string,
+  ): Promise<Installment[]> {
+    await this.updateOverdueInstallments(societyId);
+
+    let installments = await this.installmentsRepo.findByClient(
+      clientId,
+      societyId,
+    );
+
+    for (const installment of installments) {
+      await this.refreshIfNecessary(installment);
+    }
+
+    installments = await this.installmentsRepo.findByClient(
+      clientId,
+      societyId,
+    );
+
+    return installments;
   }
 
   async findOverdue(societyId: string): Promise<Installment[]> {
-    /*
-     * Antes de consultar actualizamos
-     * las cuotas cuyo vencimiento ya pasó.
-     */
     await this.updateOverdueInstallments(societyId);
 
     let overdue = await this.installmentsRepo.findOverdue(societyId);
 
-    /*
-     * Recalculamos mora de todas
-     * las cuotas vencidas.
-     */
     for (const installment of overdue) {
       await this.calculateLateInterest(installment.installmentId);
     }
 
-    /*
-     * Las volvemos a buscar para devolver
-     * lateInterestAmount actualizado.
-     */
     overdue = await this.installmentsRepo.findOverdue(societyId);
 
     return overdue;
@@ -77,7 +110,16 @@ export class InstallmentsService {
   async findPendingBySociety(societyId: string): Promise<Installment[]> {
     await this.updateOverdueInstallments(societyId);
 
-    return this.installmentsRepo.findPendingBySociety(societyId);
+    let installments =
+      await this.installmentsRepo.findPendingBySociety(societyId);
+
+    for (const installment of installments) {
+      await this.refreshIfNecessary(installment);
+    }
+
+    installments = await this.installmentsRepo.findPendingBySociety(societyId);
+
+    return installments;
   }
 
   async findById(id: string): Promise<Installment> {
@@ -90,9 +132,42 @@ export class InstallmentsService {
     return installment;
   }
 
-  // ─────────────────────────────────────────────
+  // ============================================================
+  // TOTAL ACTUAL A COBRAR
+  // ============================================================
+
+  async getTotalToCollect(
+    id: string,
+    referenceDate = new Date(),
+  ): Promise<{
+    remainingAmount: number;
+    lateInterestAmount: number;
+    totalToCollect: number;
+  }> {
+    await this.calculateLateInterest(id, referenceDate);
+
+    const installment = await this.findById(id);
+
+    const remainingAmount = this.roundMoney(
+      Number(installment.remainingAmount ?? 0),
+    );
+
+    const lateInterestAmount = this.roundMoney(
+      Number(installment.lateInterestAmount ?? 0),
+    );
+
+    return {
+      remainingAmount,
+
+      lateInterestAmount,
+
+      totalToCollect: this.roundMoney(remainingAmount + lateInterestAmount),
+    };
+  }
+
+  // ============================================================
   // ACTUALIZAR CUOTAS VENCIDAS
-  // ─────────────────────────────────────────────
+  // ============================================================
 
   async updateOverdueInstallments(
     societyId: string,
@@ -113,10 +188,6 @@ export class InstallmentsService {
     let updatedCount = 0;
 
     for (const installment of installments) {
-      /*
-       * Una cuota refinanciada ya no forma
-       * parte del calendario activo.
-       */
       if (installment.isRefinanced) {
         continue;
       }
@@ -125,13 +196,10 @@ export class InstallmentsService {
         continue;
       }
 
-      /*
-       * Solo modificamos cuotas pendientes
-       * o con pagos parciales.
-       */
       if (
         installment.status !== InstallmentStatus.PENDING &&
-        installment.status !== InstallmentStatus.PARTIAL
+        installment.status !== InstallmentStatus.PARTIAL &&
+        installment.status !== InstallmentStatus.OVERDUE
       ) {
         continue;
       }
@@ -139,28 +207,34 @@ export class InstallmentsService {
       const dueDate = this.parseDate(installment.dueDate);
 
       if (dueDate.getTime() < today.getTime()) {
-        await this.installmentEntityRepo.update(
-          {
-            installmentId: installment.installmentId,
-          },
-          {
+        if (installment.status !== InstallmentStatus.OVERDUE) {
+          await this.installmentsRepo.update(installment.installmentId, {
             status: InstallmentStatus.OVERDUE,
-          },
-        );
+          });
 
-        updatedCount++;
+          updatedCount++;
+        }
+
+        await this.calculateLateInterest(installment.installmentId, today);
       }
     }
 
     return updatedCount;
   }
 
-  // ─────────────────────────────────────────────
+  // ============================================================
   // PAGAR CUOTA
-  // ─────────────────────────────────────────────
+  //
+  // PRIORIDAD:
+  // 1. MORA
+  // 2. CAPITAL
+  // ============================================================
 
-  async payInstallment(id: string, amount: number): Promise<void> {
-    const installment = await this.findById(id);
+  async payInstallment(
+    id: string,
+    amount: number,
+  ): Promise<InstallmentPaymentResult> {
+    let installment = await this.findById(id);
 
     if (installment.isRefinanced) {
       throw new BadRequestException(
@@ -172,57 +246,134 @@ export class InstallmentsService {
       throw new BadRequestException("La cuota ya se encuentra pagada");
     }
 
-    if (amount <= 0) {
+    if (!Number.isFinite(amount) || amount <= 0) {
       throw new BadRequestException("El monto debe ser mayor a cero");
     }
 
-    const currentPaid = Number(installment.paidAmount);
-
-    const installmentAmount = Number(installment.amount);
-
-    const remainingAmount = Number(installment.remainingAmount);
-
     /*
-     * Por ahora no permitimos que un pago
-     * exceda el saldo de una cuota.
-     *
-     * El adelanto de cuotas será un flujo
-     * separado si luego lo necesitan.
+     * Primero llevamos la mora
+     * hasta el momento actual.
      */
-    if (amount > remainingAmount) {
+    await this.calculateLateInterest(id);
+
+    installment = await this.findById(id);
+
+    const currentPaid = Number(installment.paidAmount ?? 0);
+
+    const installmentAmount = Number(installment.amount ?? 0);
+
+    const remainingCapital = Number(installment.remainingAmount ?? 0);
+
+    const currentLateInterest = Number(installment.lateInterestAmount ?? 0);
+
+    const totalPending = this.roundMoney(
+      remainingCapital + currentLateInterest,
+    );
+
+    const normalizedAmount = this.roundMoney(amount);
+
+    if (normalizedAmount > totalPending) {
       throw new BadRequestException(
-        `El pago supera el saldo pendiente de la cuota. Saldo actual: ${remainingAmount}`,
+        `El pago supera el total pendiente. Capital: ${this.roundMoney(
+          remainingCapital,
+        )}. Mora: ${this.roundMoney(
+          currentLateInterest,
+        )}. Total: ${totalPending}`,
       );
     }
 
-    const totalPaid = Math.round((currentPaid + amount) * 100) / 100;
+    // ----------------------------------------------------------
+    // PRIMERO MORA
+    // ----------------------------------------------------------
 
-    const newStatus =
-      totalPaid >= installmentAmount
-        ? InstallmentStatus.PAID
-        : InstallmentStatus.PARTIAL;
+    const appliedToLateInterest = this.roundMoney(
+      Math.min(normalizedAmount, currentLateInterest),
+    );
 
-    await this.installmentsRepo.updateStatus(id, newStatus, totalPaid);
+    let amountRemaining = this.roundMoney(
+      normalizedAmount - appliedToLateInterest,
+    );
 
-    /*
-     * Si la cuota quedó pagada limpiamos
-     * el interés pendiente.
-     */
-    if (newStatus === InstallmentStatus.PAID) {
-      await this.installmentEntityRepo.update(
-        {
-          installmentId: id,
-        },
-        {
-          lateInterestAmount: 0,
-        },
-      );
+    const newLateInterest = this.roundMoney(
+      Math.max(currentLateInterest - appliedToLateInterest, 0),
+    );
+
+    // ----------------------------------------------------------
+    // DESPUÉS CAPITAL
+    // ----------------------------------------------------------
+
+    const appliedToCapital = this.roundMoney(
+      Math.min(amountRemaining, remainingCapital),
+    );
+
+    amountRemaining = this.roundMoney(amountRemaining - appliedToCapital);
+
+    if (amountRemaining > 0) {
+      throw new BadRequestException("No se pudo imputar completamente el pago");
     }
+
+    const newPaidAmount = this.roundMoney(
+      Math.min(currentPaid + appliedToCapital, installmentAmount),
+    );
+
+    const newRemainingCapital = this.roundMoney(
+      Math.max(installmentAmount - newPaidAmount, 0),
+    );
+
+    const today = this.normalizeDate(new Date());
+
+    const dueDate = this.parseDate(installment.dueDate);
+
+    let newStatus: InstallmentStatus;
+
+    if (newRemainingCapital <= 0 && newLateInterest <= 0) {
+      newStatus = InstallmentStatus.PAID;
+    } else if (today.getTime() > dueDate.getTime()) {
+      newStatus = InstallmentStatus.OVERDUE;
+    } else if (newPaidAmount > 0) {
+      newStatus = InstallmentStatus.PARTIAL;
+    } else {
+      newStatus = InstallmentStatus.PENDING;
+    }
+
+    await this.installmentsRepo.update(id, {
+      paidAmount: newPaidAmount,
+
+      remainingAmount: newRemainingCapital,
+
+      lateInterestAmount: newLateInterest,
+
+      /*
+       * El cálculo queda cerrado al día del pago.
+       *
+       * La próxima vez sólo se genera mora
+       * desde este punto.
+       */
+      lateInterestCalculatedAt: today,
+
+      status: newStatus,
+    });
+
+    return {
+      installmentId: id,
+
+      receivedAmount: normalizedAmount,
+
+      appliedToLateInterest,
+
+      appliedToCapital,
+
+      remainingLateInterest: newLateInterest,
+
+      remainingCapital: newRemainingCapital,
+
+      status: newStatus,
+    };
   }
 
-  // ─────────────────────────────────────────────
+  // ============================================================
   // MODIFICAR VENCIMIENTO
-  // ─────────────────────────────────────────────
+  // ============================================================
 
   async updateDueDate(id: string, dueDate: string): Promise<void> {
     const installment = await this.findById(id);
@@ -241,10 +392,6 @@ export class InstallmentsService {
 
     const parsedDate = this.parseDate(dueDate);
 
-    /*
-     * Recalculamos el estado teniendo
-     * en cuenta la nueva fecha.
-     */
     const today = this.normalizeDate(new Date());
 
     let status = installment.status;
@@ -257,32 +404,34 @@ export class InstallmentsService {
       status = InstallmentStatus.PENDING;
     }
 
-    await this.installmentEntityRepo.update(
-      {
-        installmentId: id,
-      },
-      {
-        dueDate: parsedDate,
+    await this.installmentsRepo.update(id, {
+      dueDate: parsedDate,
 
-        status,
+      status,
 
-        /*
-         * Como cambió el vencimiento,
-         * la mora previa deja de ser válida.
-         */
-        lateInterestAmount: 0,
+      /*
+       * Al cambiar el vencimiento,
+       * reiniciamos la mora.
+       */
+      lateInterestAmount: 0,
 
-        lateInterestCalculatedAt: null,
-      },
-    );
+      lateInterestCalculatedAt: null,
+    });
+
+    if (status === InstallmentStatus.OVERDUE) {
+      await this.calculateLateInterest(id);
+    }
   }
 
-  // ─────────────────────────────────────────────
-  // MODIFICAR INTERÉS DIARIO
-  // ─────────────────────────────────────────────
+  // ============================================================
+  // AJUSTAR MORA MANUALMENTE
+  // ============================================================
 
-  async updateLateInterestRate(id: string, rate: number): Promise<void> {
-    const installment = await this.findById(id);
+  async updateLateInterest(
+    id: string,
+    dto: UpdateLateInterestDto,
+  ): Promise<void> {
+    let installment = await this.findById(id);
 
     if (installment.isRefinanced) {
       throw new BadRequestException(
@@ -290,28 +439,73 @@ export class InstallmentsService {
       );
     }
 
-    if (rate < 0 || rate > 1) {
-      throw new BadRequestException("El interés diario debe estar entre 0 y 1");
+    if (installment.status === InstallmentStatus.PAID) {
+      throw new BadRequestException(
+        "No se puede modificar la mora de una cuota pagada",
+      );
     }
 
-    await this.installmentEntityRepo.update(
-      {
-        installmentId: id,
-      },
-      {
-        dailyLateInterestRate: rate,
-      },
-    );
+    if (
+      dto.dailyLateInterestRate === undefined &&
+      dto.lateInterestAmount === undefined
+    ) {
+      throw new BadRequestException(
+        "Debe indicar una tasa diaria, un monto de mora o ambos",
+      );
+    }
 
     /*
-     * Recalculamos inmediatamente.
+     * Antes de cambiar la tasa cerramos
+     * el cálculo con la tasa anterior.
+     *
+     * Así la nueva tasa empieza a correr
+     * desde hoy y no modifica retroactivamente
+     * días anteriores.
      */
-    await this.calculateLateInterest(id);
+    if (dto.dailyLateInterestRate !== undefined) {
+      await this.calculateLateInterest(id);
+
+      installment = await this.findById(id);
+    }
+
+    const updates: Partial<Installment> = {};
+
+    if (dto.dailyLateInterestRate !== undefined) {
+      updates.dailyLateInterestRate = dto.dailyLateInterestRate;
+
+      updates.lateInterestCalculatedAt = this.normalizeDate(new Date());
+    }
+
+    if (dto.lateInterestAmount !== undefined) {
+      updates.lateInterestAmount = this.roundMoney(dto.lateInterestAmount);
+
+      /*
+       * El importe manual se considera
+       * válido hasta hoy.
+       */
+      updates.lateInterestCalculatedAt = this.normalizeDate(new Date());
+    }
+
+    await this.installmentsRepo.update(id, updates);
   }
 
-  // ─────────────────────────────────────────────
+  // ============================================================
+  // COMPATIBILIDAD CON CÓDIGO EXISTENTE
+  // ============================================================
+
+  async updateLateInterestRate(id: string, rate: number): Promise<void> {
+    return this.updateLateInterest(id, {
+      dailyLateInterestRate: rate,
+    });
+  }
+
+  // ============================================================
   // CALCULAR MORA
-  // ─────────────────────────────────────────────
+  //
+  // CÁLCULO INCREMENTAL.
+  // NO vuelve a recalcular desde el vencimiento
+  // cada vez.
+  // ============================================================
 
   async calculateLateInterest(
     id: string,
@@ -330,68 +524,96 @@ export class InstallmentsService {
 
     const today = this.normalizeDate(referenceDate);
 
+    const currentInterest = this.roundMoney(
+      Number(installment.lateInterestAmount ?? 0),
+    );
+
     /*
-     * La cuota todavía no venció.
+     * Todavía no venció.
      */
     if (today.getTime() <= dueDate.getTime()) {
-      await this.installmentEntityRepo.update(
-        {
-          installmentId: id,
-        },
-        {
-          lateInterestAmount: 0,
-
-          lateInterestCalculatedAt: today,
-        },
-      );
-
-      return 0;
+      return currentInterest;
     }
-
-    const differenceMs = today.getTime() - dueDate.getTime();
-
-    const daysLate = Math.floor(differenceMs / (1000 * 60 * 60 * 24));
 
     const rate = Number(installment.dailyLateInterestRate ?? 0);
 
-    const remainingAmount = Number(installment.remainingAmount);
+    const remainingAmount = Number(installment.remainingAmount ?? 0);
 
     /*
-     * Interés simple:
-     *
-     * saldo pendiente
-     * × tasa diaria
-     * × días vencidos
+     * Marcamos OVERDUE aunque la tasa
+     * sea cero.
      */
-    const interest = Math.round(remainingAmount * rate * daysLate * 100) / 100;
+    if (installment.status !== InstallmentStatus.OVERDUE) {
+      await this.installmentsRepo.update(id, {
+        status: InstallmentStatus.OVERDUE,
+      });
+    }
 
-    await this.installmentEntityRepo.update(
-      {
-        installmentId: id,
-      },
-      {
-        lateInterestAmount: interest,
-
+    /*
+     * Si no hay tasa o no queda capital,
+     * no generamos nueva mora.
+     */
+    if (rate <= 0 || remainingAmount <= 0) {
+      await this.installmentsRepo.update(id, {
         lateInterestCalculatedAt: today,
-      },
+      });
+
+      return currentInterest;
+    }
+
+    /*
+     * Primera vez:
+     * comienza desde dueDate.
+     *
+     * Siguientes:
+     * comienza desde el último cálculo.
+     */
+    let calculationStart = installment.lateInterestCalculatedAt
+      ? this.parseDate(installment.lateInterestCalculatedAt)
+      : dueDate;
+
+    if (calculationStart.getTime() < dueDate.getTime()) {
+      calculationStart = dueDate;
+    }
+
+    if (today.getTime() <= calculationStart.getTime()) {
+      return currentInterest;
+    }
+
+    const differenceMs = today.getTime() - calculationStart.getTime();
+
+    const daysToAccrue = Math.floor(differenceMs / (1000 * 60 * 60 * 24));
+
+    if (daysToAccrue <= 0) {
+      return currentInterest;
+    }
+
+    const additionalInterest = this.roundMoney(
+      remainingAmount * rate * daysToAccrue,
     );
 
-    return interest;
+    const newInterest = this.roundMoney(currentInterest + additionalInterest);
+
+    await this.installmentsRepo.update(id, {
+      lateInterestAmount: newInterest,
+
+      lateInterestCalculatedAt: today,
+
+      status: InstallmentStatus.OVERDUE,
+    });
+
+    return newInterest;
   }
 
-  // ─────────────────────────────────────────────
+  // ============================================================
   // REFINANCIACIÓN
-  // ─────────────────────────────────────────────
+  // ============================================================
 
   async refinance(
     saleId: string,
     dto: RefinanceInstallmentsDto,
     societyId: string,
   ) {
-    /*
-     * Antes de refinanciar actualizamos
-     * vencimientos.
-     */
     await this.updateOverdueInstallments(societyId);
 
     const installments = await this.installmentEntityRepo.find({
@@ -409,9 +631,6 @@ export class InstallmentsService {
       throw new NotFoundException("La venta no tiene cuotas");
     }
 
-    /*
-     * Solo tomamos saldo activo.
-     */
     const pending = installments.filter(
       (installment) =>
         !installment.isRefinanced &&
@@ -431,10 +650,6 @@ export class InstallmentsService {
       );
     }
 
-    // ─────────────────────────────────────────
-    // TOTAL PENDIENTE
-    // ─────────────────────────────────────────
-
     let totalPending = 0;
 
     for (const installment of pending) {
@@ -442,28 +657,17 @@ export class InstallmentsService {
         installment.installmentId,
       );
 
-      totalPending += Number(installment.remainingAmount) + interest;
+      const refreshed = await this.findById(installment.installmentId);
+
+      totalPending += Number(refreshed.remainingAmount) + interest;
     }
 
-    totalPending = Math.round(totalPending * 100) / 100;
+    totalPending = this.roundMoney(totalPending);
 
     if (totalPending <= 0) {
       throw new BadRequestException("No existe saldo para refinanciar");
     }
 
-    /*
-     * Ejemplo:
-     *
-     * deuda: 110.000
-     * puede pagar: 30.000
-     *
-     * => 4 cuotas
-     *
-     * 30.000
-     * 30.000
-     * 30.000
-     * 20.000
-     */
     const installmentsCount = Math.ceil(totalPending / dto.installmentAmount);
 
     if (installmentsCount > 100) {
@@ -478,28 +682,16 @@ export class InstallmentsService {
 
     const clientId = pending[0].clientId;
 
-    /*
-     * No reutilizamos números anteriores.
-     *
-     * Si tenía cuotas 1..12,
-     * refinanciación comienza en 13.
-     */
+    const inheritedLateInterestRate = Number(
+      pending[0].dailyLateInterestRate ?? 0,
+    );
+
     const firstInstallmentNumber =
       Math.max(
         ...installments.map((installment) => installment.installmentNumber),
       ) + 1;
 
-    // ─────────────────────────────────────────
-    // TRANSACCIÓN
-    // ─────────────────────────────────────────
-
     await this.dataSource.transaction(async (manager) => {
-      /*
-       * Marcamos las cuotas originales
-       * como refinanciadas.
-       *
-       * NO se eliminan.
-       */
       for (const installment of pending) {
         await manager.update(
           Installment,
@@ -529,7 +721,7 @@ export class InstallmentsService {
       for (let index = 0; index < installmentsCount; index++) {
         const amount = Math.min(dto.installmentAmount, remaining);
 
-        const roundedAmount = Math.round(amount * 100) / 100;
+        const roundedAmount = this.roundMoney(amount);
 
         const newInstallment = manager.create(Installment, {
           saleId,
@@ -552,7 +744,7 @@ export class InstallmentsService {
 
           status: InstallmentStatus.PENDING,
 
-          dailyLateInterestRate: 0,
+          dailyLateInterestRate: inheritedLateInterestRate,
 
           lateInterestAmount: 0,
 
@@ -569,7 +761,7 @@ export class InstallmentsService {
 
         await manager.save(Installment, newInstallment);
 
-        remaining = Math.round((remaining - roundedAmount) * 100) / 100;
+        remaining = this.roundMoney(remaining - roundedAmount);
 
         dueDate = this.getNextInstallmentDate(dueDate, dto.paymentFrequency);
       }
@@ -589,12 +781,35 @@ export class InstallmentsService {
       firstDueDate: dto.firstDueDate,
 
       paymentFrequency: dto.paymentFrequency,
+
+      dailyLateInterestRate: inheritedLateInterestRate,
     };
   }
 
-  // ─────────────────────────────────────────────
+  // ============================================================
+  // REFRESH AUXILIAR
+  // ============================================================
+
+  private async refreshIfNecessary(installment: Installment): Promise<void> {
+    if (
+      installment.isRefinanced ||
+      installment.status === InstallmentStatus.PAID
+    ) {
+      return;
+    }
+
+    const today = this.normalizeDate(new Date());
+
+    const dueDate = this.parseDate(installment.dueDate);
+
+    if (today.getTime() > dueDate.getTime()) {
+      await this.calculateLateInterest(installment.installmentId, today);
+    }
+  }
+
+  // ============================================================
   // FECHA SIGUIENTE
-  // ─────────────────────────────────────────────
+  // ============================================================
 
   private getNextInstallmentDate(
     currentDate: Date,
@@ -632,9 +847,9 @@ export class InstallmentsService {
     }
   }
 
-  // ─────────────────────────────────────────────
-  // SUMAR UN MES CALENDARIO
-  // ─────────────────────────────────────────────
+  // ============================================================
+  // SUMAR UN MES
+  // ============================================================
 
   private addOneMonth(date: Date): Date {
     const originalDay = date.getDate();
@@ -656,9 +871,9 @@ export class InstallmentsService {
     return result;
   }
 
-  // ─────────────────────────────────────────────
-  // PARSEAR FECHA
-  // ─────────────────────────────────────────────
+  // ============================================================
+  // FECHAS
+  // ============================================================
 
   private parseDate(value: string | Date): Date {
     if (value instanceof Date) {
@@ -678,5 +893,9 @@ export class InstallmentsService {
 
   private normalizeDate(value: Date): Date {
     return new Date(value.getFullYear(), value.getMonth(), value.getDate());
+  }
+
+  private roundMoney(value: number): number {
+    return Math.round((value + Number.EPSILON) * 100) / 100;
   }
 }

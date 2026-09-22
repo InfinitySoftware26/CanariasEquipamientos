@@ -90,6 +90,15 @@ export class InstallmentsRepository implements IInstallmentsRepository {
     return this.repo.save(installments);
   }
 
+  async update(id: string, data: Partial<Installment>): Promise<void> {
+    await this.repo.update(
+      {
+        installmentId: id,
+      },
+      data,
+    );
+  }
+
   async updateStatus(
     id: string,
     status: InstallmentStatus,
@@ -108,10 +117,6 @@ export class InstallmentsRepository implements IInstallmentsRepository {
     if (paidAmount !== undefined) {
       const installmentAmount = Number(installment.amount);
 
-      /*
-       * Evita paidAmount superior
-       * al valor nominal de la cuota.
-       */
       const normalizedPaidAmount = Math.min(paidAmount, installmentAmount);
 
       updates.paidAmount = normalizedPaidAmount;

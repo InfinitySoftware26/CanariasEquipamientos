@@ -31,6 +31,14 @@ function truncateId(id: string) {
   return `${id.slice(0, 8)}...`;
 }
 
+function formatDate(value: string) {
+  const datePart = value.split("T")[0];
+
+  const [year, month, day] = datePart.split("-").map(Number);
+
+  return new Date(year, month - 1, day).toLocaleDateString("es-AR");
+}
+
 export function InstallmentRow({
   installment,
   showClient,
@@ -67,7 +75,7 @@ export function InstallmentRow({
       </td>
 
       <td className="px-6 py-4 text-white/80">
-        {new Date(installment.dueDate).toLocaleDateString()}
+        {formatDate(installment.dueDate)}
       </td>
 
       <td className="px-6 py-4">

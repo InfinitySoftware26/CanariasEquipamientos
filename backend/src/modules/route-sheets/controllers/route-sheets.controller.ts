@@ -130,6 +130,28 @@ export class RouteSheetsController {
   }
 
   // ============================================================
+  // CUOTAS DISPONIBLES PARA AGREGAR MANUALMENTE
+  // ============================================================
+
+  @Get(":id/available-installments")
+  @Roles(StaffRole.ADMIN, StaffRole.MANAGER, StaffRole.SUPER_ADMIN)
+  @ApiOperation({
+    summary: "Listar cuotas disponibles para agregar a una hoja de ruta",
+  })
+  getAvailableInstallments(
+    @Param("id", ParseUUIDPipe)
+    id: string,
+
+    @CurrentUser()
+    user: JwtPayload,
+  ) {
+    return this.routeSheetsService.getAvailableInstallmentsForRouteSheet(
+      id,
+      user,
+    );
+  }
+
+  // ============================================================
   // DETALLE
   // ============================================================
 
