@@ -8,7 +8,13 @@ export const RouteSheetStatus = {
 export type RouteSheetStatus =
   (typeof RouteSheetStatus)[keyof typeof RouteSheetStatus];
 
-export type RouteSheetItemType = "installment" | "delivery";
+export const RouteSheetItemType = {
+  INSTALLMENT: "installment",
+  DELIVERY: "delivery",
+} as const;
+
+export type RouteSheetItemType =
+  (typeof RouteSheetItemType)[keyof typeof RouteSheetItemType];
 
 export const RouteSheetItemResult = {
   PENDING: "pending",
@@ -19,120 +25,192 @@ export const RouteSheetItemResult = {
 export type RouteSheetItemResult =
   (typeof RouteSheetItemResult)[keyof typeof RouteSheetItemResult];
 
+export type RouteSheetCollectionState =
+  | "overdue"
+  | "due_today"
+  | "partial"
+  | "pending";
+
 export interface RouteSheet {
   routeSheetId: string;
+
   societyId: string;
+
   zoneId: string;
+
   staffId: string;
-  assignedBy: string;
+
+  assignedBy: string | null;
+
   routeDate: string;
+
   status: RouteSheetStatus;
-  zoneName?: string | null;
-  staffName?: string | null;
+
   notes?: string | null;
+
+  zoneName?: string | null;
+
+  staffName?: string | null;
+
   createdAt?: string;
+
   updatedAt?: string;
-}
-
-export interface RouteSheetDetail extends RouteSheet {
-  items: RouteSheetItem[];
-}
-
-export interface RouteSheetClient {
-  clientId: string;
-  name?: string | null;
-  surname?: string | null;
-  fullName?: string | null;
-  documentNumber?: string | null;
-  address?: string | null;
-  phone?: string | null;
-}
-
-export interface RouteSheetInstallment {
-  installmentId: string;
-  installmentNumber?: number | null;
-  amount?: number | string | null;
-  status?: string | null;
-  dueDate?: string | null;
 }
 
 export interface RouteSheetItem {
   itemId: string;
   routeSheetId: string;
+
+  itemType: "installment" | "delivery";
+
+  result: "pending" | "completed" | "failed";
+
   clientId: string;
 
-  installmentId?: string | null;
   saleId?: string | null;
+  installmentId?: string | null;
 
-  itemType: RouteSheetItemType;
-
-  result: RouteSheetItemResult;
-
-  collectedAmount?: number | null;
-
-  notes?: string | null;
-
-  visitedAt?: string | null;
-
-  createdAt: string;
-  updatedAt: string;
-
-  /*
-   * Datos enriquecidos del cliente.
-   */
   clientName?: string | null;
   clientDocumentNumber?: string | null;
   clientAddress?: string | null;
   clientPhone?: string | null;
 
-  /*
-   * Datos de la cuota.
-   */
-  installmentAmount?: number | null;
   installmentNumber?: number | null;
-  installmentStatus?: string | null;
+
+  installmentAmount?: number | null;
+
+  installmentRemainingAmount?: number | null;
+
   installmentDueDate?: string | null;
 
-  /*
-   * Datos de la venta.
-   */
-  saleTotalAmount?: number | null;
+  installmentStatus?: "pending" | "partial" | "paid" | "overdue" | null;
+
+  lateInterestAmount?: number | null;
+
+  daysLate?: number | null;
+
+  totalToCollect?: number | null;
+
+  collectedAmount?: number | null;
+
+  productDelivered?: boolean | null;
+
+  paymentReceived?: boolean | null;
+
+  notes?: string | null;
+
+  visitedAt?: string | null;
 
   sale?: {
-    saleId: string;
-    totalAmount: string;
-    installmentAmount: string;
-    installmentsCount: number;
-    paymentFrequency: string;
+    saleId?: string;
+
+    totalAmount?: number;
+
+    installmentAmount?: number;
+
+    installmentsCount?: number;
 
     products?: Array<{
-      saleProductId: string;
-      productId: string;
-      quantity: number;
-      unitPrice: string;
-      subtotal: string;
+      saleProductId?: string;
+
+      quantity?: number;
 
       product?: {
-        name: string;
+        productId?: string;
+
+        name?: string;
+
         brand?: string;
-        model?: string;
       };
     }>;
   } | null;
 }
+export interface RouteSheetDetail extends RouteSheet {
+  items: RouteSheetItem[];
+}
 
-export interface RouteSheetItemSummary {
-  itemId: string;
-  itemType: RouteSheetItemType;
-  result: RouteSheetItemResult;
+export interface RouteSheetFilters {
+  zoneId?: string;
 
-  clientName: string;
-  clientDocumentNumber: string;
+  staffId?: string;
 
-  installmentAmount?: number;
-  installmentNumber?: number;
+  status?: RouteSheetStatus;
+
+  routeDate?: string;
+}
+
+export interface CreateRouteSheetPayload {
+  zoneId: string;
+
+  staffId: string;
+
+  routeDate: string;
+
+  notes?: string;
+}
+
+export interface AddRouteSheetInstallmentPayload {
+  installmentId: string;
+}
+
+export interface ReassignRouteSheetPayload {
+  staffId: string;
+}
+
+export interface GenerateRouteSheetsPayload {
+  routeDate: string;
+}
+
+export interface GenerateRouteSheetsResult {
+  routeDate: string;
+
+  created: number;
+
+  skipped: number;
+
+  routeSheets: RouteSheet[];
+
+  skippedGroups: Array<{
+    zoneId: string;
+
+    staffId: string;
+
+    reason: string;
+  }>;
+
+  collectionsFound?: number;
+
+  deliveriesFound?: number;
+}
+
+export interface AvailableRouteSheetInstallment {
+  installmentId: string;
+  installmentNumber: number;
+  amount: number;
+  remainingAmount: number;
+  dueDate: string;
+  lateInterestAmount: number;
+  totalToCollect: number;
+  clientId: string;
+  clientName: string | null;
+  clientDocumentNumber: string | null;
+  saleId: string;
+}
+
+export interface UpdateRouteSheetItemPayload {
+  result: "completed" | "failed";
 
   collectedAmount?: number;
 
-  visitedAt?: string;
+  failedVisitReason?:
+    | "client_absent"
+    | "refused_payment"
+    | "wrong_address"
+    | "other";
+
+  notes?: string;
+
+  productDelivered?: boolean;
+
+  paymentReceived?: boolean;
 }

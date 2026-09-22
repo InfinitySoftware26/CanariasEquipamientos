@@ -1,10 +1,20 @@
 import { Injectable } from "@nestjs/common";
+
 import { InjectRepository } from "@nestjs/typeorm";
+
 import { Repository } from "typeorm";
 
 import { RouteSheetItem } from "../entities/route-sheet-item.entity";
+
+import { RouteSheet } from "../entities/route-sheet.entity";
+
 import { IRouteSheetItemsRepository } from "../interfaces/route-sheet-items-repository.interface";
+
 import { RouteSheetItemResult } from "../../../common/enums/route-sheet-item-result.enum";
+
+import { RouteSheetItemType } from "../../../common/enums/route-sheet-item-type.enum";
+
+import { RouteSheetStatus } from "../../../common/enums/route-sheet-status.enum";
 
 @Injectable()
 export class RouteSheetItemsRepository implements IRouteSheetItemsRepository {
@@ -13,87 +23,220 @@ export class RouteSheetItemsRepository implements IRouteSheetItemsRepository {
     private readonly repo: Repository<RouteSheetItem>,
   ) {}
 
-  async findByRouteSheet(routeSheetId: string): Promise<RouteSheetItem[]> {
-    const items = await this.repo
-      .createQueryBuilder("item")
-      .leftJoinAndSelect(
-        "CLIENT",
-        "client",
-        `"client"."client_id" = "item"."client_id"`,
-      )
-      .leftJoinAndSelect(
-        "INSTALLMENTS",
-        "installment",
-        `"installment"."installment_id" = "item"."installment_id"`,
-      )
-      .where(`"item"."route_sheet_id" = :routeSheetId`, {
+  // ============================================================
+  // CREAR VARIOS ITEMS
+  // ============================================================
+
+  async createMany(
+    items: Partial<RouteSheetItem>[],
+  ): Promise<RouteSheetItem[]> {
+    if (items.length === 0) {
+      return [];
+    }
+
+    const entities = this.repo.create(items);
+
+    return this.repo.save(entities);
+  }
+
+  // ============================================================
+  // ITEMS DE UNA HOJA
+  // ============================================================
+
+  findByRouteSheet(routeSheetId: string): Promise<RouteSheetItem[]> {
+    return this.repo.find({
+      where: {
         routeSheetId,
-      })
-      .orderBy(`"item"."created_at"`, "ASC")
-      .getRawAndEntities();
+      },
 
-    return items.entities.map((item, index) => {
-      const raw = items.raw[index];
-
-      return Object.assign(item, {
-        clientName:
-          [raw.client_name, raw.client_surname].filter(Boolean).join(" ") ||
-          null,
-
-        clientDocumentNumber: raw.client_document_number ?? null,
-        clientAddress: raw.client_address ?? null,
-        clientPhone: raw.client_phone ?? null,
-
-        installmentAmount:
-          raw.installment_amount != null
-            ? Number(raw.installment_amount)
-            : null,
-
-        installmentNumber:
-          raw.installment_installment_number != null
-            ? Number(raw.installment_installment_number)
-            : null,
-
-        installmentStatus: raw.installment_status ?? null,
-
-        installmentDueDate: raw.installment_due_date ?? null,
-
-        saleTotalAmount: raw.installment_sale_id != null ? null : null,
-      });
+      order: {
+        createdAt: "ASC",
+      },
     });
   }
+
+  // ============================================================
+  // BUSCAR ITEM
+  // ============================================================
 
   findById(id: string): Promise<RouteSheetItem | null> {
     return this.repo.findOne({
-      where: { itemId: id },
+      where: {
+        itemId: id,
+      },
     });
   }
 
-  async createMany(data: Partial<RouteSheetItem>[]): Promise<RouteSheetItem[]> {
-    if (!data.length) return [];
+  // ============================================================
+  // BUSCAR CUOTA EN HOJA ACTIVA
+  // ============================================================
 
-    return this.repo.save(data.map((d) => this.repo.create(d)));
+  async findActiveByInstallment(
+    installmentId: string,
+  ): Promise<RouteSheetItem | null> {
+    return (
+      this.repo
+        .createQueryBuilder("item")
+
+        .innerJoin(
+          RouteSheet,
+          "sheet",
+          "sheet.route_sheet_id = item.route_sheet_id",
+        )
+
+        .where("item.installment_id = :installmentId", {
+          installmentId,
+        })
+
+        /**
+         * Un item ya resuelto no debe bloquear
+         * futuras hojas.
+         *
+         * Ejemplo:
+         *
+         * cuota vencida
+         * visita fallida hoy
+         * → tiene que poder reaparecer en la próxima
+         *   fecha habitual.
+         */
+        .andWhere("item.result = :itemResult", {
+          itemResult: RouteSheetItemResult.PENDING,
+        })
+
+        .andWhere("sheet.status IN (:...statuses)", {
+          statuses: [RouteSheetStatus.PENDING, RouteSheetStatus.IN_PROGRESS],
+        })
+
+        .getOne()
+    );
   }
+
+  // ============================================================
+  // BUSCAR ENTREGA ACTIVA DE UNA VENTA
+  // ============================================================
+
+  async findActiveDeliveryBySale(
+    saleId: string,
+  ): Promise<RouteSheetItem | null> {
+    return (
+      this.repo
+        .createQueryBuilder("item")
+
+        .innerJoin(
+          RouteSheet,
+          "sheet",
+          "sheet.route_sheet_id = item.route_sheet_id",
+        )
+
+        .where("item.sale_id = :saleId", {
+          saleId,
+        })
+
+        /**
+         * IMPORTANTE:
+         *
+         * Antes se utilizaba:
+         *
+         * installment_id IS NULL
+         *
+         * para identificar una entrega.
+         *
+         * Eso deja de ser válido porque ahora
+         * un item DELIVERY puede apuntar también
+         * a la cuota Nº 1.
+         *
+         * La forma correcta de distinguirlo
+         * es por item_type.
+         */
+        .andWhere("item.item_type = :itemType", {
+          itemType: RouteSheetItemType.DELIVERY,
+        })
+
+        /**
+         * Sólo consideramos una entrega como activa
+         * mientras todavía no fue resuelta.
+         */
+        .andWhere("item.result = :itemResult", {
+          itemResult: RouteSheetItemResult.PENDING,
+        })
+
+        .andWhere("sheet.status IN (:...statuses)", {
+          statuses: [RouteSheetStatus.PENDING, RouteSheetStatus.IN_PROGRESS],
+        })
+
+        .getOne()
+    );
+  }
+
+  // ============================================================
+  // ACTUALIZAR RESULTADO
+  // ============================================================
 
   async updateResult(
     id: string,
     result: RouteSheetItemResult,
     collectedAmount?: number,
     notes?: string,
+    productDelivered?: boolean,
+    paymentReceived?: boolean,
   ): Promise<void> {
     const updates: Partial<RouteSheetItem> = {
       result,
+
+      /**
+       * Cada resultado registrado representa
+       * una visita efectivamente atendida.
+       */
       visitedAt: new Date(),
     };
+
+    // ==========================================================
+    // MONTO
+    // ==========================================================
 
     if (collectedAmount !== undefined) {
       updates.collectedAmount = collectedAmount;
     }
 
+    // ==========================================================
+    // NOTAS
+    // ==========================================================
+
     if (notes !== undefined) {
       updates.notes = notes;
     }
 
-    await this.repo.update({ itemId: id }, updates);
+    // ==========================================================
+    // PRODUCTO ENTREGADO
+    // ==========================================================
+
+    if (productDelivered !== undefined) {
+      updates.productDelivered = productDelivered;
+    }
+
+    // ==========================================================
+    // DINERO RECIBIDO
+    // ==========================================================
+
+    if (paymentReceived !== undefined) {
+      updates.paymentReceived = paymentReceived;
+    }
+
+    await this.repo.update(
+      {
+        itemId: id,
+      },
+      updates,
+    );
+  }
+
+  // ============================================================
+  // ELIMINAR ITEM
+  // ============================================================
+
+  async deleteById(id: string): Promise<void> {
+    await this.repo.delete({
+      itemId: id,
+    });
   }
 }

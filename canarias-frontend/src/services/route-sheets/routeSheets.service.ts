@@ -3,274 +3,208 @@ import { useAuthStore } from "@/store/auth.store";
 import { apiFetch } from "../apiFetch.service";
 
 import {
+  GenerateRouteSheetsResult,
   RouteSheet,
   RouteSheetDetail,
+  AvailableRouteSheetInstallment,
 } from "@/types/rotue-sheets/routeSheets.types";
 
-import { CreateRouteSheetPayload } from "@/types/rotue-sheets/createRouteSheets.type";
-
-import { AvailableRouteInstallment } from "@/types/rotue-sheets/available-installment.type";
+import {
+  AddRouteSheetInstallmentPayload,
+  CreateRouteSheetPayload,
+  GenerateRouteSheetsPayload,
+  ReassignRouteSheetPayload,
+} from "@/types/rotue-sheets/createRouteSheets.type";
 
 import { UpdateRouteSheetStatusPayload } from "@/types/rotue-sheets/updateRouteSheets";
+
+// ============================================================
+// AUTH
+// ============================================================
+
+function getToken(): string {
+  const token = useAuthStore.getState().accessToken;
+
+  if (!token) {
+    throw new Error("NO_TOKEN");
+  }
+
+  return token;
+}
+
+function authHeaders() {
+  return {
+    Authorization: `Bearer ${getToken()}`,
+  };
+}
+
+// ============================================================
+// RESPONSE
+// ============================================================
+
+async function parseResponse<T>(response: Response): Promise<T> {
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
+  const text = await response.text();
+
+  if (!text) {
+    return undefined as T;
+  }
+
+  const json = JSON.parse(text);
+
+  return (json?.data ?? json) as T;
+}
+
+// ============================================================
+// ERROR
+// ============================================================
+
+async function getErrorMessage(
+  response: Response,
+  fallback: string,
+): Promise<string> {
+  const text = await response.text().catch(() => "");
+
+  if (!text) {
+    return fallback;
+  }
+
+  try {
+    const json = JSON.parse(text);
+
+    if (Array.isArray(json?.message)) {
+      return json.message.join(", ");
+    }
+
+    return json?.message ?? json?.error ?? fallback;
+  } catch {
+    return fallback;
+  }
+}
 
 // ============================================================
 // LISTAR HOJAS
 // ============================================================
 
 export async function getRouteSheets(): Promise<RouteSheet[]> {
-  const token = useAuthStore.getState().accessToken;
-
-  if (!token) {
-    throw new Error("NO_TOKEN");
-  }
-
-  const res = await apiFetch("/route-sheets", {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+  const response = await apiFetch("/route-sheets", {
+    headers: authHeaders(),
   });
-
-  const json = await res.json().catch(() => null);
-
-  if (!res.ok) {
-    const message = Array.isArray(json?.message)
-      ? json.message.join(", ")
-      : json?.message;
-
-    throw new Error(
-      message ?? `Error obteniendo hojas de ruta (${res.status})`,
-    );
-  }
-
-  return (
-    Array.isArray(json) ? json : Array.isArray(json?.data) ? json.data : []
-  ) as RouteSheet[];
-}
-
-// ============================================================
-// CUOTAS DISPONIBLES
-// ============================================================
-
-export async function getAvailableInstallments(
-  zoneId: string,
-  staffId: string,
-  routeDate: string,
-): Promise<AvailableRouteInstallment[]> {
-  const token = useAuthStore.getState().accessToken;
-
-  if (!token) {
-    throw new Error("NO_TOKEN");
-  }
-
-  const params = new URLSearchParams({
-    zoneId,
-    staffId,
-    routeDate,
-  });
-
-  const response = await apiFetch(
-    `/route-sheets/available-installments?${params.toString()}`,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    },
-  );
-
-  const text = await response.text();
-
-  let json: {
-    data?: AvailableRouteInstallment[];
-    message?: string | string[];
-    error?: string;
-    statusCode?: number;
-  } | null = null;
-
-  try {
-    json = text ? JSON.parse(text) : null;
-  } catch {
-    json = null;
-  }
 
   if (!response.ok) {
-    const message = Array.isArray(json?.message)
-      ? json.message.join(", ")
-      : json?.message;
-
-    console.error("❌ ERROR OBTENIENDO CUOTAS");
-    console.error("STATUS:", response.status);
-    console.error("STATUS TEXT:", response.statusText);
-    console.error("PARAMS:", {
-      zoneId,
-      staffId,
-      routeDate,
-    });
-    console.error("RESPUESTA BACKEND:", json);
-
     throw new Error(
-      message ??
-        json?.error ??
-        `Error obteniendo cuotas disponibles (${response.status})`,
+      await getErrorMessage(
+        response,
+        `Error obteniendo hojas de ruta (${response.status})`,
+      ),
     );
   }
 
-  return Array.isArray(json) ? json : (json?.data ?? []);
+  const result = await parseResponse<RouteSheet[]>(response);
+
+  return Array.isArray(result) ? result : [];
 }
 
 // ============================================================
-// OBTENER UNA HOJA
+// MIS HOJAS
+// ============================================================
+
+export async function getMyRouteSheets(): Promise<RouteSheet[]> {
+  /*
+   * El backend ya detecta por JWT si el usuario
+   * es cobrador y filtra sus propias hojas.
+   */
+  return getRouteSheets();
+}
+
+// ============================================================
+// DETALLE
 // ============================================================
 
 export async function getRouteSheetById(id: string): Promise<RouteSheetDetail> {
-  const token = useAuthStore.getState().accessToken;
-
-  if (!token) {
-    throw new Error("NO_TOKEN");
-  }
-
   if (!id || id === "undefined" || id === "null") {
     throw new Error("ID de hoja de ruta inválido");
   }
 
-  const res = await apiFetch(`/route-sheets/${id}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+  const response = await apiFetch(`/route-sheets/${id}`, {
+    headers: authHeaders(),
   });
 
-  const json = await res.json().catch(() => null);
-
-  if (!res.ok) {
-    const message = Array.isArray(json?.message)
-      ? json.message.join(", ")
-      : json?.message;
-
-    throw new Error(message ?? `Error obteniendo hoja de ruta (${res.status})`);
+  if (!response.ok) {
+    throw new Error(
+      await getErrorMessage(
+        response,
+        `Error obteniendo hoja de ruta (${response.status})`,
+      ),
+    );
   }
 
-  return (json?.data ?? json) as RouteSheetDetail;
+  return parseResponse<RouteSheetDetail>(response);
 }
 
 // ============================================================
-// CREAR HOJA DE RUTA
+// CREAR UNA HOJA
 // ============================================================
 
 export async function createRouteSheet(
   payload: CreateRouteSheetPayload,
 ): Promise<RouteSheetDetail> {
-  const token = useAuthStore.getState().accessToken;
-
-  if (!token) {
-    throw new Error("NO_TOKEN");
-  }
-
-  // ==========================================================
-  // VALIDACIONES FRONTEND
-  // ==========================================================
-
-  if (!payload.zoneId) {
-    throw new Error("Debés seleccionar una zona");
-  }
-
-  if (!payload.staffId) {
-    throw new Error("Debés seleccionar un cobrador");
-  }
-
-  if (!payload.routeDate) {
-    throw new Error("Debés seleccionar una fecha");
-  }
-
-  if (!payload.installmentIds || payload.installmentIds.length === 0) {
-    throw new Error(
-      "Debés seleccionar al menos una cuota para crear la hoja de ruta",
-    );
-  }
-
-  // ==========================================================
-  // REQUEST
-  // ==========================================================
-
-  console.log("==========================================");
-  console.log("🚀 CREATE ROUTE SHEET");
-  console.log("==========================================");
-  console.log("PAYLOAD:", payload);
-
-  const res = await apiFetch("/route-sheets", {
+  const response = await apiFetch("/route-sheets", {
     method: "POST",
+
     headers: {
-      Authorization: `Bearer ${token}`,
+      ...authHeaders(),
+
       "Content-Type": "application/json",
     },
+
     body: JSON.stringify(payload),
   });
 
-  // ==========================================================
-  // LEER RESPUESTA
-  // ==========================================================
-
-  const text = await res.text();
-
-  let json: {
-    data?: RouteSheetDetail;
-    message?: string | string[];
-    error?: string;
-    statusCode?: number;
-  } | null = null;
-
-  try {
-    json = text ? JSON.parse(text) : null;
-  } catch {
-    json = null;
-  }
-
-  console.log("==========================================");
-  console.log("📦 RESPUESTA CREAR HOJA");
-  console.log("==========================================");
-  console.log("STATUS:", res.status);
-  console.log("OK:", res.ok);
-  console.log("RAW RESPONSE:", text);
-  console.log("JSON RESPONSE:", json);
-  console.log("==========================================");
-
-  // ==========================================================
-  // ERROR
-  // ==========================================================
-
-  if (!res.ok) {
-    const message = Array.isArray(json?.message)
-      ? json.message.join(", ")
-      : json?.message;
-
-    console.log("❌ CREAR HOJA - ERROR");
-    console.log("STATUS:", res.status);
-    console.log("PAYLOAD:", payload);
-    console.log("RESPUESTA:", json);
-    console.log("MESSAGE:", message);
-
+  if (!response.ok) {
     throw new Error(
-      message ?? json?.error ?? `Error creando hoja de ruta (${res.status})`,
+      await getErrorMessage(
+        response,
+        `Error creando hoja de ruta (${response.status})`,
+      ),
     );
   }
 
-  // ==========================================================
-  // SUCCESS
-  // ==========================================================
+  return parseResponse<RouteSheetDetail>(response);
+}
 
-  const result = (json?.data ?? json) as RouteSheetDetail;
+// ============================================================
+// GENERAR TODAS LAS HOJAS DE UNA FECHA
+// ============================================================
 
-  if (!result?.routeSheetId) {
-    console.error(
-      "❌ La API respondió correctamente pero no devolvió routeSheetId",
-    );
+export async function generateRouteSheets(
+  payload: GenerateRouteSheetsPayload,
+): Promise<GenerateRouteSheetsResult> {
+  const response = await apiFetch("/route-sheets/generate", {
+    method: "POST",
 
+    headers: {
+      ...authHeaders(),
+
+      "Content-Type": "application/json",
+    },
+
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
     throw new Error(
-      "La hoja de ruta fue creada pero el servidor no devolvió su identificación.",
+      await getErrorMessage(
+        response,
+        `Error generando hojas de ruta (${response.status})`,
+      ),
     );
   }
 
-  console.log("✅ HOJA DE RUTA CREADA:", result);
-
-  return result;
+  return parseResponse<GenerateRouteSheetsResult>(response);
 }
 
 // ============================================================
@@ -280,67 +214,115 @@ export async function createRouteSheet(
 export async function updateRouteSheetStatus(
   id: string,
   payload: UpdateRouteSheetStatusPayload,
-): Promise<boolean> {
-  const token = useAuthStore.getState().accessToken;
-
-  if (!token) {
-    throw new Error("NO_TOKEN");
-  }
-
-  const res = await apiFetch(`/route-sheets/${id}/status`, {
+): Promise<void> {
+  const response = await apiFetch(`/route-sheets/${id}/status`, {
     method: "PATCH",
+
     headers: {
-      Authorization: `Bearer ${token}`,
+      ...authHeaders(),
+
       "Content-Type": "application/json",
     },
+
     body: JSON.stringify(payload),
   });
 
-  const json = await res.json().catch(() => null);
-
-  if (!res.ok) {
-    const message = Array.isArray(json?.message)
-      ? json.message.join(", ")
-      : json?.message;
-
+  if (!response.ok) {
     throw new Error(
-      message ?? `Error actualizando hoja de ruta (${res.status})`,
+      await getErrorMessage(
+        response,
+        "Error actualizando el estado de la hoja de ruta",
+      ),
     );
   }
-
-  return true;
 }
 
 // ============================================================
-// MIS HOJAS
+// AGREGAR CUOTA MANUALMENTE
 // ============================================================
 
-export async function getMyRouteSheets(): Promise<RouteSheet[]> {
-  const token = useAuthStore.getState().accessToken;
+export async function addInstallmentToRouteSheet(
+  routeSheetId: string,
+  payload: AddRouteSheetInstallmentPayload,
+): Promise<unknown> {
+  const response = await apiFetch(
+    `/route-sheets/${routeSheetId}/installments`,
+    {
+      method: "POST",
 
-  if (!token) {
-    throw new Error("NO_TOKEN");
-  }
+      headers: {
+        ...authHeaders(),
 
-  const res = await apiFetch("/route-sheets", {
-    headers: {
-      Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+
+      body: JSON.stringify(payload),
     },
-  });
+  );
 
-  const json = await res.json().catch(() => null);
-
-  if (!res.ok) {
-    const message = Array.isArray(json?.message)
-      ? json.message.join(", ")
-      : json?.message;
-
+  if (!response.ok) {
     throw new Error(
-      message ?? `Error obteniendo mis hojas de ruta (${res.status})`,
+      await getErrorMessage(
+        response,
+        "No se pudo agregar la cuota a la hoja de ruta",
+      ),
     );
   }
 
-  return (
-    Array.isArray(json) ? json : Array.isArray(json?.data) ? json.data : []
-  ) as RouteSheet[];
+  return parseResponse(response);
+}
+
+// ============================================================
+// REASIGNAR COBRADOR
+// ============================================================
+
+export async function reassignRouteSheetCollector(
+  routeSheetId: string,
+  payload: ReassignRouteSheetPayload,
+): Promise<RouteSheetDetail> {
+  const response = await apiFetch(`/route-sheets/${routeSheetId}/collector`, {
+    method: "PATCH",
+
+    headers: {
+      ...authHeaders(),
+
+      "Content-Type": "application/json",
+    },
+
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      await getErrorMessage(response, "No se pudo reasignar el cobrador"),
+    );
+  }
+
+  return parseResponse<RouteSheetDetail>(response);
+}
+
+// ============================================================
+// CUOTAS DISPONIBLES PARA AGREGAR MANUALMENTE
+// ============================================================
+
+export async function getAvailableInstallmentsForRouteSheet(
+  routeSheetId: string,
+): Promise<AvailableRouteSheetInstallment[]> {
+  const response = await apiFetch(
+    `/route-sheets/${routeSheetId}/available-installments`,
+    { headers: authHeaders() },
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      await getErrorMessage(
+        response,
+        "No se pudieron obtener las cuotas disponibles",
+      ),
+    );
+  }
+
+  const result =
+    await parseResponse<AvailableRouteSheetInstallment[]>(response);
+  return Array.isArray(result) ? result : [];
 }
