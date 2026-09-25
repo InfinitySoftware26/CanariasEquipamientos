@@ -32,7 +32,10 @@ export function EnvironmentalVisitPanel({
     try {
       setLoading(true);
 
-      await envValidateSale(sale.saleId, status, obs);
+      await envValidateSale(
+        sale.saleId,
+        status === "approved" ? { status } : { status, observations: obs },
+      );
 
       await onRefresh();
 
