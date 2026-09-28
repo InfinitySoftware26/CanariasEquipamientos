@@ -1,8 +1,10 @@
 "use client";
 
-import { getRouteSheetItems } from "@/services/route-sheets/routeSheetsItems.service";
-import { RouteSheetItem } from "@/types/rotue-sheets/routeSheets.types";
 import { useCallback, useEffect, useState } from "react";
+
+import { getRouteSheetById } from "@/services/route-sheets/routeSheets.service";
+
+import { RouteSheetItem } from "@/types/rotue-sheets/routeSheets.types";
 
 interface UseRouteSheetItemsReturn {
   items: RouteSheetItem[];
@@ -19,17 +21,29 @@ export function useRouteSheetItems(
   const [error, setError] = useState("");
 
   const loadItems = useCallback(async () => {
-    if (!routeSheetId) return;
+    if (!routeSheetId) {
+      setItems([]);
+      setLoading(false);
+      return;
+    }
 
     try {
       setLoading(true);
       setError("");
 
-      const data = await getRouteSheetItems(routeSheetId);
+      const routeSheet = await getRouteSheetById(routeSheetId);
 
-      setItems(data);
+      const routeItems = Array.isArray(routeSheet?.items)
+        ? routeSheet.items
+        : [];
+
+      console.log("📦 ITEMS ENRIQUECIDOS:", routeItems);
+
+      setItems(routeItems);
     } catch (err) {
-      console.error(err);
+      console.error("❌ Error obteniendo items de la hoja:", err);
+
+      setItems([]);
       setError("No se pudieron cargar los recorridos.");
     } finally {
       setLoading(false);
@@ -37,7 +51,7 @@ export function useRouteSheetItems(
   }, [routeSheetId]);
 
   useEffect(() => {
-    loadItems();
+    void loadItems();
   }, [loadItems]);
 
   return {

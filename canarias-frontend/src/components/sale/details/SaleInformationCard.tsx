@@ -31,6 +31,20 @@ export function SaleInformationCard({ sale }: SaleInformationCardProps) {
           value={`${sale.client?.name ?? "-"} ${sale.client?.surname ?? ""}`}
         />
 
+        {sale.financingPlan && (
+          <Info
+            title="Plan de financiación"
+            value={sale.financingPlan.name}
+          />
+        )}
+
+        {sale.promotion && (
+          <Info
+            title="Promoción"
+            value={sale.promotion.name}
+          />
+        )}
+
         {isSeller ? (
           <>
             <Info
@@ -68,8 +82,14 @@ export function SaleInformationCard({ sale }: SaleInformationCardProps) {
         />
 
         <Info
-          title="Primer vencimiento"
-          value={new Date(sale.firstDueDate).toLocaleDateString()}
+          title="Fecha de entrega"
+          value={
+            sale.deliveryDate
+              ? new Date(`${sale.deliveryDate}T00:00:00`).toLocaleDateString(
+                  "es-AR",
+                )
+              : "Sin coordinar"
+          }
         />
       </div>
 

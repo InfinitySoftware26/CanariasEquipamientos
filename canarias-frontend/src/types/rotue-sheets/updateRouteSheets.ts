@@ -1,4 +1,4 @@
-import { RouteSheetItemResult, RouteSheetStatus } from "./routeSheets.types";
+import { RouteSheetStatus, RouteSheetItemResult } from "./routeSheets.types";
 
 export interface UpdateRouteSheetStatusPayload {
   status: RouteSheetStatus;
@@ -10,4 +10,10 @@ export interface UpdateRouteSheetItemPayload {
   collectedAmount?: number;
 
   notes?: string;
+
+  failedVisitReason?:
+    | "client_absent"
+    | "refused_payment"
+    | "wrong_address"
+    | "other";
 }

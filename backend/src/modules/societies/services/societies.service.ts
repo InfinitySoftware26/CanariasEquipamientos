@@ -1,14 +1,38 @@
 import {
-  Injectable, Inject, NotFoundException,
-  ConflictException, BadRequestException, ForbiddenException, Logger,
-} from '@nestjs/common';
-import { ISocietiesRepository, SOCIETIES_REPOSITORY } from '../interfaces/societies-repository.interface';
-import { IStaffSocietiesRepository, STAFF_SOCIETIES_REPOSITORY } from '../interfaces/staff-societies-repository.interface';
-import { CreateSocietyDto } from '../dto/create-society.dto';
-import { UpdateSocietyDto } from '../dto/update-society.dto';
-import { AssignStaffDto } from '../dto/assign-staff.dto';
-import { Society, SocietyStatus } from '../entities/society.entity';
-import { StaffSocietyStatus } from '../entities/staff-society.entity';
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  Inject,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from "@nestjs/common";
+
+import {
+  ISocietiesRepository,
+  SOCIETIES_REPOSITORY,
+} from "../interfaces/societies-repository.interface";
+
+import {
+  IStaffSocietiesRepository,
+  STAFF_SOCIETIES_REPOSITORY,
+} from "../interfaces/staff-societies-repository.interface";
+
+import { CreateSocietyDto } from "../dto/create-society.dto";
+
+import { UpdateSocietyDto } from "../dto/update-society.dto";
+
+import { AssignStaffDto } from "../dto/assign-staff.dto";
+
+import { UpdateSocietyLateInterestDto } from "../dto/update-society-late-interest.dto";
+
+import { Society, SocietyStatus } from "../entities/society.entity";
+
+import { StaffSocietyStatus } from "../entities/staff-society.entity";
+
+import { JwtPayload } from "../../../common/interfaces/jwt-payload.interface";
+
+import { StaffRole } from "../../../common/enums/staff-role.enum";
 
 @Injectable()
 export class SocietiesService {
@@ -17,6 +41,7 @@ export class SocietiesService {
   constructor(
     @Inject(SOCIETIES_REPOSITORY)
     private readonly societiesRepo: ISocietiesRepository,
+
     @Inject(STAFF_SOCIETIES_REPOSITORY)
     private readonly staffSocietiesRepo: IStaffSocietiesRepository,
   ) {}
@@ -27,56 +52,129 @@ export class SocietiesService {
 
   async findById(id: string): Promise<Society> {
     const society = await this.societiesRepo.findById(id);
-    if (!society) throw new NotFoundException('Sociedad ' + id + ' no encontrada');
+
+    if (!society) {
+      throw new NotFoundException(`Sociedad ${id} no encontrada`);
+    }
+
     return society;
   }
 
   async create(dto: CreateSocietyDto): Promise<Society> {
     const existing = await this.societiesRepo.findByTaxId(dto.taxId);
-    if (existing) throw new ConflictException('Ya existe una sociedad con el CUIT ' + dto.taxId);
+
+    if (existing) {
+      throw new ConflictException(
+        `Ya existe una sociedad con el CUIT ${dto.taxId}`,
+      );
+    }
+
     return this.societiesRepo.create(dto);
   }
 
   async update(id: string, dto: UpdateSocietyDto): Promise<Society> {
     await this.findById(id);
+
     return this.societiesRepo.update(id, dto);
+  }
+
+  async updateLateInterest(
+    societyId: string,
+    dto: UpdateSocietyLateInterestDto,
+    user: JwtPayload,
+  ): Promise<Society> {
+    const society = await this.findById(societyId);
+
+    const isSuperAdmin = user.role === StaffRole.SUPER_ADMIN;
+
+    const isManager = user.role === StaffRole.MANAGER;
+
+    if (!isSuperAdmin && !isManager) {
+      throw new ForbiddenException(
+        "No tienes permisos para modificar la configuración de mora",
+      );
+    }
+
+    if (isManager && user.societyId !== society.societyId) {
+      throw new ForbiddenException(
+        "Solo puedes modificar la mora de tu propia sucursal",
+      );
+    }
+
+    const rate = Number(dto.defaultDailyLateInterestRate);
+
+    if (Number.isNaN(rate) || rate < 0 || rate > 1) {
+      throw new BadRequestException(
+        "La tasa diaria de mora debe estar entre 0 y 1",
+      );
+    }
+
+    return this.societiesRepo.update(societyId, {
+      defaultDailyLateInterestRate: rate,
+    });
   }
 
   async deactivate(id: string): Promise<void> {
     const society = await this.findById(id);
-    if (society.status === SocietyStatus.INACTIVE)
-      throw new BadRequestException('La sociedad ya esta inactiva');
+
+    if (society.status === SocietyStatus.INACTIVE) {
+      throw new BadRequestException("La sociedad ya esta inactiva");
+    }
+
     await this.societiesRepo.softDelete(id);
   }
 
   linkStaffToSociety(staffId: string, societyId: string): Promise<void> {
-    return this.staffSocietiesRepo.upsert(staffId, societyId, StaffSocietyStatus.ACTIVE);
+    return this.staffSocietiesRepo.upsert(
+      staffId,
+      societyId,
+      StaffSocietyStatus.ACTIVE,
+    );
   }
 
-  async assignStaff(societyId: string, dto: AssignStaffDto, currentUserSocietyId?: string, isSuperAdmin = false): Promise<void> {
+  async assignStaff(
+    societyId: string,
+    dto: AssignStaffDto,
+    currentUserSocietyId?: string,
+    isSuperAdmin = false,
+  ): Promise<void> {
     await this.findById(societyId);
 
     if (!isSuperAdmin && currentUserSocietyId !== societyId) {
-      throw new ForbiddenException('Solo podés asignar staff a tu propia sociedad');
+      throw new ForbiddenException(
+        "Solo podés asignar staff a tu propia sociedad",
+      );
     }
 
     await this.staffSocietiesRepo.upsert(
       dto.staffId,
       societyId,
-      (dto.status as unknown as StaffSocietyStatus) ?? StaffSocietyStatus.ACTIVE,
+      (dto.status as unknown as StaffSocietyStatus) ??
+        StaffSocietyStatus.ACTIVE,
     );
   }
 
   async getStaff(societyId: string): Promise<any[]> {
     await this.findById(societyId);
+
     return this.staffSocietiesRepo.findBySocietyWithStaff(societyId);
   }
 
-  async getSocietiesForStaff(staffId: string): Promise<{ societyId: string; societyName: string; status: string }[]> {
+  async getSocietiesForStaff(staffId: string): Promise<
+    {
+      societyId: string;
+      societyName: string;
+      status: string;
+    }[]
+  > {
     try {
       return await this.staffSocietiesRepo.findByStaff(staffId);
     } catch (err) {
-      this.logger.error('getSocietiesForStaff failed for staffId=' + staffId, err instanceof Error ? err.stack : String(err));
+      this.logger.error(
+        `getSocietiesForStaff failed for staffId=${staffId}`,
+        err instanceof Error ? err.stack : String(err),
+      );
+
       return [];
     }
   }

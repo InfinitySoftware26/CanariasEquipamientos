@@ -3,25 +3,46 @@
 import { useMemo } from "react";
 
 import { useSales } from "../sales/useSale";
+
 import { Sale } from "@/types/sales/sale.type";
+
 import { normalizeSaleStatus } from "@/types/sales/saleStatus.mapper";
 
 export interface DashboardMetrics {
   totalSales: number;
+
   pendingSales: number;
+
   deliveredSales: number;
+
   closedSales: number;
+
   rejectedSales: number;
 
   totalAmount: number;
+
   averageTicket: number;
 
   completionRate: number;
+
   rejectionRate: number;
+}
+
+export interface DashboardPipeline {
+  adminValidation: number;
+
+  envVisit: number;
+
+  delivery: number;
+
+  closed: number;
+
+  rejected: number;
 }
 
 export interface DashboardActivity {
   id: string;
+
   type: "validation" | "visit" | "delivery" | "closed" | "rejected";
 
   title: string;
@@ -36,8 +57,12 @@ export interface DashboardActivity {
 export function useAdminDashboard() {
   const { sales, loading, error, refresh } = useSales();
 
-  const pipeline = useMemo(() => {
-    const stats = {
+  // ============================================================
+  // PIPELINE
+  // ============================================================
+
+  const pipeline = useMemo<DashboardPipeline>(() => {
+    const stats: DashboardPipeline = {
       adminValidation: 0,
       envVisit: 0,
       delivery: 0,
@@ -69,15 +94,24 @@ export function useAdminDashboard() {
         case "ENVIRONMENTAL_REJECTED":
           stats.rejected++;
           break;
+
+        default:
+          break;
       }
     });
 
     return stats;
   }, [sales]);
 
+  // ============================================================
+  // METRICS
+  // ============================================================
+
   const metrics = useMemo<DashboardMetrics>(() => {
+    const totalSales = sales.length;
+
     const totalAmount = sales.reduce(
-      (acc, sale) => acc + Number(sale.totalAmount),
+      (acc, sale) => acc + Number(sale.totalAmount || 0),
       0,
     );
 
@@ -88,36 +122,42 @@ export function useAdminDashboard() {
     const pendingSales =
       pipeline.adminValidation + pipeline.envVisit + pipeline.delivery;
 
+    const closedSales = pipeline.closed;
+
+    const rejectedSales = pipeline.rejected;
+
+    const averageTicket = totalSales > 0 ? totalAmount / totalSales : 0;
+
     const completionRate =
-      sales.length === 0
-        ? 0
-        : Math.round((pipeline.closed / sales.length) * 100);
+      totalSales > 0 ? Math.round((closedSales / totalSales) * 100) : 0;
 
     const rejectionRate =
-      sales.length === 0
-        ? 0
-        : Math.round((pipeline.rejected / sales.length) * 100);
+      totalSales > 0 ? Math.round((rejectedSales / totalSales) * 100) : 0;
 
     return {
-      totalSales: sales.length,
+      totalSales,
 
       pendingSales,
 
       deliveredSales,
 
-      closedSales: pipeline.closed,
+      closedSales,
 
-      rejectedSales: pipeline.rejected,
+      rejectedSales,
 
       totalAmount,
 
-      averageTicket: sales.length > 0 ? totalAmount / sales.length : 0,
+      averageTicket,
 
       completionRate,
 
       rejectionRate,
     };
   }, [sales, pipeline]);
+
+  // ============================================================
+  // RECENT SALES
+  // ============================================================
 
   const recentSales = useMemo(() => {
     return [...sales]
@@ -127,6 +167,10 @@ export function useAdminDashboard() {
       )
       .slice(0, 5);
   }, [sales]);
+
+  // ============================================================
+  // RECENT ACTIVITY
+  // ============================================================
 
   const activities = useMemo<DashboardActivity[]>(() => {
     return [...sales]
@@ -138,13 +182,17 @@ export function useAdminDashboard() {
       .map((sale) => {
         const status = normalizeSaleStatus(sale.status);
 
+        const clientName = `${sale.client?.name ?? ""} ${
+          sale.client?.surname ?? ""
+        }`.trim();
+
         switch (status) {
           case "PENDING_ADMIN_VALIDATION":
             return {
               id: sale.saleId,
               type: "validation",
               title: "Venta pendiente de validación",
-              description: `${sale.client?.name ?? ""} ${sale.client?.surname ?? ""}`,
+              description: clientName || "Cliente sin nombre",
               date: sale.saleDate,
               sale,
             };
@@ -154,7 +202,7 @@ export function useAdminDashboard() {
               id: sale.saleId,
               type: "visit",
               title: "Pendiente de visita",
-              description: `${sale.client?.name ?? ""} ${sale.client?.surname ?? ""}`,
+              description: clientName || "Cliente sin nombre",
               date: sale.saleDate,
               sale,
             };
@@ -164,7 +212,7 @@ export function useAdminDashboard() {
               id: sale.saleId,
               type: "delivery",
               title: "Lista para entregar",
-              description: `${sale.client?.name ?? ""} ${sale.client?.surname ?? ""}`,
+              description: clientName || "Cliente sin nombre",
               date: sale.saleDate,
               sale,
             };
@@ -174,7 +222,7 @@ export function useAdminDashboard() {
               id: sale.saleId,
               type: "closed",
               title: "Venta cerrada",
-              description: `${sale.client?.name ?? ""} ${sale.client?.surname ?? ""}`,
+              description: clientName || "Cliente sin nombre",
               date: sale.saleDate,
               sale,
             };
@@ -184,7 +232,7 @@ export function useAdminDashboard() {
               id: sale.saleId,
               type: "rejected",
               title: "Venta rechazada",
-              description: `${sale.client?.name ?? ""} ${sale.client?.surname ?? ""}`,
+              description: clientName || "Cliente sin nombre",
               date: sale.saleDate,
               sale,
             };
@@ -192,8 +240,13 @@ export function useAdminDashboard() {
       });
   }, [sales]);
 
+  // ============================================================
+  // RETURN
+  // ============================================================
+
   return {
     loading,
+
     error,
 
     sales,

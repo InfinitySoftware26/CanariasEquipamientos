@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-import { FailedVisit } from "@/types/payments/failed_visits.types";
+import { FailedVisit } from "@/types/failed-visits/failed-visitis.type";
 
 interface Props {
   failedVisit: FailedVisit | null;
@@ -13,6 +13,7 @@ interface Props {
 
 function getTomorrow() {
   const date = new Date();
+
   date.setDate(date.getDate() + 1);
 
   return date.toISOString().split("T")[0];
@@ -59,6 +60,11 @@ export function RescheduleFailedVisitModal({
       return;
     }
 
+    if (!visit.failedVisitId) {
+      setError("No se encontró el identificador de la visita fallida.");
+      return;
+    }
+
     try {
       setError(null);
 
@@ -76,16 +82,19 @@ export function RescheduleFailedVisitModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-      {" "}
       <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0E1726] p-6 shadow-2xl">
-        {" "}
         <div>
-          {" "}
-          <h2 className="text-xl font-bold text-white">Reprogramar visita </h2>
+          <h2 className="text-xl font-bold text-white">Reprogramar visita</h2>
+
           <p className="mt-2 text-sm text-white/50">
-            Intento #{visit.attemptNumber}
+            Cliente: {visit.clientId}
+          </p>
+
+          <p className="mt-1 text-xs text-white/30">
+            Visita: {visit.failedVisitId}
           </p>
         </div>
+
         <form onSubmit={handleSubmit} className="mt-6 space-y-5">
           {error && (
             <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">

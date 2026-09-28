@@ -1,7 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
+
 import { useParams } from "next/navigation";
+
 import {
   CheckCircle2,
   Clock3,
@@ -11,29 +13,36 @@ import {
 } from "lucide-react";
 
 import { useRouteSheet } from "@/hooks/route-sheets/useRouteSheet";
-import { useRouteSheetItems } from "@/hooks/route-sheets/useRouteSheetsItems";
-import { useUpdateRouteSheetItem } from "@/hooks/route-sheets/useUpdateRouteSheetItem";
+
+import { useUpdateRouteSheetStatus } from "@/hooks/route-sheets/useUpdateRouteSheetStatus";
+
+import { updateRouteSheetStatus } from "@/services/route-sheets/routeSheets.service";
 
 import { RouteSheetItemCard } from "@/components/route-sheets/RouteSheetItemCard";
 
+import { RouteSheetItemResult } from "@/components/route-sheets/RouteSheetItemResult";
+
 import {
   RouteSheetItem,
-  RouteSheetItemResult,
+  RouteSheetItemResult as RouteSheetItemResultEnum,
 } from "@/types/rotue-sheets/routeSheets.types";
-import { RouteSheetItemResultModal } from "@/components/route-sheets/RouteSheetItemResult";
-
-interface ItemResultData {
-  result: RouteSheetItemResult;
-  collectedAmount?: number;
-  notes?: string;
-}
 
 export default function CollectorRouteSheetDetailPage() {
-  const params = useParams<{ id: string }>();
+  const params = useParams<{
+    id: string;
+  }>();
 
   const routeSheetId = params.id;
 
   const [selectedItem, setSelectedItem] = useState<RouteSheetItem | null>(null);
+
+  const [closingRoute, setClosingRoute] = useState(false);
+
+  const [closeError, setCloseError] = useState("");
+
+  const [startingRoute, setStartingRoute] = useState(false);
+
+  const [startError, setStartError] = useState("");
 
   const {
     routeSheet,
@@ -42,43 +51,98 @@ export default function CollectorRouteSheetDetailPage() {
     reload: reloadSheet,
   } = useRouteSheet(routeSheetId);
 
-  const {
-    items,
-    loading: loadingItems,
-    reload,
-  } = useRouteSheetItems(routeSheetId);
+  const { loading: updatingStatus } = useUpdateRouteSheetStatus();
 
-  const { loading: updating, update } = useUpdateRouteSheetItem();
+  /**
+   * /route-sheets/:id devuelve
+   * directamente la hoja con sus items
+   * enriquecidos.
+   *
+   * No usamos useRouteSheetItems()
+   * para evitar perder:
+   *
+   * - cliente
+   * - venta
+   * - mora
+   * - saldo
+   * - totalToCollect
+   * - productos
+   */
+  const items = useMemo<RouteSheetItem[]>(() => {
+    if (!routeSheet?.items) {
+      return [];
+    }
+
+    return routeSheet.items;
+  }, [routeSheet]);
+
+  // ============================================================
+  // REPORTE
+  // ============================================================
 
   const report = useMemo(() => {
-    const completed = items.filter((item) => item.result === "completed");
+    const completed = items.filter(
+      (item) => item.result === RouteSheetItemResultEnum.COMPLETED,
+    );
 
-    const failed = items.filter((item) => item.result === "failed");
+    const failed = items.filter(
+      (item) => item.result === RouteSheetItemResultEnum.FAILED,
+    );
 
-    const pending = items.filter((item) => item.result === "pending");
+    const pending = items.filter(
+      (item) => item.result === RouteSheetItemResultEnum.PENDING,
+    );
 
+    /**
+     * IMPORTANTE
+     *
+     * Sumamos collectedAmount
+     * independientemente del tipo.
+     *
+     * Esto incluye:
+     *
+     * INSTALLMENT
+     * → cuotas 2+
+     *
+     * DELIVERY
+     * → cuota 1 cobrada
+     *   durante la entrega.
+     */
     const totalCollected = completed.reduce((total, item) => {
-      if (item.itemType !== "installment") {
-        return total;
-      }
-
-      return total + Number(item.collectedAmount || 0);
+      return total + Number(item.collectedAmount ?? 0);
     }, 0);
 
     return {
       total: items.length,
+
       completed,
+
       failed,
+
       pending,
+
       totalCollected,
     };
   }, [items]);
+
+  /**
+   * La ruta puede cerrarse
+   * solamente cuando:
+   *
+   * - tiene items
+   * - no quedan visitas pendientes
+   */
+  const canCompleteRoute = items.length > 0 && report.pending.length === 0;
+
+  // ============================================================
+  // VALIDACIONES DE CARGA
+  // ============================================================
 
   if (!routeSheetId) {
     return <div className="p-6 text-red-400">ID de hoja de ruta inválido.</div>;
   }
 
-  if (loadingSheet || loadingItems) {
+  if (loadingSheet) {
     return <div className="p-6 text-white">Cargando hoja de ruta...</div>;
   }
 
@@ -88,28 +152,165 @@ export default function CollectorRouteSheetDetailPage() {
     );
   }
 
-  async function handleItemResult(data: ItemResultData) {
-    if (!selectedItem) {
+  // ============================================================
+  // INICIAR RECORRIDO
+  // ============================================================
+
+  async function handleStartRoute() {
+    try {
+      setStartingRoute(true);
+
+      setStartError("");
+
+      await updateRouteSheetStatus(routeSheetId, {
+        status: "in_progress",
+      });
+
+      await reloadSheet();
+    } catch (error) {
+      console.error(error);
+
+      setStartError(
+        error instanceof Error
+          ? error.message
+          : "No se pudo iniciar la hoja de ruta.",
+      );
+    } finally {
+      setStartingRoute(false);
+    }
+  }
+
+  // ============================================================
+  // FINALIZAR RECORRIDO
+  // ============================================================
+
+  async function handleCompleteRoute() {
+    if (!canCompleteRoute) {
       return;
     }
 
-    await update(selectedItem.itemId, {
-      result: data.result,
-      collectedAmount: data.collectedAmount,
-      notes: data.notes,
-    });
+    try {
+      setClosingRoute(true);
 
-    setSelectedItem(null);
+      setCloseError("");
 
-    await reload();
-    await reloadSheet();
+      await updateRouteSheetStatus(routeSheetId, {
+        status: "completed",
+      });
+
+      await reloadSheet();
+    } catch (error) {
+      console.error(error);
+
+      setCloseError(
+        error instanceof Error
+          ? error.message
+          : "No se pudo completar la hoja de ruta.",
+      );
+    } finally {
+      setClosingRoute(false);
+    }
   }
 
+  // ============================================================
+  // ESTADOS
+  // ============================================================
+
   const isRouteCompleted = routeSheet.status === "completed";
+
+  const isRouteCancelled = routeSheet.status === "cancelled";
+
+  const isRoutePending = routeSheet.status === "pending";
+
+  const isRouteInProgress = routeSheet.status === "in_progress";
+
+  // ============================================================
+  // HOJA PENDIENTE
+  // ============================================================
+
+  if (isRoutePending) {
+    return (
+      <div className="space-y-8">
+        <section className="rounded-3xl border border-white/10 bg-gradient-to-r from-[#10254A] via-[#16315F] to-[#21457A] p-8">
+          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+            <div>
+              <p className="text-sm text-white/50">Hoja de ruta</p>
+
+              <h1 className="mt-1 text-3xl font-bold text-white">
+                Recorrido del día
+              </h1>
+            </div>
+
+            <span className="inline-flex w-fit rounded-full bg-yellow-500/15 px-4 py-2 text-sm font-semibold text-yellow-300">
+              Pendiente de iniciar
+            </span>
+          </div>
+
+          <div className="mt-6 grid gap-4 md:grid-cols-3">
+            <div>
+              <p className="text-xs text-white/40">Fecha</p>
+
+              <p className="mt-1 text-white">{routeSheet.routeDate}</p>
+            </div>
+
+            <div>
+              <p className="text-xs text-white/40">Zona</p>
+
+              <p className="mt-1 text-white">
+                {routeSheet.zoneName || "No disponible"}
+              </p>
+            </div>
+
+            <div>
+              <p className="text-xs text-white/40">Estado</p>
+
+              <p className="mt-1 text-white">Pendiente</p>
+            </div>
+          </div>
+        </section>
+
+        <section className="rounded-3xl border border-white/10 bg-[#101927] p-8">
+          <div className="space-y-4">
+            <div>
+              <h2 className="text-2xl font-semibold text-white">
+                Iniciar recorrido
+              </h2>
+
+              <p className="mt-2 text-white/60">
+                Presioná el botón para comenzar el recorrido del día.
+              </p>
+            </div>
+
+            {startError && (
+              <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">
+                {startError}
+              </div>
+            )}
+
+            <button
+              type="button"
+              disabled={startingRoute}
+              onClick={handleStartRoute}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-cyan-600 px-6 py-3 font-semibold text-white transition hover:bg-cyan-500 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <CheckCircle2 size={20} />
+
+              {startingRoute ? "Iniciando..." : "Iniciar recorrido"}
+            </button>
+          </div>
+        </section>
+      </div>
+    );
+  }
+
+  // ============================================================
+  // HOJA EN CURSO / COMPLETADA
+  // ============================================================
 
   return (
     <div className="space-y-8">
       {/* HEADER */}
+
       <section className="rounded-3xl border border-white/10 bg-gradient-to-r from-[#10254A] via-[#16315F] to-[#21457A] p-8">
         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div>
@@ -132,11 +333,17 @@ export default function CollectorRouteSheetDetailPage() {
               ${
                 isRouteCompleted
                   ? "bg-emerald-500/15 text-emerald-400"
-                  : "bg-yellow-500/15 text-yellow-300"
+                  : isRouteCancelled
+                    ? "bg-red-500/15 text-red-400"
+                    : "bg-yellow-500/15 text-yellow-300"
               }
             `}
           >
-            {isRouteCompleted ? "Ruta finalizada" : "Ruta en curso"}
+            {isRouteCompleted
+              ? "Ruta finalizada"
+              : isRouteCancelled
+                ? "Ruta cancelada"
+                : "Ruta en curso"}
           </span>
         </div>
 
@@ -150,18 +357,23 @@ export default function CollectorRouteSheetDetailPage() {
           <div>
             <p className="text-xs text-white/40">Zona</p>
 
-            <p className="mt-1 text-white">{routeSheet.zoneName}</p>
+            <p className="mt-1 text-white">
+              {routeSheet.zoneName || "No disponible"}
+            </p>
           </div>
 
           <div>
             <p className="text-xs text-white/40">Estado</p>
 
-            <p className="mt-1 text-white">{routeSheet.status}</p>
+            <p className="mt-1 text-white">
+              {formatRouteStatus(routeSheet.status)}
+            </p>
           </div>
         </div>
       </section>
 
       {/* RESUMEN */}
+
       <section>
         <div className="mb-4 flex items-center gap-2">
           <FileText size={20} className="text-cyan-400" />
@@ -201,13 +413,72 @@ export default function CollectorRouteSheetDetailPage() {
             label="Total cobrado"
             value={`$${report.totalCollected.toLocaleString("es-AR", {
               minimumFractionDigits: 2,
+
               maximumFractionDigits: 2,
             })}`}
           />
         </div>
       </section>
 
+      {/* FINALIZAR HOJA */}
+
+      {isRouteInProgress && !isRouteCompleted && !isRouteCancelled && (
+        <section className="rounded-3xl border border-white/10 bg-[#101927] p-6">
+          <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-white">
+                Finalizar hoja de ruta
+              </h2>
+
+              {canCompleteRoute ? (
+                <p className="mt-1 text-sm text-emerald-400">
+                  Todas las visitas fueron procesadas. La ruta puede
+                  finalizarse.
+                </p>
+              ) : (
+                <p className="mt-1 text-sm text-yellow-300">
+                  Todavía quedan {report.pending.length} visita
+                  {report.pending.length === 1 ? "" : "s"} pendiente
+                  {report.pending.length === 1 ? "" : "s"}.
+                </p>
+              )}
+
+              {closeError && (
+                <p className="mt-2 text-sm text-red-400">{closeError}</p>
+              )}
+            </div>
+
+            <button
+              type="button"
+              disabled={!canCompleteRoute || closingRoute || updatingStatus}
+              onClick={handleCompleteRoute}
+              className="
+                  inline-flex
+                  items-center
+                  justify-center
+                  gap-2
+                  rounded-xl
+                  bg-emerald-500
+                  px-5
+                  py-3
+                  font-semibold
+                  text-white
+                  transition
+                  hover:bg-emerald-400
+                  disabled:cursor-not-allowed
+                  disabled:opacity-40
+                "
+            >
+              <CheckCircle2 size={18} />
+
+              {closingRoute ? "Finalizando..." : "Marcar ruta como completa"}
+            </button>
+          </div>
+        </section>
+      )}
+
       {/* REPORTE FINAL */}
+
       {isRouteCompleted && (
         <section className="space-y-5 rounded-3xl border border-emerald-500/20 bg-emerald-500/5 p-6">
           <div>
@@ -221,6 +492,7 @@ export default function CollectorRouteSheetDetailPage() {
           </div>
 
           {/* COMPLETADAS */}
+
           <div className="rounded-2xl border border-white/10 bg-[#101927] p-5">
             <div className="mb-4 flex items-center gap-2">
               <CheckCircle2 size={20} className="text-emerald-400" />
@@ -248,6 +520,7 @@ export default function CollectorRouteSheetDetailPage() {
           </div>
 
           {/* FALLIDAS */}
+
           <div className="rounded-2xl border border-white/10 bg-[#101927] p-5">
             <div className="mb-4 flex items-center gap-2">
               <XCircle size={20} className="text-red-400" />
@@ -277,52 +550,68 @@ export default function CollectorRouteSheetDetailPage() {
       )}
 
       {/* RECORRIDO */}
-      <section className="space-y-4">
-        <div>
-          <h2 className="text-xl font-semibold text-white">
-            Recorrido del día
-          </h2>
 
-          <p className="mt-1 text-sm text-white/50">
-            Gestioná cada visita desde su tarjeta.
-          </p>
-        </div>
+      {isRouteInProgress && (
+        <section className="space-y-4">
+          <div>
+            <h2 className="text-xl font-semibold text-white">
+              Recorrido del día
+            </h2>
 
-        {items.length === 0 && (
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-white/60">
-            No hay visitas pendientes.
+            <p className="mt-1 text-sm text-white/50">
+              Gestioná cada visita desde su tarjeta.
+            </p>
           </div>
-        )}
 
-        <div className="grid gap-5">
-          {items.map((item) => (
-            <RouteSheetItemCard
-              key={item.itemId}
-              item={item}
-              onAction={() => setSelectedItem(item)}
-            />
-          ))}
-        </div>
-      </section>
+          {items.length === 0 && (
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-white/60">
+              No hay visitas en esta hoja de ruta.
+            </div>
+          )}
+
+          <div className="grid gap-5">
+            {items.map((item) => (
+              <RouteSheetItemCard
+                key={item.itemId}
+                item={item}
+                onAction={() => setSelectedItem(item)}
+              />
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* MODAL */}
-      <RouteSheetItemResultModal
-        item={selectedItem}
-        loading={updating}
-        onClose={() => {
-          if (!updating) {
+
+      {selectedItem && (
+        <RouteSheetItemResult
+          item={selectedItem}
+          open={Boolean(selectedItem)}
+          onOpenChange={(open) => {
+            if (!open) {
+              setSelectedItem(null);
+            }
+          }}
+          onSuccess={async () => {
             setSelectedItem(null);
-          }
-        }}
-        onSubmit={handleItemResult}
-      />
+
+            await reloadSheet();
+          }}
+        />
+      )}
     </div>
   );
 }
 
+// ============================================================
+// SUMMARY CARD
+// ============================================================
+
 interface SummaryCardProps {
   icon: React.ReactNode;
+
   label: string;
+
   value: string | number;
 }
 
@@ -340,8 +629,13 @@ function SummaryCard({ icon, label, value }: SummaryCardProps) {
   );
 }
 
+// ============================================================
+// REPORT ITEM
+// ============================================================
+
 interface ReportItemProps {
   item: RouteSheetItem;
+
   type: "completed" | "failed";
 }
 
@@ -350,6 +644,17 @@ function ReportItem({ item, type }: ReportItemProps) {
     item.collectedAmount !== null && item.collectedAmount !== undefined
       ? Number(item.collectedAmount)
       : 0;
+
+  const isDelivery = item.itemType === "delivery";
+
+  const hasInstallment = Boolean(item.installmentId);
+
+  const itemLabel =
+    item.itemType === "installment"
+      ? "Cobranza de cuota"
+      : isDelivery && hasInstallment
+        ? "Entrega + cuota 1"
+        : "Entrega";
 
   return (
     <div className="rounded-xl border border-white/10 bg-white/5 p-4">
@@ -363,12 +668,10 @@ function ReportItem({ item, type }: ReportItemProps) {
             DNI: {item.clientDocumentNumber || "No disponible"}
           </p>
 
-          <p className="mt-1 text-xs text-white/40">
-            {item.itemType === "installment" ? "Cobranza de cuota" : "Entrega"}
-          </p>
+          <p className="mt-1 text-xs text-white/40">{itemLabel}</p>
         </div>
 
-        {item.itemType === "installment" && type === "completed" && (
+        {type === "completed" && amount > 0 && (
           <div className="text-left md:text-right">
             <p className="text-xs text-white/40">Cobrado</p>
 
@@ -376,6 +679,7 @@ function ReportItem({ item, type }: ReportItemProps) {
               $
               {amount.toLocaleString("es-AR", {
                 minimumFractionDigits: 2,
+
                 maximumFractionDigits: 2,
               })}
             </p>
@@ -388,7 +692,46 @@ function ReportItem({ item, type }: ReportItemProps) {
           item.installmentAmount !== undefined && (
             <p className="text-white/60">
               Cuota prevista:{" "}
-              <span className="text-white">${item.installmentAmount}</span>
+              <span className="text-white">
+                $
+                {Number(item.installmentAmount).toLocaleString("es-AR", {
+                  minimumFractionDigits: 2,
+
+                  maximumFractionDigits: 2,
+                })}
+              </span>
+            </p>
+          )}
+
+        {item.totalToCollect !== null &&
+          item.totalToCollect !== undefined &&
+          type === "completed" && (
+            <p className="text-white/60">
+              Total previsto:{" "}
+              <span className="text-white">
+                $
+                {Number(item.totalToCollect).toLocaleString("es-AR", {
+                  minimumFractionDigits: 2,
+
+                  maximumFractionDigits: 2,
+                })}
+              </span>
+            </p>
+          )}
+
+        {item.lateInterestAmount !== null &&
+          item.lateInterestAmount !== undefined &&
+          Number(item.lateInterestAmount) > 0 && (
+            <p className="text-white/60">
+              Mora:{" "}
+              <span className="text-red-300">
+                $
+                {Number(item.lateInterestAmount).toLocaleString("es-AR", {
+                  minimumFractionDigits: 2,
+
+                  maximumFractionDigits: 2,
+                })}
+              </span>
             </p>
           )}
 
@@ -422,4 +765,27 @@ function ReportItem({ item, type }: ReportItemProps) {
       )}
     </div>
   );
+}
+
+// ============================================================
+// FORMAT STATUS
+// ============================================================
+
+function formatRouteStatus(status: string) {
+  switch (status) {
+    case "pending":
+      return "Pendiente";
+
+    case "in_progress":
+      return "En curso";
+
+    case "completed":
+      return "Completada";
+
+    case "cancelled":
+      return "Cancelada";
+
+    default:
+      return status;
+  }
 }

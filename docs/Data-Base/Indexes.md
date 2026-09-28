@@ -414,8 +414,32 @@ Los índices deberán ajustarse según:
 | Campo      | Tipo  |
 | ---------- | ----- |
 | society_id | INDEX |
-| is_default | INDEX |
-| is_active  | INDEX |
+| (society_id, lower(name)) | UNIQUE |
+
+---
+
+# FINANCING_PLANS
+
+## Índices
+
+| Campo               | Tipo  |
+| --------------------- | ----- |
+| society_id            | INDEX |
+| financing_config_id   | INDEX |
+| (society_id, lower(name)) | UNIQUE |
+
+---
+
+# PROMOTIONS
+
+## Índices
+
+| Campo               | Tipo  |
+| --------------------- | ----- |
+| society_id            | INDEX |
+| financing_plan_id     | INDEX |
+| (society_id, is_active) | INDEX |
+| (society_id, lower(name)) | UNIQUE |
 
 ---
 
@@ -430,7 +454,6 @@ Los índices deberán ajustarse según:
 | Campo                      | Tipo  |
 | -------------------------- | ----- |
 | supplier_id                | INDEX |
-| financing_configuration_id | INDEX |
 | category                   | INDEX |
 | status                     | INDEX |
 

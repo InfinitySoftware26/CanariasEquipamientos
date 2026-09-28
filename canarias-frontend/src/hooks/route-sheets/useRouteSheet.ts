@@ -17,7 +17,6 @@ const UUID_REGEX =
 
 export function useRouteSheet(routeSheetId?: string): UseRouteSheetReturn {
   const [routeSheet, setRouteSheet] = useState<RouteSheetDetail | null>(null);
-
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -49,8 +48,6 @@ export function useRouteSheet(routeSheetId?: string): UseRouteSheetReturn {
       console.error("❌ Error cargando hoja de ruta:", err);
 
       setRouteSheet(null);
-
-      // Nunca mostramos el mensaje técnico del backend
       setError(
         "Ocurrió un problema al cargar la hoja de ruta. Intentá nuevamente.",
       );

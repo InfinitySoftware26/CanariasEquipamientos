@@ -4,11 +4,12 @@ export type FailedVisitReason =
   | "wrong_address"
   | "other";
 
+export type FailedVisitStatus = "pending" | "rescheduled" | "resolved";
+
 export interface FailedVisit {
   failedVisitId: string;
-
   clientId: string;
-
+  saleId: string;
   routeSheetItemId: string;
 
   reason: FailedVisitReason;
@@ -20,4 +21,17 @@ export interface FailedVisit {
   registeredAt?: string;
 
   rescheduledDate?: string | null;
+}
+
+export interface FailedVisitFilters {
+  clientId?: string;
+  collectorId?: string;
+  status?: FailedVisitStatus;
+  from?: string;
+  to?: string;
+}
+
+export interface RescheduleFailedVisitPayload {
+  rescheduledDate: string;
+  notes?: string;
 }

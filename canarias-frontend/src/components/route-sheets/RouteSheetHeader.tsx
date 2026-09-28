@@ -50,7 +50,7 @@ export function RouteSheetHeader({ routeSheet, onStatusChange }: Props) {
           <div>
             <p className="text-xs text-white/40">Zona</p>
 
-            <p>{routeSheet.zoneId}</p>
+            <p>{routeSheet.zoneName}</p>
           </div>
         </div>
 
@@ -60,7 +60,7 @@ export function RouteSheetHeader({ routeSheet, onStatusChange }: Props) {
           <div>
             <p className="text-xs text-white/40">Cobrador</p>
 
-            <p>{routeSheet.staffId}</p>
+            <p>{routeSheet.staffName}</p>
           </div>
         </div>
 

@@ -10,10 +10,21 @@ import {
   searchClientByDocument,
 } from "@/services/client.service";
 import { createSale } from "@/services/sales.service";
+import {
+  getAllFinancingConfigurations,
+  getFinancingPlans,
+  getPromotions,
+} from "@/services/financing/financing.service";
 import { Product } from "@/types/preload-sale/preload.type";
+import {
+  FinancingConfiguration,
+  FinancingPlan,
+  Promotion,
+} from "@/types/financing/financing.types";
 import { Client } from "@/types/cretateClient.type";
 import { useZones } from "@/hooks/zones/useZones";
 import { useInfoDialog } from "@/hooks/ui/useConfirmDialog";
+import { mapClientToFormData } from "@/utils/preload-sale/mapClientToForm";
 
 const initialForm: PreloadFormData = {
   name: "",
@@ -24,6 +35,17 @@ const initialForm: PreloadFormData = {
   locality: "",
   phone: "",
   zoneId: "",
+
+  // Modalidad comercial de venta
+  saleMode: "plan",
+  financingPlanId: "",
+  promotionId: "",
+
+  // En modo personalizado
+  customRateType: "config",
+  financingConfigId: "",
+  customRate: "0",
+
   productId: "",
   quantity: 1,
   installmentsCount: 3,
@@ -37,10 +59,25 @@ const initialForm: PreloadFormData = {
   ref1Phone: "",
   ref1Relationship: "",
   ref1Address: "",
-
   ref2Phone: "",
   ref2Relationship: "",
   ref2Address: "",
+
+  // ─── SOCIOECONÓMICOS ───
+  profession: "",
+  monthlyIncome: "",
+  paymentMethod: "",
+  incomeDependents: "",
+  additionalIncome: "",
+  housingSituation: "",
+  contractDuration: "",
+  cuil: "",
+  activeCredit: false,
+
+  // Observaciones
+  observations: "",
+
+  societyId: "",
 };
 
 export function usePreloadSale() {
@@ -51,6 +88,10 @@ export function usePreloadSale() {
 
   const [products, setProducts] = useState<Product[]>([]);
   const [productsLoading, setProductsLoading] = useState(false);
+
+  const [plans, setPlans] = useState<FinancingPlan[]>([]);
+  const [promotions, setPromotions] = useState<Promotion[]>([]);
+  const [configs, setConfigs] = useState<FinancingConfiguration[]>([]);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -79,18 +120,38 @@ export function usePreloadSale() {
   >(null);
 
   // ---------------- PRODUCTS ----------------
+  // ---------------- PRODUCTS & FINANCING DATA ----------------
 
-  async function loadProducts() {
+  async function loadData() {
     try {
       setProductsLoading(true);
       setError(null);
 
-      const data = await getProducts();
+      const [productsData, plansData, promosData, configsData] = await Promise.allSettled([
+        getProducts(),
+        getFinancingPlans(),
+        getPromotions(),
+        getAllFinancingConfigurations(),
+      ]);
 
-      setProducts(Array.isArray(data) ? data : []);
+      if (productsData.status === "fulfilled") {
+        setProducts(Array.isArray(productsData.value) ? productsData.value : []);
+      }
+      if (plansData.status === "fulfilled") {
+        const activePlans = (Array.isArray(plansData.value) ? plansData.value : []).filter((p) => p.isActive);
+        setPlans(activePlans);
+      }
+      if (promosData.status === "fulfilled") {
+        const activePromos = (Array.isArray(promosData.value) ? promosData.value : []).filter((p) => p.isActive);
+        setPromotions(activePromos);
+      }
+      if (configsData.status === "fulfilled") {
+        const activeConfigs = (Array.isArray(configsData.value) ? configsData.value : []).filter((c) => c.isActive);
+        setConfigs(activeConfigs);
+      }
     } catch (err) {
       console.error(err);
-      setError("No se pudieron cargar los productos");
+      setError("No se pudieron cargar los productos o datos de financiación");
     } finally {
       setProductsLoading(false);
     }
@@ -101,7 +162,7 @@ export function usePreloadSale() {
 
     loadedRef.current = true;
 
-    loadProducts();
+    loadData();
   }, []);
 
   // ---------------- CLIENT SEARCH ----------------
@@ -146,18 +207,8 @@ export function usePreloadSale() {
 
       setForm((prev) => ({
         ...prev,
-
-        clientId: client.clientId,
-
-        name: client.name ?? "",
-        surname: client.surname ?? "",
-
+        ...mapClientToFormData(client),
         documentNumber: client.documentNumber ?? prev.documentNumber,
-
-        address: client.address ?? "",
-        zoneId: client.zoneId ?? "",
-
-        phone: client.phone ?? "",
       }));
 
       setClientConfirmType("existing");
@@ -224,6 +275,7 @@ export function usePreloadSale() {
             documentNumber: form.documentNumber,
             address: form.address,
             phone: form.phone,
+            email: form.email,
             zoneId: form.zoneId,
             nameReference1: form.nameReference1,
             telReference1: form.telReference1,
@@ -231,6 +283,22 @@ export function usePreloadSale() {
             nameReference2: form.nameReference2,
             telReference2: form.telReference2,
             addressReference2: form.addressReference2,
+
+            // ─── SOCIOECONÓMICOS ───
+            profession: form.profession,
+            monthlyIncome: form.monthlyIncome,
+            paymentMethod: form.paymentMethod,
+            incomeDependents: form.incomeDependents,
+            additionalIncome: form.additionalIncome,
+            housingSituation: form.housingSituation,
+            contractDuration: form.contractDuration,
+            cuil: form.cuil,
+            activeCredit: form.activeCredit,
+
+            // Observaciones
+            observations: form.observations,
+
+            societyId: form.societyId,
           });
         } catch (err) {
           console.warn("El cliente ya existe. Reintentando búsqueda...");
@@ -284,15 +352,31 @@ export function usePreloadSale() {
         throw new Error("Producto no válido");
       }
 
-      // ---------------- CREATE SALE ----------------
+      // ---------------- LOGUEAR PAYLOAD VENTA ----------------
+      const isPlanMode = form.saleMode === "plan";
+      const isPromoMode = form.saleMode === "promotion";
+      const isCustomMode = form.saleMode === "custom";
 
-      await createSale({
-        clientId: finalClientId, // 🔥 SIEMPRE STRING
+      let customConfigId: string | undefined;
+      let customRateValue: number | undefined;
+
+      if (isCustomMode) {
+        if (form.customRateType === "config" && form.financingConfigId) {
+          customConfigId = form.financingConfigId;
+        } else if (form.customRateType === "custom" && form.customRate !== "") {
+          customRateValue = Number(form.customRate) / 100;
+        }
+      }
+
+      const payload = {
+        clientId: finalClientId,
+        financingPlanId: isPlanMode ? (form.financingPlanId || undefined) : undefined,
+        promotionId: isPromoMode ? (form.promotionId || undefined) : undefined,
+        financingConfigId: customConfigId,
+        financingRate: customRateValue,
         installmentsCount: form.installmentsCount,
-
         paymentFrequency: form.paymentFrequency,
-        observation: `Localidad: ${form.locality}`,
-
+        observation: form.observations,
         products: [
           {
             productId: form.productId,
@@ -300,7 +384,13 @@ export function usePreloadSale() {
             unitPrice: Number(selectedProduct.price),
           },
         ],
-      });
+      };
+
+      console.log("Payload venta:", payload);
+
+      // ---------------- CREATE SALE ----------------
+
+      await createSale(payload);
 
       router.push("/dashboard/seller");
     } catch (err) {
@@ -319,6 +409,10 @@ export function usePreloadSale() {
 
     products,
     productsLoading,
+
+    plans,
+    promotions,
+    configs,
 
     loading,
     error,

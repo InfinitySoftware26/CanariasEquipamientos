@@ -1,18 +1,18 @@
 "use client";
 
 import { useEffect } from "react";
-
+import { useRouter } from "next/navigation";
 import { SalesFilters } from "@/components/sale/SaleFilter";
 import { SalesStats } from "@/components/sale/SalesStats";
 import { SalesTable } from "@/components/sale/SaleTable";
-
+import { AddButton } from "@/components/button/AddButton";
 import { useSales } from "@/hooks/sales/useSale";
 import { useSalesView } from "@/hooks/sales/useSalesView";
 import { useSalesPagination } from "@/hooks/sales/useSalePagination";
 
 export default function SalesPage() {
   const { sales, loading, error } = useSales();
-
+  const router = useRouter();
   const {
     filter,
     setFilter,
@@ -34,9 +34,17 @@ export default function SalesPage() {
   return (
     <div className="space-y-10">
       {/* HEADER */}
-      <section>
-        <h1 className="text-3xl font-bold text-white">Ventas</h1>
-        <p className="mt-2 text-white/60">Gestión y seguimiento comercial.</p>
+      <section className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-white">Ventas</h1>
+
+          <p className="mt-1 text-white/70">Gestión y seguimiento comercial.</p>
+        </div>
+
+        <AddButton onClick={() => router.push("/sales/preload")}>
+          Nueva venta
+        </AddButton>
+        
       </section>
 
       {/* STATS */}

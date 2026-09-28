@@ -6,13 +6,14 @@ export const navigationByRole = {
     { label: "Ventas", href: "/sales" },
     { label: "Hojas de Ruta", href: "/route-sheets" },
     { label: "Cobranzas", href: "/collections" },
+    { label: "Cuotas", href: "/installments" },
     { label: "Visitas fallidas", href: "/failed-visits" },
     { label: "Cierres", href: "/closures" },
     { label: "Liquidaciones", href: "/settlements" },
     { label: "Financiación", href: "/financing" },
     { label: "Reportes", href: "/reports" },
     { label: "Zonas", href: "/zones" },
-    { label: "Sociedades", href: "/societies" },
+    { label: "Sociedades", href: "/select-society" },
     { label: "Empleados", href: "/staff" },
     { label: "Configuración", href: "/settings" },
   ],
@@ -23,6 +24,8 @@ export const navigationByRole = {
     { label: "Clientes", href: "/client" },
     { label: "Hojas de Ruta", href: "/route-sheets" },
     { label: "Cobranzas", href: "/collections" },
+    { label: "Cuotas", href: "/installments" },
+    { label: "Visitas fallidas", href: "/failed-visits" },
     { label: "Cierres", href: "/closures" },
     { label: "Liquidaciones", href: "/settlements" },
     { label: "Financiación", href: "/financing" },
@@ -51,6 +54,7 @@ export const navigationByRole = {
     },
     { label: "Cobros", href: "/payments" },
     { label: "Cobranzas", href: "/collections" },
+    { label: "Cuotas", href: "/installments" },
     { label: "Visitas fallidas", href: "/failed-visits" },
     { label: "Cierres", href: "/closures" },
     { label: "Liquidaciones", href: "/settlements" },
@@ -72,33 +76,15 @@ export const navigationByRole = {
   ],
 
   [StaffRole.SELLER]: [
-    {
-      label: "Panel Inicial",
-      href: "/dashboard/seller",
-    },
-    {
-      label: "Mis Comisiones",
-      href: "/dashboard/seller/commissions",
-    },
-    {
-      label: "Nueva Venta",
-      href: "/sales/preload",
-    },
-    {
-      label: "Mis Ventas",
-      href: "/sales/my",
-    },
-    {
-      label: "Clientes",
-      href: "/client",
-    },
+    { label: "Panel Inicial", href: "/dashboard/seller" },
+    { label: "Mis Comisiones", href: "/dashboard/seller/commissions" },
+    { label: "Nueva Venta", href: "/sales/preload" },
+    { label: "Mis Ventas", href: "/sales/my" },
+    { label: "Clientes", href: "/client" },
   ],
 
   [StaffRole.COLLECTOR]: [
-    {
-      label: "Panel Inicial",
-      href: "/dashboard/collector",
-    },
+    { label: "Panel Inicial", href: "/dashboard/collector" },
     { label: "Mis Ventas", href: "/sales/collector" },
     {
       label: "Mis Hojas de Ruta",
@@ -112,7 +98,7 @@ export const navigationByRole = {
       label: "Mis Cobros",
       href: "/collections",
     },
-    { label: "Visitas fallidas", href: "/failed-visits" },
+
     { label: "Cierres", href: "/closures" },
     {
       label: "Liquidaciones",

@@ -1,3 +1,5 @@
+import { FinancingPlan, Promotion } from "../financing/financing.types";
+
 export interface SaleClient {
   clientId: string;
   name: string;
@@ -19,7 +21,6 @@ export interface SaleClient {
 export interface SaleStaff {
   staffId: string;
   name: string;
-  surname?: string;
   email?: string;
   role?: string;
 }
@@ -73,6 +74,14 @@ export interface Sale {
 
   societyId: string;
 
+  financingPlanId?: string | null;
+
+  financingPlan?: FinancingPlan | null;
+
+  promotionId?: string | null;
+
+  promotion?: Promotion | null;
+
   // IMPORTES
   totalAmount: string;
 
@@ -87,7 +96,9 @@ export interface Sale {
   paymentFrequency: string;
 
   // FECHAS
-  firstDueDate: string;
+  firstDueDate?: string | null;
+
+  secondDueDate?: string | null;
 
   saleDate: string;
 
@@ -99,8 +110,7 @@ export interface Sale {
 
   updatedAt?: string;
 
-  deliveryDate?: string;
-  
+  deliveryDate?: string | null;
 
   // ESTADO
   status:
@@ -112,7 +122,30 @@ export interface Sale {
     | "rejected_admin"
     | "environmental_rejected";
 
+  // COBRADOR
   assignedCollectorId?: string | null;
+
+  // DOCUMENTACIÓN DEL COBRADOR
+  collectorDocumentsDelivered?: boolean;
+
+  collectorDocumentsDeliveredAt?: string | null;
+
+  collectorDocumentsDeliveredBy?: string | null;
+
+  // CONFIGURACIÓN DE COBRANZA
+  collectionScheduleType?: "fixed_weekday" | "monthly_range" | null;
+
+  collectionWeekday?: number | null;
+
+  paymentRangeStartDay?: number | null;
+
+  paymentRangeEndDay?: number | null;
+
+  manualCollectionDate?: string | null;
+
+  firstInstallmentOnDelivery?: boolean;
+
+  dailyLateInterestRate?: string | number | null;
 
   products?: SaleProductDetail[];
 }

@@ -23,12 +23,13 @@ export class ClientsService {
     private readonly clientsRepo: IClientsRepository,
     @InjectRepository(ClientHistory)
     private readonly historyRepo: Repository<ClientHistory>,
-  ) {}
+  ) { }
 
   async createPreload(
     dto: CreateClientDto,
     performer: { staffId: string; name: string; societyId?: string },
   ): Promise<Client> {
+    console.log("Creating client with DTO:", dto);
     const data: Partial<Client> = {
       name: dto.name,
       surname: dto.surname,
@@ -43,15 +44,19 @@ export class ClientsService {
       nameReference2: dto.nameReference2,
       telReference2: dto.telReference2,
       addressReference2: dto.addressReference2,
-      supportDni: !!dto.supportDni,
-      supportBill: !!dto.supportBill,
-      supportVisit: !!dto.supportVisit,
-      visitName: dto.visitName,
-      visitDate: dto.visitDate ? new Date(dto.visitDate) : undefined,
       observations: dto.observations,
       societyId: performer.societyId ?? dto.societyId,
       createdBy: performer.staffId,
       updatedBy: performer.staffId,
+      profession: dto.profession,
+      monthlyIncome: dto.monthlyIncome,
+      paymentMethod: dto.paymentMethod,
+      incomeDependents: dto.incomeDependents,
+      additionalIncome: dto.additionalIncome,
+      housingSituation: dto.housingSituation,
+      contractDuration: dto.contractDuration,
+      cuil: dto.cuil,
+      activeCredit: dto.activeCredit ?? false,
     };
     const existingClient = await this.clientsRepo.findByDocumentNumber(
       dto.documentNumber ?? "",
@@ -125,7 +130,6 @@ export class ClientsService {
 
     const updateData: Partial<Client> = {
       ...dto,
-      visitDate: dto.visitDate ? new Date(dto.visitDate) : existing.visitDate,
       updatedBy: performer.staffId,
     } as any;
 

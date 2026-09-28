@@ -1,5 +1,22 @@
 import { useAuthStore } from "@/store/auth.store";
 import { apiFetch } from "../apiFetch.service";
+import { Sale } from "@/types/sales/sale.type";
+
+export interface ConfigureCollectionSchedulePayload {
+  collectionScheduleType: "fixed_weekday" | "monthly_range";
+
+  collectionWeekday?: number;
+
+  paymentRangeStartDay?: number;
+
+  paymentRangeEndDay?: number;
+
+  manualCollectionDate?: string;
+
+  secondDueDate?: string;
+
+  dailyLateInterestRate?: number;
+}
 
 export async function getCollectors() {
   const token = useAuthStore.getState().accessToken;
@@ -63,29 +80,69 @@ export async function getCollectorSales() {
   return Array.isArray(json) ? json : (json.data ?? []);
 }
 
+export interface EnvironmentalVisitPayload {
+  status: "approved" | "rejected";
+
+  observations?: string;
+
+  dniCopyReceived?: boolean;
+
+  salaryReceiptReceived?: boolean;
+
+  otherDocumentsReceived?: boolean;
+}
+
 export async function envValidateSale(
   saleId: string,
-  status: "approved" | "rejected",
-  observations?: string,
+  payload: EnvironmentalVisitPayload,
 ) {
   const token = useAuthStore.getState().accessToken;
 
   const res = await apiFetch(`/sales/${saleId}/env-validate`, {
     method: "PATCH",
-    body: JSON.stringify({
-      status,
-      observations,
-    }),
+
     headers: {
       Authorization: `Bearer ${token}`,
+
+      "Content-Type": "application/json",
     },
+
+    body: JSON.stringify(payload),
   });
 
   if (!res.ok) {
-    const error = await res.json();
+    const error = await res.json().catch(() => null);
 
-    throw new Error(error.message ?? "Error validando visita ambiental");
+    throw new Error(error?.message ?? "Error validando visita ambiental");
   }
 
   return true;
+}
+export async function configureCollectionSchedule(
+  saleId: string,
+  payload: ConfigureCollectionSchedulePayload,
+): Promise<Sale | null> {
+  const token = useAuthStore.getState().accessToken;
+
+  const res = await apiFetch(`/sales/${saleId}/collection-schedule`, {
+    method: "PATCH",
+
+    headers: {
+      Authorization: `Bearer ${token}`,
+
+      "Content-Type": "application/json",
+    },
+
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    const error = await res.json().catch(() => null);
+
+    throw new Error(error?.message || "No se pudo configurar la cobranza");
+  }
+
+  const text = await res.text();
+
+  return text ? JSON.parse(text) : null;
 }

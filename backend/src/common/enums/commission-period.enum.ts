@@ -1,6 +1,6 @@
 export enum CommissionPeriod {
-  DAY   = 'day',
-  WEEK  = 'week',
-  MONTH = 'month',
-  YEAR  = 'year',
+  DAY = "day",
+  WEEK = "week",
+  MONTH = "month",
+  YEAR = "year",
 }

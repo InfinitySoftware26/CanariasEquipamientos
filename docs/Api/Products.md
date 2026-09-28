@@ -72,7 +72,6 @@ POST /products
   "category": "TV",
   "price": 450000,
   "supplierId": "uuid",
-  "financingConfigurationId": null,
   "hasStockControl": false
 }
 ```
@@ -81,29 +80,23 @@ POST /products
 
 # Regla Financiera
 
-## Configuración Especial
+La financiación **ya no se asigna directamente al producto** (no existe un campo
+`financingConfigurationId` en `Product`). En su lugar, el producto puede formar
+parte de la relación M2M `FINANCING_CONFIG_PRODUCTS` / `FINANCING_PLAN_PRODUCTS` /
+`PROMOTION_PRODUCTS` cuando una `FinancingConfiguration`, `FinancingPlan` o
+`Promotion` se crea con `isGlobal = false`.
 
-Si:
+## Configuración Global (por defecto)
 
-```text id="5w9mwx"
-financingConfigurationId
-```
+Si una `FinancingConfiguration` tiene `isGlobal = true`, aplica automáticamente a
+todos los productos de la sociedad sin necesidad de asociación explícita.
 
-posee valor:
+## Configuración Específica por Producto
 
-* utilizar configuración específica producto
+Si `isGlobal = false`, la configuración/plan/promoción solo aplica a los
+`productIds` explícitamente asociados en su creación o edición.
 
----
-
-## Configuración Global
-
-Si:
-
-```text id="gq1fvg"
-financingConfigurationId = NULL
-```
-
-el sistema utilizará automáticamente la configuración financiera global activa de la sociedad.
+Ver detalle completo en `docs/Api/Financing.md` y `docs/Bussines-Rules/Financings.md`.
 
 ---
 
