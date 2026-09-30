@@ -2,3 +2,23 @@ allowBuilds:
   '@nestjs/core': true
   bcrypt: true
   esbuild: set this to true or false
+
+packageExtensions:
+  '@nestjs/core@*':
+    peerDependencies:
+      class-transformer: '*'
+      class-validator: '*'
+    peerDependenciesMeta:
+      class-transformer:
+        optional: true
+      class-validator:
+        optional: true
+  '@nestjs/schedule@*':
+    peerDependencies:
+      class-transformer: '*'
+      class-validator: '*'
+    peerDependenciesMeta:
+      class-transformer:
+        optional: true
+      class-validator:
+        optional: true

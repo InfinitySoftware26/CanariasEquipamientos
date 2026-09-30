@@ -8,17 +8,36 @@ El módulo será responsable de:
 
 * gestión productos
 * precios
-* categorías
 * financiación
 * configuración comercial
 * proveedores
 * control disponibilidad
+* identificación de productos devueltos
+* historial de ventas por producto
+* estadísticas de ventas por producto
+
+---
+
+# Módulo Backend
+
+```text
+backend/src/modules/products/
+```
+
+El módulo actualmente cuenta con:
+
+* `ProductsController`
+* `ProductsService`
+* `ProductsRepository`
+* `Product` entity
+* `CreateProductDto`
+* `UpdateProductDto`
 
 ---
 
 # Endpoint Base
 
-```http id="41b1p0"
+```http
 /api/v1/products
 ```
 
@@ -26,21 +45,33 @@ El módulo será responsable de:
 
 # Roles Permitidos
 
-| Rol     | Acceso   |
-| ------- | -------- |
-| ADMIN   | Completo |
-| SELLER  | Lectura  |
-| MANAGER | Lectura  |
+| Rol         | Acceso                 |
+| ----------- | ---------------------- |
+| ADMIN       | Completo               |
+| MANAGER     | Completo               |
+| SUPER_ADMIN | Completo               |
+| SELLER      | Lectura                |
+| COLLECTOR   | Acceso según operación |
+
+Los endpoints requieren:
+
+* `JwtAuthGuard`
+* `RolesGuard`
+* `SocietyGuard`
+
+El `societyId` se obtiene del usuario autenticado.
 
 ---
 
 # Estados Producto
 
-| Estado       | Descripción   |
-| ------------ | ------------- |
-| ACTIVE       | Disponible    |
-| INACTIVE     | Inactivo      |
-| DISCONTINUED | Descontinuado |
+| Estado       | Descripción            |
+| ------------ | ---------------------- |
+| ACTIVE       | Producto disponible    |
+| INACTIVE     | Producto desactivado   |
+| DISCONTINUED | Producto descontinuado |
+
+El estado `INACTIVE` se utiliza actualmente para la desactivación lógica del producto.
 
 ---
 
@@ -52,7 +83,7 @@ El módulo será responsable de:
 
 ## Endpoint
 
-```http id="34cbg5"
+```http
 POST /products
 ```
 
@@ -61,60 +92,84 @@ POST /products
 # Roles
 
 * ADMIN
+* MANAGER
+* SUPER_ADMIN
 
 ---
 
-# Request
+# Request Actual
 
-```json id="q5sgrn"
+```json
 {
-  "name": "Smart TV Samsung 50",
-  "category": "TV",
-  "price": 450000,
-  "supplierId": "uuid",
-  "hasStockControl": false
+  "name": "Heladera No Frost",
+  "brand": "Samsung",
+  "model": "RT32K5730S8",
+  "category": "Electrodomésticos",
+  "description": "Heladera No Frost",
+  "price": 480000,
+  "costPrice": 340000
 }
 ```
 
 ---
 
-# Regla Financiera
+# Campos Actuales
 
-La financiación **ya no se asigna directamente al producto** (no existe un campo
-`financingConfigurationId` en `Product`). En su lugar, el producto puede formar
-parte de la relación M2M `FINANCING_CONFIG_PRODUCTS` / `FINANCING_PLAN_PRODUCTS` /
-`PROMOTION_PRODUCTS` cuando una `FinancingConfiguration`, `FinancingPlan` o
-`Promotion` se crea con `isGlobal = false`.
-
-## Configuración Global (por defecto)
-
-Si una `FinancingConfiguration` tiene `isGlobal = true`, aplica automáticamente a
-todos los productos de la sociedad sin necesidad de asociación explícita.
-
-## Configuración Específica por Producto
-
-Si `isGlobal = false`, la configuración/plan/promoción solo aplica a los
-`productIds` explícitamente asociados en su creación o edición.
-
-Ver detalle completo en `docs/Api/Financing.md` y `docs/Bussines-Rules/Financings.md`.
+| Campo       | Tipo   | Obligatorio |
+| ----------- | ------ | ----------- |
+| name        | string | Sí          |
+| brand       | string | Sí          |
+| model       | string | Sí          |
+| category    | string | No          |
+| description | string | No          |
+| price       | number | Sí          |
+| costPrice   | number | No          |
 
 ---
 
-# Regla Operativa Stock
+# Cambio de Categorías
 
-Los productos de:
+Las categorías dejarán de formar parte del modelo funcional definitivo de productos.
 
-* Canarias 1
-* Canarias 2
-* Canarias Motos
+Por lo tanto, `category` no debe formar parte del modelo definitivo del producto.
 
-podrán operar sin control obligatorio stock.
+La eliminación de este campo requiere actualización de:
+
+* Entity
+* DTO
+* Seed
+* migración/base de datos
+* Frontend
+* documentación
+
+Esta modificación todavía no está implementada en el código revisado.
+
+---
+
+# Producto Devuelto
+
+El producto debe contar con una propiedad específica que permita identificarlo como producto devuelto.
+
+Esta propiedad:
+
+* no representa un estado del producto;
+* no debe relacionarse con `Promotion`;
+* no debe crear una relación nueva con promociones;
+* debe permitir que el producto continúe apareciendo en el listado general;
+* permitirá utilizarlo posteriormente dentro del plan comercial correspondiente;
+* deberá permitir diferenciarlo visualmente en el Frontend.
+
+La propiedad y su nombre definitivo todavía no existen en el código actual.
 
 ---
 
 # Response Success
 
-```json id="6zsr76"
+Actualmente el servicio retorna la entidad `Product` creada.
+
+No existe actualmente un wrapper obligatorio con:
+
+```json
 {
   "success": true,
   "message": "Product created successfully",
@@ -124,27 +179,63 @@ podrán operar sin control obligatorio stock.
 }
 ```
 
+Por lo tanto, la documentación de integración debe utilizar la respuesta real del servicio hasta que se defina formalmente un nuevo contrato.
+
 ---
 
 # Obtener Productos
 
 ## Endpoint
 
-```http id="4tqv0r"
+```http
 GET /products
 ```
 
 ---
 
-# Query Params
+# Roles
 
-| Parámetro  | Tipo   |
-| ---------- | ------ |
-| page       | number |
-| limit      | number |
-| category   | string |
-| status     | string |
-| supplierId | uuid   |
+El endpoint está protegido por autenticación y contexto de sociedad.
+
+Actualmente devuelve únicamente productos:
+
+```text
+status = ACTIVE
+```
+
+y los ordena por:
+
+```text
+name ASC
+```
+
+---
+
+# Comportamiento Actual
+
+La consulta recibe:
+
+```text
+societyId
+```
+
+desde el JWT.
+
+El repositorio ejecuta la consulta dentro de la sociedad correspondiente.
+
+---
+
+# Filtros
+
+El controller actual no implementa:
+
+* page
+* limit
+* category
+* status
+* supplierId
+
+Por lo tanto, esos query params no deben considerarse rutas o funcionalidades implementadas actualmente.
 
 ---
 
@@ -152,20 +243,17 @@ GET /products
 
 ## Endpoint
 
-```http id="hqqr1y"
+```http
 GET /products/:id
 ```
 
 ---
 
-# Información Incluida
+# Comportamiento
 
-* proveedor
-* financiación
-* historial ventas
-* stock actual
-* precio
-* estado
+Obtiene un producto mediante su `productId`.
+
+Actualmente devuelve el producto mediante `ProductsService.findById()`.
 
 ---
 
@@ -173,52 +261,255 @@ GET /products/:id
 
 ## Endpoint
 
-```http id="bkm9hy"
+```http
 PATCH /products/:id
 ```
 
 ---
 
-# Reglas Negocio
+# Roles
 
-* productos vendidos no deberán eliminarse
-* implementar soft delete
-* productos podrán cambiar financiación
-* precios deberán auditarse
+* ADMIN
+* MANAGER
+* SUPER_ADMIN
+
+---
+
+# Request
+
+El endpoint utiliza:
+
+```text
+UpdateProductDto
+```
+
+que actualmente es un `PartialType(CreateProductDto)`.
+
+Por lo tanto, permite actualizar parcialmente los campos existentes del producto.
+
+---
+
+# Precio Individual
+
+Actualmente el precio puede modificarse mediante:
+
+```http
+PATCH /products/:id
+```
+
+utilizando:
+
+```json
+{
+  "price": 520000
+}
+```
+
+El cambio de precio actualmente no posee un historial específico de auditoría.
+
+La auditoría de precios debe incorporarse como parte de la evolución del módulo.
+
+---
+
+# Actualización Global de Precios
+
+Se requiere incorporar una operación que permita modificar los precios de múltiples productos mediante un aumento global.
+
+Esta funcionalidad no existe actualmente en el controller, service ni repository revisados.
+
+El endpoint y DTO específicos deberán definirse durante su implementación.
+
+La operación deberá contemplar:
+
+* selección de sociedad;
+* porcentaje o criterio de aumento definido por negocio;
+* actualización de los productos alcanzados;
+* conservación del precio anterior;
+* nuevo precio;
+* registro de fecha;
+* usuario que realizó la operación.
+
+---
+
+# Desactivar Producto
+
+## Endpoint
+
+```http
+DELETE /products/:id
+```
+
+---
+
+# Roles
+
+* ADMIN
+* MANAGER
+* SUPER_ADMIN
+
+---
+
+# Comportamiento
+
+El producto no se elimina físicamente.
+
+El servicio actual modifica:
+
+```text
+status = INACTIVE
+```
+
+y responde:
+
+```http
+204 No Content
+```
+
+---
+
+# Historial de Ventas del Producto
+
+El sistema debe conservar la relación histórica entre productos y ventas.
+
+Actualmente existe:
+
+```text
+SALE_PRODUCTS
+```
+
+con:
+
+* `saleId`
+* `productId`
+* `quantity`
+* `unitPrice`
+* `subtotal`
+* `customDetails`
+* `createdAt`
+
+Esto permite conservar el producto utilizado en una venta y el precio aplicado en ese momento.
+
+No existe actualmente un endpoint específico para consultar el historial de ventas de un producto.
+
+La implementación de dicha consulta queda pendiente.
+
+---
+
+# Índice de Ventas por Producto
+
+Se requiere poder consultar posteriormente cuál es el producto más vendido.
+
+El cálculo deberá basarse en el historial de `SALE_PRODUCTS`, utilizando como mínimo la cantidad vendida.
+
+No existe actualmente un endpoint específico de estadísticas de productos.
+
+La implementación deberá incorporar:
+
+* endpoint;
+* agregación;
+* ordenamiento;
+* respuesta estadística;
+* filtros temporales, cuando sean definidos por negocio.
+
+---
+
+# Regla Financiera
+
+La financiación no se asigna directamente al producto.
+
+El producto puede formar parte de las relaciones:
+
+```text
+FINANCING_CONFIG_PRODUCTS
+
+FINANCING_PLAN_PRODUCTS
+
+PROMOTION_PRODUCTS
+```
+
+cuando las configuraciones correspondientes utilizan asociaciones específicas por producto.
+
+Las configuraciones globales aplican según las reglas definidas en:
+
+```text
+docs/Api/Financing.md
+
+docs/Bussines-Rules/Financings.md
+```
+
+El producto devuelto no debe crear una relación especial con `Promotion`.
 
 ---
 
 # Auditoría
 
-Registrar:
+El módulo debe conservar información suficiente para auditar:
 
-* creador producto
-* cambios precio
-* cambios financiación
-* cambios estado
+* creación del producto;
+* modificación de datos;
+* cambios de precio;
+* cambios de estado;
+* identificación como producto devuelto;
+* modificaciones realizadas mediante aumentos globales.
+
+Actualmente la auditoría específica de precios y aumentos globales todavía no está implementada.
 
 ---
 
 # Seguridad
 
-* JWT obligatorio
-* permisos ADMIN
+* JWT obligatorio.
+* `RolesGuard`.
+* `SocietyGuard`.
+* Las operaciones de escritura están restringidas a ADMIN, MANAGER y SUPER_ADMIN.
+* El `societyId` se obtiene del JWT para las operaciones que ya lo implementan.
+
+---
+
+# Reglas de Eliminación
+
+Los productos utilizados en ventas no deben eliminarse físicamente.
+
+La desactivación debe conservar:
+
+* producto;
+* relación con ventas;
+* cantidad vendida;
+* precio histórico;
+* información de la operación.
 
 ---
 
 # Escalabilidad Futura
 
-Preparado para:
+El módulo queda preparado para:
 
-* múltiples precios
-* promociones
-* variantes
-* imágenes
-* ecommerce
-* catálogo mobile
+* historial de precios;
+* aumentos globales;
+* estadísticas de productos vendidos;
+* promociones;
+* variantes;
+* imágenes;
+* ecommerce;
+* catálogo mobile.
 
 ---
 
-# Estado Actual
+# Estado
 
-Módulo aprobado para Fase 1.
+Documento actualizado Sprint 05.
+
+Backend parcialmente desarrollado.
+
+Frontend de productos existente únicamente como placeholder.
+
+Integración Back ↔ Front pendiente para el desarrollo completo del módulo.
+
+Funcionalidades pendientes:
+
+* eliminación de categorías;
+* identificación de producto devuelto;
+* historial específico de precios;
+* aumento global de precios;
+* consulta de historial de ventas por producto;
+* índice/estadística de productos más vendidos.
