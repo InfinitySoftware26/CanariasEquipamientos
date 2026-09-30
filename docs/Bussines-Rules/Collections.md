@@ -137,6 +137,30 @@ La administración debe aprobar manualmente las rendiciones.
 
 ---
 
+## Medio de pago y recargo por transferencia
+
+Cuando el cliente realiza un pago mediante transferencia bancaria, el sistema debe permitir aplicar opcionalmente un recargo del 21% sobre el importe que se está cobrando.
+
+El recargo es opcional y debe ser seleccionado explícitamente durante el registro del cobro.
+
+El recargo no modifica el importe original de la cuota ni su saldo de capital.
+
+Cuando se aplica:
+
+- importe base: importe que corresponde cobrar;
+- recargo: 21% del importe base;
+- total recibido: importe base + recargo.
+
+Ejemplo:
+
+Cuota: $100.000
+Recargo por transferencia: $21.000
+Total: $121.000
+
+El sistema debe conservar por separado el importe base y el recargo.
+
+---
+
 # Validaciones
 
 | Validación          | Obligatoria |

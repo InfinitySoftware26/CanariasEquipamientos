@@ -109,6 +109,78 @@ No se permite aprobar rendiciones duplicadas.
 
 ---
 
+# Plata en calle
+
+La plata en calle representa el importe financiado que todavía permanece pendiente de cobro.
+
+Una venta financiada incorpora inicialmente su importe financiado a la plata en calle.
+
+Ejemplo
+
+Venta:
+
+20 cuotas;
+$100.000 por cuota.
+
+Total financiado:
+
+$2.000.000
+
+Plata en calle inicial:
+
+$2.000.000
+
+---
+
+# Retiro por falta de pago
+
+El retiro se produce como consecuencia de incumplimiento de pago.
+
+La condición definida es:
+
+Dos cuotas consecutivas impagas.
+
+Al cumplirse la condición:
+
+Se genera una notificación interna a Administración.
+Administración puede gestionar el retiro.
+Cuando el producto queda registrado como retirado, el saldo pendiente de esa venta deja de formar parte de la plata en calle.
+
+---
+
+# Retiro y deuda histórica
+
+El retiro no debe borrar:
+
+la venta;
+los pagos realizados;
+las cuotas históricas;
+la información del cliente.
+
+Debe conservarse la trazabilidad de la operación.
+
+El saldo pendiente existente al momento del retiro deja de computarse como plata en calle según la regla comercial definida.
+
+---
+
+# Cobranza semanal
+
+El control semanal de Caja debe contemplar las nuevas ventas realizadas durante la semana.
+
+No debe considerar únicamente los cobros efectuados.
+
+La información debe permitir explicar la variación de plata en calle durante el período.
+
+--- 
+
+# Diferencias
+
+Una diferencia entre el importe esperado y el declarado debe quedar registrada.
+
+No debe corregirse silenciosamente ni eliminarse el movimiento que originó la diferencia.
+
+---
+
 # Restricciones
 
 * No se permiten movimientos sin sociedad.

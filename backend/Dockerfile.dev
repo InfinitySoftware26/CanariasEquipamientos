@@ -7,14 +7,15 @@ RUN apk add --no-cache python3 make g++
 
 RUN npm install -g pnpm
 
-COPY package.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml .npmrc ./
 
 # Instalar sin scripts para evitar compilación prematura
 RUN pnpm install --ignore-scripts
 
 # Compilar bcrypt para Linux Alpine explícitamente
-RUN cd node_modules/.pnpm/bcrypt@5.1.1/node_modules/bcrypt \
-    && npm rebuild bcrypt --build-from-source
+RUN for dir in node_modules/.pnpm/bcrypt@*/node_modules/bcrypt; do \
+    (cd "$dir" && npm rebuild bcrypt --build-from-source); \
+    done
 
 COPY . .
 

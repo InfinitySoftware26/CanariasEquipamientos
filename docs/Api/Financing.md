@@ -113,6 +113,43 @@ GET /financing/plans
 POST /financing/plans
 ```
 
+# Opción 1 — Configuración de financiación
+{
+  "name": "3 cuotas mensuales",
+  "financingConfigId": "uuid",
+  "paymentFrequency": "monthly",
+  "installmentsCount": 3,
+  "isGlobal": true,
+  "productIds": []
+}
+
+# Opción 2 — Tasa directa
+
+{
+  "name": "3 cuotas mensuales",
+  "financingRate": 0.12,
+  "paymentFrequency": "monthly",
+  "installmentsCount": 3,
+  "isGlobal": true,
+  "productIds": []
+}
+
+# Obtener, Actualizar, Eliminar
+
+GET /financing/plans/:id
+PUT /financing/plans/:id
+DELETE /financing/plans/:id
+
+DELETE responde 400 si existen Promotion o Sale vinculadas al plan
+
+# Reglas
+
+financingConfigId y financingRate no pueden utilizarse simultáneamente.
+Debe proporcionarse una de las dos alternativas.
+paymentFrequency: daily | weekly | biweekly | monthly.
+financingConfigId debe pertenecer a la misma sociedad.
+productIds es obligatorio y no vacío si isGlobal = false.
+
 ### Request
 
 ```json id="fin-plan-create-body"
@@ -220,8 +257,8 @@ DELETE /financing/promotions/:id
 
 ---
 
-# Estado Actual
+# Estado
 
-CRUD completo y operativo para las 3 entidades. Integración con `Sales` (cálculo
-real de cuotas usando plan + promoción) pendiente — ver Fase 2 en
-`Bussines-Rules/Financings.md`.
+Documento actualizado Sprint 05.
+Backend y Frontend operativos.
+Integración Back ↔ Front operativa.
