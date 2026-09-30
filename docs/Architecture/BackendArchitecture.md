@@ -106,7 +106,7 @@ src/
 ├── database/
 ├── shared/
 ├── infrastructure/
-└── main.ts
+└── main/
 ```
 
 ---

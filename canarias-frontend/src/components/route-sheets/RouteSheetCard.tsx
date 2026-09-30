@@ -227,11 +227,13 @@ export function RouteSheetItemCard({ item, onAction }: Props) {
               <p className="text-xs text-white/40">Estado</p>
 
               <p className="mt-1 text-sm font-semibold text-yellow-300">
-                {item.collectionState === "overdue"
+                {item.installmentStatus === "overdue"
                   ? "Vencida"
-                  : item.collectionState === "partial"
+                  : item.installmentStatus === "partial"
                     ? "Pago parcial"
-                    : item.collectionState === "due_today"
+                    : item.installmentDueDate &&
+                        new Date(item.installmentDueDate).toDateString() ===
+                          new Date().toDateString()
                       ? "Vence hoy"
                       : "Pendiente"}
               </p>
