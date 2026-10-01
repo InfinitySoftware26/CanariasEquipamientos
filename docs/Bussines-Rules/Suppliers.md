@@ -1,601 +1,368 @@
-# Business Rules — Proveedores
+# Business Rules — Suppliers
 
-## 1. Objetivo
-
-El módulo de Proveedores permite administrar los proveedores comerciales de la sociedad y gestionar la información relacionada con sus operaciones financieras.
-
-El dominio de proveedores comprende:
-
-* proveedores;
-* facturas de proveedores;
-* deuda con proveedores;
-* pagos a proveedores;
-* imputación de pagos a facturas;
-* relación de los pagos con Caja;
-* información necesaria para futuras operaciones de compras y stock.
-
-El módulo debe mantener separada la información del proveedor de las operaciones financieras realizadas con él.
+**Documento actualizado — Sprint 05**
 
 ---
 
-# 2. Conceptos principales
+# 1. Objetivo
 
-El dominio se divide en tres componentes principales:
+Definir las reglas de negocio correspondientes a la gestión de proveedores de Canarias System.
 
-### Proveedor
+El módulo debe permitir administrar la información comercial de los proveedores, relacionarlos con los productos y registrar los pagos realizados.
 
-Representa la entidad comercial que suministra productos o servicios.
+El módulo debe mantenerse simple y orientado a las necesidades comerciales de Canarias, sin incorporar un sistema completo de cuentas por pagar o gestión de facturas de proveedores.
 
-### Factura de proveedor
+---
 
-Representa una obligación registrada con un proveedor.
+# 2. Alcance
 
-### Pago a proveedor
+El módulo comprende:
 
-Representa un desembolso realizado a un proveedor.
+* Alta de proveedores.
+* Consulta de proveedores.
+* Modificación de proveedores.
+* Activación/desactivación.
+* Relación proveedor → productos.
+* Registro de pagos realizados a proveedores.
+* Consulta del historial de pagos.
+* Integración de pagos con movimientos de caja.
+* Trazabilidad por sociedad y usuario.
 
-La relación entre estos conceptos es:
+Queda fuera del alcance:
 
-```text
-Proveedor
-    │
-    ├── Facturas
-    │       │
-    │       └── Imputaciones
-    │
-    └── Pagos
-            │
-            └── Imputaciones → Facturas
-```
+* Gestión de facturas de proveedores.
+* Vencimientos de facturas.
+* Cuentas corrientes por factura.
+* Imputación de pagos a facturas.
+* Aplicaciones parciales de pagos sobre facturas.
+* Cálculo de deuda basada en facturas.
 
 ---
 
 # 3. Proveedor
 
+Un proveedor representa una entidad comercial a la cual Canarias adquiere productos o servicios.
+
 Cada proveedor pertenece a una sociedad.
 
-Actualmente el proveedor contiene:
+### Datos principales
 
-* nombre;
-* identificación fiscal;
-* teléfono;
-* email;
-* dirección;
-* estado activo/inactivo;
-* fecha de creación;
-* fecha de actualización.
-
-El proveedor debe quedar asociado a la sociedad mediante `societyId`.
-
----
-
-# 4. Alta de Proveedor
-
-La creación de un proveedor debe:
-
-1. validar la información recibida;
-2. obtener la sociedad desde el usuario autenticado;
-3. crear el proveedor asociado a dicha sociedad;
-4. establecerlo como activo inicialmente.
-
-El Frontend no debe permitir seleccionar arbitrariamente otra sociedad mediante un `societyId` enviado desde el formulario.
-
-La sociedad debe obtenerse del contexto autenticado.
+* `supplierId`
+* `societyId`
+* `name`
+* `taxId`
+* `phone`
+* `email`
+* `address`
+* `active`
+* `createdAt`
+* `updatedAt`
 
 ---
 
-# 5. Edición de Proveedor
+# 4. Sociedad
 
-Los datos comerciales del proveedor pueden ser modificados por los roles autorizados.
+Todo proveedor pertenece a una sociedad.
 
-Actualmente se contemplan:
+Las operaciones sobre proveedores deben respetar el contexto de sociedad obtenido del usuario autenticado.
 
-* nombre;
-* identificación fiscal;
-* teléfono;
-* email;
-* dirección.
-
-La edición no debe alterar las operaciones financieras históricas asociadas al proveedor.
+Un usuario no debe poder operar sobre proveedores pertenecientes a otra sociedad.
 
 ---
 
-# 6. Desactivación de Proveedor
+# 5. Alta de proveedor
 
-La eliminación de un proveedor es lógica.
+La creación de un proveedor requiere como mínimo:
 
-La operación cambia:
+* Nombre.
+
+Los siguientes datos son opcionales:
+
+* CUIT / identificación fiscal.
+* Teléfono.
+* Email.
+* Dirección.
+
+El proveedor se crea inicialmente como activo.
+
+---
+
+# 6. Modificación
+
+Los datos comerciales del proveedor pueden modificarse mediante la operación de actualización.
+
+La modificación no debe alterar:
+
+* pagos históricos;
+* movimientos de caja;
+* relaciones históricas con productos.
+
+---
+
+# 7. Activación y desactivación
+
+Los proveedores no deben eliminarse físicamente cuando dejan de utilizarse.
+
+La operación de baja corresponde a una **desactivación lógica** mediante `active = false`.
+
+Un proveedor desactivado:
+
+* permanece almacenado;
+* conserva sus datos históricos;
+* conserva sus relaciones existentes;
+* no debe aparecer como opción para nuevas asociaciones de productos;
+* no debe poder seleccionarse para nuevas operaciones que requieran un proveedor activo.
+
+---
+
+# 8. Relación Proveedor → Producto
+
+Cada producto puede tener asociado un proveedor mediante:
 
 ```text
-active = true
+PRODUCT.supplierId → SUPPLIER.supplierId
 ```
 
-a:
+La relación es:
 
 ```text
-active = false
+1 Supplier
+   ↓
+N Products
 ```
 
-El proveedor no debe eliminarse físicamente cuando posee información histórica.
+El proveedor se almacena directamente en el producto mediante `supplierId`.
 
-Esto permite conservar:
-
-* facturas;
-* pagos;
-* deuda histórica;
-* trazabilidad de operaciones.
+No se requiere una tabla intermedia para esta relación.
 
 ---
 
-# 7. Listado de Proveedores
+# 9. Reglas de asociación con productos
 
-El listado debe respetar la sociedad activa.
+Al asociar un proveedor a un producto:
 
-Debe permitir consultar:
+* el `supplierId` debe corresponder a un proveedor existente;
+* el proveedor debe pertenecer a la misma sociedad;
+* para nuevas asociaciones, el proveedor debe estar activo.
 
-* todos los proveedores;
-* únicamente proveedores activos.
+El producto no debe duplicar información comercial del proveedor.
 
-Los proveedores se ordenan por nombre.
-
----
-
-# 8. Detalle del Proveedor
-
-El detalle de proveedor debe funcionar como punto de consulta de toda la información relacionada.
-
-Debe poder mostrar progresivamente:
-
-* datos comerciales;
-* estado;
-* facturas;
-* deuda;
-* pagos;
-* historial financiero.
-
-El detalle debe utilizar la información registrada en los módulos correspondientes.
-
-No debe duplicar información financiera en la entidad `Supplier`.
-
----
-
-# 9. Facturas de Proveedores
-
-Las facturas representan obligaciones económicas de la sociedad frente a un proveedor.
-
-Cada factura contiene:
-
-* proveedor;
-* número de factura;
-* fecha de emisión;
-* fecha de vencimiento;
-* importe total;
-* estado;
-* observaciones;
-* sociedad;
-* fecha de creación;
-* fecha de actualización.
-
-El número de factura debe ser único para un mismo proveedor.
-
----
-
-# 10. Estados de Factura
-
-Actualmente se contemplan los siguientes estados:
-
-```text
-pending
-partially_paid
-paid
-cancelled
-```
-
-### `pending`
-
-La factura no posee pagos imputados.
-
-### `partially_paid`
-
-La factura posee pagos imputados pero todavía mantiene saldo pendiente.
-
-### `paid`
-
-La suma de los pagos imputados alcanza el importe total de la factura.
-
-### `cancelled`
-
-La factura fue anulada.
-
----
-
-# 11. Registro de Factura
-
-Para registrar una factura se requiere:
-
-* proveedor;
-* número de factura;
-* fecha de emisión;
-* importe total.
-
-La fecha de vencimiento y las observaciones son opcionales.
-
-La factura se crea inicialmente como:
-
-```text
-pending
-```
-
----
-
-# 12. Modificación de Factura
-
-Una factura existente puede actualizar:
-
-* fecha de vencimiento;
-* observaciones.
-
-La modificación no debe cambiar:
-
-* proveedor;
-* importe total;
-* número de factura;
-* sociedad.
-
----
-
-# 13. Anulación de Factura
-
-Una factura puede ser anulada únicamente si no posee pagos imputados.
-
-No se permite:
-
-```text
-Factura con pagos
-        ↓
-Anular
-```
-
-Si existen pagos imputados, la operación debe rechazarse.
-
-Una factura anulada no puede recibir nuevos pagos.
-
----
-
-# 14. Saldo de Factura
-
-El saldo de una factura se obtiene mediante:
-
-```text
-saldo = importe_total - importe_imputado
-```
-
-Donde:
-
-```text
-importe_imputado
-=
-suma de aplicaciones de pagos sobre la factura
-```
-
-El cálculo debe realizarse a partir de las imputaciones registradas.
-
-No debe almacenarse un saldo independiente que pueda quedar desactualizado.
-
----
-
-# 15. Deuda del Proveedor
-
-La deuda del proveedor representa el importe total facturado que permanece pendiente.
-
-El cálculo se basa en:
-
-```text
-deuda =
-total facturado no cancelado
--
-total imputado
-```
-
-La deuda debe poder consultarse desde el contexto del proveedor.
-
----
-
-# 16. Pagos a Proveedores
-
-Un pago a proveedor representa un desembolso realizado por la sociedad.
-
-Cada pago registra:
-
-* proveedor;
-* sociedad;
-* empleado que realizó la operación;
-* importe;
-* método de pago;
-* fecha;
-* observaciones.
-
-Los métodos de pago utilizan el enum general de métodos de pago del sistema.
-
----
-
-# 17. Registro de Pago
-
-Para registrar un pago se requiere:
-
-* proveedor;
-* importe;
-* método de pago.
-
-Opcionalmente puede indicarse una factura para realizar la imputación automática.
-
-El empleado responsable se obtiene del usuario autenticado.
-
-La sociedad también se obtiene del usuario autenticado.
-
----
-
-# 18. Imputación de Pagos
-
-Un pago puede imputarse:
-
-* automáticamente a una factura;
-* manualmente a una o varias facturas.
-
-La suma de las imputaciones de un pago nunca puede superar el importe total disponible del pago.
-
-Ejemplo:
-
-```text
-Pago: $100.000
-
-Factura A: $60.000
-Factura B: $40.000
-
-Total imputado: $100.000
-```
-
-La operación es válida.
-
----
-
-# 19. Imputación Parcial
-
-Una factura puede recibir pagos parciales.
-
-Ejemplo:
-
-```text
-Factura: $100.000
-
-Pago 1: $40.000
-Pago 2: $30.000
-
-Saldo: $30.000
-Estado: partially_paid
-```
-
-Cuando el total imputado alcanza el importe de la factura:
-
-```text
-Estado: paid
-```
-
----
-
-# 20. Restricciones de Imputación
-
-No se puede imputar un pago a:
-
-* una factura inexistente;
-* una factura anulada;
-* una factura cuyo saldo sea inferior al importe que se intenta imputar.
-
-Tampoco se puede superar el importe disponible de un pago.
-
----
-
-# 21. Relación con Caja
-
-Los pagos a proveedores representan una salida financiera de la sociedad.
-
-El dominio de Caja debe registrar el movimiento financiero correspondiente al pago cuando la operación requiera afectar la caja.
-
-El movimiento de caja debe poder identificar el pago de proveedor mediante:
-
-```text
-relatedSupplierPaymentId
-```
-
-Actualmente `CASH_MOVEMENTS` contempla específicamente este campo.
-
-Esto permite mantener la trazabilidad:
-
-```text
-SupplierPayment
-      ↓
-CashMovement
-      ↓
-Cashbox
-```
-
----
-
-# 22. Métodos de Pago y Caja
-
-El método utilizado en el pago determina cómo debe interpretarse financieramente la operación.
-
-El módulo de Proveedores no debe modificar directamente los saldos mediante cálculos propios.
-
-Los saldos de Caja deben continuar siendo responsabilidad del módulo de Caja/Cash Movements.
-
----
-
-# 23. Trazabilidad Financiera
-
-Cada pago debe poder identificarse mediante:
-
-* proveedor;
-* sociedad;
-* empleado;
-* importe;
-* método;
-* fecha;
-* factura/s imputada/s.
-
-Cuando corresponda, debe existir la relación con el movimiento financiero de Caja.
-
-Esto permite reconstruir:
-
-```text
-Proveedor
-    ↓
-Pago
-    ↓
-Movimiento de Caja
-    ↓
-Caja
-```
-
----
-
-# 24. Relación con Productos
-
-Los proveedores forman parte del dominio de productos y stock a nivel funcional.
-
-Un proveedor representa una posible fuente de abastecimiento de productos.
-
-Sin embargo, en la implementación actual del ZIP:
-
-```text
-PRODUCTS
-```
-
-no contiene actualmente:
+Debe almacenar únicamente su referencia:
 
 ```text
 supplierId
 ```
 
-Por lo tanto, la relación directa:
-
-```text
-PRODUCT → SUPPLIER
-```
-
-no debe considerarse implementada actualmente.
-
-Si se incorpora posteriormente, deberá definirse explícitamente:
-
-* asociación producto-proveedor;
-* proveedor principal;
-* costo de adquisición;
-* historial de costos;
-* operaciones de compra;
-* impacto en stock.
+La información del proveedor se obtiene desde la entidad `Supplier`.
 
 ---
 
-# 25. Relación con Stock y Compras
+# 10. Cambio de proveedor de un producto
 
-El flujo funcional previsto contempla que los proveedores formen parte del proceso de abastecimiento.
+El proveedor asociado a un producto puede modificarse.
 
-Conceptualmente:
+Modificar `Product.supplierId` no debe modificar:
 
-```text
-Proveedor
-    ↓
-Compra
-    ↓
-Producto
-    ↓
-Stock
-    ↓
-Pago
-    ↓
-Caja
-```
-
-Actualmente el ZIP contiene documentación de workflow de Stock que contempla proveedores y pagos, pero el módulo de proveedores implementado no constituye todavía un módulo completo de compras/recepción de stock.
-
-Por lo tanto, estas operaciones deben considerarse parte de una evolución posterior y no deben inventarse dentro del CRUD actual de proveedores.
-
----
-
-# 26. Historial Financiero
-
-El proveedor debe poder consultarse junto con sus operaciones financieras.
-
-El historial debe permitir reconstruir:
-
-* facturas;
+* ventas históricas;
 * pagos;
-* imputaciones;
-* deuda;
-* estado de las facturas.
+* movimientos de caja;
+* información histórica de operaciones anteriores.
 
-La información debe provenir de:
+La relación representa el proveedor actualmente asociado al producto.
+
+Cuando el sistema incorpore un módulo formal de compras/ingresos de stock, las operaciones de compra deberán conservar su propio proveedor para mantener trazabilidad histórica.
+
+---
+
+# 11. Desactivación de un proveedor asociado a productos
+
+La desactivación de un proveedor no debe eliminar ni romper las relaciones existentes con productos.
+
+Los productos conservan su `supplierId`.
+
+El proveedor desactivado:
+
+* continúa siendo identificable en registros existentes;
+* no debe aparecer como proveedor disponible para nuevas asociaciones;
+* no debe eliminarse físicamente.
+
+---
+
+# 12. Pagos a proveedores
+
+Un pago a proveedor representa una salida de dinero realizada por Canarias hacia un proveedor.
+
+El pago debe registrar como mínimo:
+
+* `supplierId`
+* `societyId`
+* `staffId`
+* `amount`
+* `method`
+* `paymentDate`
+* `notes`
+* `createdAt`
+
+---
+
+# 13. Registro de pagos
+
+El pago debe estar asociado a un proveedor existente.
+
+El importe debe ser mayor que cero.
+
+El método de pago debe corresponder a los métodos permitidos por el sistema.
+
+El pago registra el importe efectivamente abonado al proveedor.
+
+---
+
+# 14. Relación entre pago y proveedor
+
+La relación es:
 
 ```text
-SUPPLIER_INVOICES
-SUPPLIER_PAYMENTS
-SUPPLIER_INVOICE_PAYMENT_APPLICATIONS
+Supplier
+   ↓
+SupplierPayment
 ```
 
----
+Un proveedor puede tener múltiples pagos.
 
-# 27. Sociedad
-
-Todas las operaciones de proveedores deben respetar la sociedad activa.
-
-Los datos pertenecientes a una sociedad no deben mezclarse con los de otra.
-
-El `societyId` debe provenir del usuario autenticado cuando la operación lo requiera.
+Cada pago pertenece a un único proveedor.
 
 ---
 
-# 28. Permisos
+# 15. Pagos y caja
 
-Las operaciones de administración de proveedores, facturas y pagos están actualmente habilitadas para:
+Los pagos realizados a proveedores representan egresos financieros y deben integrarse con el módulo de movimientos de caja cuando corresponda.
 
-* ADMIN;
-* MANAGER;
-* SUPER_ADMIN.
+La relación debe permitir identificar:
 
-La lectura básica de proveedores actualmente no restringe explícitamente los roles en el controlador y continúa protegida por autenticación y sociedad.
+```text
+Supplier Payment
+       ↓
+Cash Movement
+```
 
----
+De esta forma puede conocerse:
 
-# 29. Auditoría
-
-Las operaciones financieras relacionadas con proveedores deben conservar trazabilidad.
-
-No se deben eliminar físicamente:
-
-* proveedores con historial;
-* facturas;
-* pagos;
-* imputaciones.
-
-Las facturas se anulan mediante cambio de estado.
-
-Los proveedores se desactivan mediante cambio de estado.
+* qué proveedor recibió el pago;
+* cuánto se pagó;
+* cuándo se pagó;
+* qué movimiento de caja originó o registró el egreso.
 
 ---
 
-# 30. Principios
+# 16. Historial de pagos
 
-* Cada proveedor pertenece a una sociedad.
-* Los proveedores se desactivan, no se eliminan físicamente.
-* Las facturas representan obligaciones económicas.
-* Los pagos representan desembolsos realizados.
-* Las facturas pueden pagarse parcial o totalmente.
-* Un pago no puede imputarse por encima de su importe.
-* Una factura anulada no puede recibir pagos.
-* Una factura con pagos imputados no puede anularse.
-* La deuda debe calcularse desde facturas e imputaciones.
-* Los pagos deben mantener trazabilidad financiera.
-* Los pagos relacionados con caja deben poder identificarse mediante `relatedSupplierPaymentId`.
-* Los datos de productos/stock no deben duplicarse dentro del proveedor.
-* La relación directa Producto → Proveedor no se considera implementada hasta que exista en código.
-* Toda operación debe respetar la sociedad activa y los permisos correspondientes.
+El sistema debe permitir consultar el historial de pagos realizados a un proveedor.
+
+El historial debe permitir identificar:
+
+* fecha;
+* importe;
+* método;
+* usuario responsable;
+* observaciones.
+
+Los pagos históricos no deben modificarse como consecuencia de cambios posteriores en los datos comerciales del proveedor.
+
+---
+
+# 17. Resumen de pagos
+
+El sistema puede proporcionar un resumen de los pagos realizados a un proveedor.
+
+El resumen debe basarse exclusivamente en los pagos registrados.
+
+No debe existir un cálculo de deuda basado en facturas, ya que la gestión de facturas de proveedores queda fuera del alcance del módulo.
+
+---
+
+# 18. Facturas de proveedores — fuera de alcance
+
+El proyecto **no gestionará facturas de proveedores como una entidad propia** en esta etapa.
+
+Por lo tanto, no forman parte del modelo funcional:
+
+* `SupplierInvoice`;
+* estados de factura;
+* vencimiento de factura;
+* saldo de factura;
+* deuda por factura;
+* aplicaciones de pago;
+* imputaciones de pago a factura.
+
+La documentación o comprobante que entregue externamente el proveedor no implica que deba existir una entidad `SupplierInvoice` dentro del sistema.
+
+---
+
+# 19. Eliminación del módulo Supplier Invoices
+
+El backend actualmente contiene un módulo `supplier-invoices`.
+
+Este módulo deberá ser eliminado o retirado del alcance:
+
+```text
+backend/src/modules/supplier-invoices/
+```
+
+También deberán eliminarse sus dependencias en `supplier-payments`, incluyendo:
+
+* DTOs de imputación;
+* aplicaciones de pago;
+* consultas de facturas;
+* cálculo de deuda por facturas;
+* relaciones entre pagos y facturas;
+* servicios utilizados exclusivamente para facturas.
+
+La eliminación debe realizarse mediante una migración/limpieza de base de datos cuando corresponda, evitando dejar tablas o relaciones huérfanas.
+
+---
+
+# 20. Seguridad
+
+Las operaciones de proveedores y pagos deben respetar:
+
+* autenticación mediante JWT;
+* autorización por roles;
+* aislamiento por sociedad.
+
+Roles administrativos contemplados:
+
+* `ADMIN`
+* `MANAGER`
+* `SUPER_ADMIN`
+
+El `societyId` debe provenir del contexto autenticado y no debe confiarse en un valor enviado libremente por el frontend.
+
+---
+
+# 21. Trazabilidad
+
+Las operaciones relevantes deben conservar información suficiente para determinar:
+
+* sociedad;
+* proveedor;
+* usuario responsable;
+* fecha;
+* importe;
+* operación realizada.
+
+Los registros históricos no deben perderse por desactivación de proveedores.
+
+---
+
+# 22. Principios del módulo
+
+El módulo debe mantenerse:
+
+* simple;
+* trazable;
+* orientado al negocio;
+* integrado con productos;
+* integrado con caja;
+* preparado para una futura evolución hacia compras/stock.
+
+No se debe incorporar complejidad contable que no sea necesaria para el alcance actual.

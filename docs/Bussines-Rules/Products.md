@@ -24,6 +24,7 @@ Todo producto debe tener:
 * marca
 * modelo
 * precio
+* category
 * estado
 
 La descripción es opcional.
@@ -93,7 +94,7 @@ La identificación de producto devuelto:
 * no constituye una `Promotion`;
 * no debe crear una relación con `Promotion`;
 * no modifica la existencia del producto dentro del catálogo;
-* permite que el producto continúe apareciendo en el listado;
+* permite que el producto continúe apareciendo en el listado pero diferenciado;
 * permite seleccionarlo posteriormente dentro del plan comercial correspondiente.
 
 ---
@@ -279,22 +280,6 @@ Los filtros temporales todavía no están definidos en la implementación actual
 ## BR-PRODUCT-022
 
 Las estadísticas deberán poder calcularse a partir del historial de ventas sin modificar ni eliminar los registros históricos utilizados para el cálculo.
-
----
-
-# Categorías
-
-## BR-PRODUCT-023
-
-Las categorías no forman parte del modelo funcional definitivo de productos.
-
-El campo `category` actualmente existe en:
-
-* Entity;
-* DTO;
-* Seed.
-
-Su eliminación requiere una modificación coordinada del modelo de datos y del código.
 
 ---
 

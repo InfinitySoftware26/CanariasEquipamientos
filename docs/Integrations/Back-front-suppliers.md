@@ -1,585 +1,332 @@
-# Integration Back ↔ Front — Proveedores
+# Integration — Suppliers
 
-# 1. Objetivo
-
-Documentar la integración entre Backend y Frontend del dominio de Proveedores.
-
-El dominio comprende:
-
-```text
-Proveedores
-Facturas
-Pagos
-Imputaciones
-Deuda
-Caja
-```
+**Documento actualizado — Sprint 05**
 
 ---
 
-# 2. Estado Actual
+# 1. Objetivo
 
-Actualmente el Backend cuenta con los módulos:
+Definir la integración entre Backend y Frontend para la gestión de proveedores.
 
-```text
-backend/src/modules/suppliers/
-backend/src/modules/supplier-invoices/
-backend/src/modules/supplier-payments/
-```
+El módulo frontend debe presentar una única experiencia de **Proveedores**, integrando:
 
-El Frontend todavía no posee una implementación funcional del módulo.
+* proveedores;
+* productos asociados;
+* pagos realizados.
 
-Actualmente existe:
+La gestión de facturas de proveedores queda fuera del alcance.
+
+---
+
+# 2. Estado actual
+
+El backend cuenta actualmente con:
+
+* módulo `suppliers`;
+* módulo `supplier-payments`;
+* módulo `supplier-invoices`.
+
+El frontend mantiene la ruta:
 
 ```text
 canarias-frontend/src/app/(private)/suppliers/page.tsx
 ```
 
-pero la página utiliza:
+actualmente pendiente de implementación completa.
 
-```tsx
-<PagePlaceholder
-  title="Proveedores"
-  description="Gestión y administración de proveedores."
-/>
-```
-
-Por lo tanto, la integración Frontend está pendiente de desarrollo.
+El módulo `supplier-invoices` deberá retirarse del backend y no debe generar una pantalla frontend.
 
 ---
 
-# 3. Arquitectura de Integración
+# 3. Estructura funcional frontend
 
-La integración esperada es:
-
-```text
-Frontend
-   │
-   ├── Suppliers
-   │
-   ├── Supplier Invoices
-   │
-   └── Supplier Payments
-          │
-          ↓
-       Backend
-          │
-          ├── SuppliersService
-          ├── SupplierInvoicesService
-          └── SupplierPaymentsService
-                    │
-                    ↓
-                  Caja
-```
-
----
-
-# 4. Estructura Frontend a desarrollar
-
-Se recomienda mantener la estructura modular existente del proyecto:
-
-```text
-canarias-frontend/src/
-
-app/(private)/suppliers/
-components/suppliers/
-services/suppliers/
-hooks/suppliers/
-types/suppliers/
-```
-
-Para las facturas y pagos puede utilizarse una estructura específica dentro del dominio:
-
-```text
-components/suppliers/
-  SupplierForm.tsx
-  SupplierTable.tsx
-  SupplierDetail.tsx
-  SupplierInvoices.tsx
-  SupplierPayments.tsx
-  SupplierDebt.tsx
-```
-
-La implementación debe reutilizar los componentes generales existentes del proyecto.
-
----
-
-# 5. Pantalla Principal de Proveedores
-
-Ruta:
+La sección principal debe ser:
 
 ```text
 /suppliers
 ```
 
+La experiencia debe organizarse alrededor del proveedor.
+
+### Listado
+
 Debe permitir:
 
-* listar proveedores;
-* buscar/filtrar proveedores;
+* visualizar proveedores;
+* identificar proveedores activos/inactivos;
 * crear proveedor;
 * editar proveedor;
-* desactivar proveedor;
-* ingresar al detalle.
-
-El listado debe utilizar:
-
-```http
-GET /suppliers
-```
+* consultar detalle.
 
 ---
 
-# 6. Alta de Proveedor
+# 4. Detalle de proveedor
 
-El formulario debe utilizar:
-
-```http
-POST /suppliers
-```
-
-Campos:
-
-```text
-Nombre
-Identificación fiscal
-Teléfono
-Email
-Dirección
-```
-
-No debe incluir:
-
-```text
-societyId
-```
-
-porque la sociedad proviene del contexto autenticado.
-
----
-
-# 7. Edición
-
-El formulario de edición utiliza:
-
-```http
-PATCH /suppliers/:id
-```
-
-La respuesta esperada es:
-
-```http
-204 No Content
-```
-
-Luego de modificar el proveedor, el listado/detalle debe actualizarse.
-
----
-
-# 8. Desactivación
-
-La acción utiliza:
-
-```http
-DELETE /suppliers/:id
-```
-
-No debe eliminar físicamente el registro.
-
-La interfaz debe mostrar confirmación antes de realizar la operación.
-
----
-
-# 9. Detalle de Proveedor
-
-El detalle del proveedor debe centralizar la información:
-
-```text
-┌─────────────────────────────┐
-│ Datos del proveedor         │
-├─────────────────────────────┤
-│ Deuda actual                │
-├─────────────────────────────┤
-│ Facturas                    │
-├─────────────────────────────┤
-│ Pagos                       │
-└─────────────────────────────┘
-```
-
----
-
-# 10. Deuda
-
-La deuda se obtiene mediante:
-
-```http
-GET /supplier-invoices/supplier/:supplierId/debt
-```
-
-No debe calcularse nuevamente en Frontend.
-
-El Backend devuelve:
-
-```text
-totalInvoiced
-totalPaid
-balance
-```
-
-Frontend solamente representa esos valores.
-
----
-
-# 11. Facturas
-
-El listado de facturas puede utilizar:
-
-```http
-GET /supplier-invoices?supplierId=:supplierId
-```
-
-Debe permitir visualizar:
-
-* número;
-* fecha;
-* vencimiento;
-* importe;
-* estado;
-* saldo.
-
-Para obtener el saldo de una factura:
-
-```http
-GET /supplier-invoices/:id/balance
-```
-
----
-
-# 12. Crear Factura
-
-El formulario utiliza:
-
-```http
-POST /supplier-invoices
-```
-
-La factura requiere:
+El detalle puede organizarse en:
 
 ```text
 Proveedor
-Número
-Fecha emisión
-Fecha vencimiento
+│
+├── Información general
+│
+├── Productos asociados
+│
+└── Historial de pagos
+```
+
+No se debe crear una sección independiente de facturas.
+
+---
+
+# 5. Alta y edición
+
+El formulario de proveedor debe trabajar con los campos definidos por la API:
+
+* nombre;
+* identificación fiscal;
+* teléfono;
+* email;
+* dirección.
+
+El frontend no debe enviar `societyId` como dato de autoridad.
+
+La sociedad activa/contexto de autenticación determina la sociedad sobre la que opera el backend.
+
+---
+
+# 6. Productos y proveedor
+
+En el formulario de producto debe existir un selector de proveedor.
+
+El flujo esperado:
+
+```text
+Producto
+   ↓
+Seleccionar proveedor
+   ↓
+supplierId
+   ↓
+POST/PATCH Product
+```
+
+Para cargar las opciones disponibles:
+
+```http
+GET /api/v1/suppliers?activeOnly=true
+```
+
+El frontend debe mostrar información amigable del proveedor, pero enviar al backend únicamente su UUID:
+
+```json
+{
+  "supplierId": "uuid-del-proveedor"
+}
+```
+
+---
+
+# 7. Cambio de proveedor
+
+Si se modifica el proveedor asociado a un producto:
+
+```text
+Producto
+supplierId: proveedor anterior
+        ↓
+        cambio
+        ↓
+supplierId: proveedor nuevo
+```
+
+El frontend no debe intentar modificar información histórica de ventas, pagos o caja.
+
+La modificación afecta únicamente la asociación actual del producto.
+
+---
+
+# 8. Proveedores inactivos
+
+Los proveedores inactivos pueden continuar apareciendo en información histórica.
+
+Sin embargo, para nuevas asociaciones de productos el selector debe utilizar:
+
+```http
+GET /api/v1/suppliers?activeOnly=true
+```
+
+De esta forma se evita seleccionar proveedores desactivados.
+
+---
+
+# 9. Registro de pago
+
+Desde el detalle del proveedor debe poder iniciarse el registro de un pago.
+
+Flujo:
+
+```text
+Proveedor
+   ↓
+Registrar pago
+   ↓
 Importe
+   ↓
+Método de pago
+   ↓
 Observaciones
+   ↓
+Confirmar
+   ↓
+POST /supplier-payments
 ```
 
-El proveedor debe estar seleccionado desde el contexto del proveedor o mediante selector correspondiente.
+El frontend no debe solicitar ni enviar:
+
+```text
+supplierInvoiceId
+```
 
 ---
 
-# 13. Anular Factura
+# 10. Historial de pagos
 
-La acción utiliza:
-
-```http
-DELETE /supplier-invoices/:id
-```
-
-Antes de mostrar la acción debe tenerse en cuenta que una factura con pagos imputados no puede anularse.
-
-La validación definitiva corresponde al Backend.
-
-Frontend debe mostrar el error devuelto por Backend si la operación no es válida.
-
----
-
-# 14. Pagos
-
-El detalle del proveedor debe mostrar sus pagos mediante:
+El detalle del proveedor debe permitir consultar sus pagos mediante:
 
 ```http
-GET /supplier-payments/supplier/:supplierId
+GET /api/v1/supplier-payments/supplier/:supplierId
 ```
 
-Debe mostrar como mínimo:
+Se puede mostrar:
 
 * fecha;
 * importe;
 * método;
 * observaciones.
 
----
-
-# 15. Registrar Pago
-
-El formulario utiliza:
-
-```http
-POST /supplier-payments
-```
-
-Debe permitir:
+El historial debe diferenciar claramente entre:
 
 ```text
 Proveedor
-Importe
-Método
-Factura opcional
-Observaciones
+   ↓
+Pagos realizados
 ```
 
-Si el usuario selecciona una factura, el Backend puede realizar la imputación automática.
+sin presentar una cuenta corriente basada en facturas.
 
 ---
 
-# 16. Imputación Manual
+# 11. Pagos y caja
 
-Cuando un pago deba distribuirse entre varias facturas, utilizar:
-
-```http
-POST /supplier-payments/:id/applications
-```
-
-Ejemplo:
+Cuando un pago a proveedor genere un movimiento de caja, el frontend debe poder mantener la trazabilidad entre:
 
 ```text
-Pago $100.000
-
-Factura A → $60.000
-Factura B → $40.000
-```
-
-El Backend valida que la suma no supere el importe disponible.
-
-Frontend no debe implementar esta validación como única protección.
-
----
-
-# 17. Historial de Pagos
-
-El historial debe mostrar los pagos asociados al proveedor.
-
-También puede consultar las facturas cubiertas por un pago:
-
-```http
-GET /supplier-payments/:id/applications
-```
-
-Esto permite visualizar:
-
-```text
+Proveedor
+   ↓
 Pago
- ├── Factura A → $30.000
- └── Factura B → $20.000
+   ↓
+Movimiento de caja
 ```
+
+Los movimientos de caja pertenecen al módulo financiero y no deben duplicarse dentro de la pantalla de proveedores.
 
 ---
 
-# 18. Relación con Caja
+# 12. Eliminación de Supplier Invoices
 
-Cuando se registra un pago a proveedor, la operación pertenece al circuito financiero de la sociedad.
-
-El modelo de Caja contempla:
+Como parte de esta modificación, el equipo Backend deberá retirar:
 
 ```text
-related_supplier_payment_id
+backend/src/modules/supplier-invoices/
 ```
 
-por lo que el movimiento financiero puede relacionarse con el pago de proveedor.
+y todas las dependencias asociadas.
 
-Frontend de Proveedores no debe modificar directamente el saldo de Caja.
+También deberán revisarse:
 
-La información financiera debe permanecer sincronizada mediante las operaciones Backend correspondientes.
+* módulos importadores;
+* entidades;
+* DTOs;
+* repositories;
+* services;
+* migrations;
+* enums;
+* relaciones;
+* imports de `SupplierInvoicesService`;
+* lógica de aplicaciones de pagos.
+
+En particular, `supplier-payments` actualmente depende de `SupplierInvoicesService`; esa dependencia debe desaparecer.
 
 ---
 
-## 19. Relación con Productos
+# 13. Integración final Backend ↔ Frontend
 
-Cada producto debe estar asociado a un proveedor mediante:
+El flujo final esperado es:
 
 ```text
-supplierId
+                    SUPPLIERS
+                       │
+        ┌──────────────┼──────────────┐
+        │              │              │
+        ▼              ▼              ▼
+    Información     Products       Payments
+                       │              │
+                  supplierId          │
+                                      ▼
+                                Cash Movement
 ```
 
-La relación representa el proveedor al que corresponde la adquisición del producto.
-
-La relación es:
+No debe existir dependencia funcional entre:
 
 ```text
-SUPPLIER
-    │
-    └── PRODUCTS
-            │
-            └── supplierId
-```
-
-Un proveedor puede estar asociado a múltiples productos.
-
-Cada producto tendrá un único proveedor asociado como proveedor de origen/principal.
-
----
-
-## 19.1. Regla de Asociación
-
-Al crear o modificar un producto, el `supplierId` debe corresponder a un proveedor existente y válido dentro de la sociedad activa.
-
-No se permite asociar un producto con un proveedor perteneciente a otra sociedad.
-
-La validación debe realizarse en Backend.
-
-Frontend debe utilizar proveedores disponibles de la sociedad activa para seleccionar el proveedor.
-
----
-
-## 19.2. Proveedor del Producto
-
-El producto debe permitir identificar:
-
-* proveedor;
-* `supplierId`;
-* información básica del proveedor cuando corresponda.
-
-El `supplierId` se almacena como referencia al registro de `SUPPLIERS`.
-
-No se debe duplicar dentro de `PRODUCTS` la información comercial del proveedor, como:
-
-* nombre;
-* teléfono;
-* email;
-* dirección.
-
-La información del proveedor debe obtenerse mediante la relación correspondiente.
-
----
-
-## 19.3. Integridad Referencial
-
-`PRODUCTS.supplierId` debe referenciar:
-
-```text
-SUPPLIERS.id
-```
-
-No debe existir un producto asociado a un proveedor inexistente.
-
-Cuando un proveedor se encuentre desactivado, los productos históricos asociados a dicho proveedor deben conservar su relación.
-
-La desactivación de un proveedor no debe modificar automáticamente el `supplierId` de los productos existentes.
-
----
-
-## 19.4. Proveedor y Productos Históricos
-
-La relación producto-proveedor debe conservarse para mantener trazabilidad sobre el origen de adquisición.
-
-Por lo tanto:
-
-```text
-Proveedor activo
-       ↓
-Producto
-       ↓
-Proveedor desactivado
-```
-
-no debe provocar la pérdida de la relación histórica.
-
-El producto continúa mostrando el proveedor al que fue asociado originalmente.
-
----
-
-## 19.5. Proveedor y Nuevos Productos
-
-Un proveedor desactivado no debe estar disponible para asociar nuevos productos.
-
-Los productos existentes que ya poseen ese proveedor continúan manteniendo su `supplierId`.
-
----
-
-## 19.6. Cambio de Proveedor
-
-El `supplierId` de un producto puede modificarse cuando corresponda.
-
-La modificación representa un cambio del proveedor asociado al producto para futuras operaciones.
-
-El cambio no debe alterar:
-
-* ventas históricas;
-* pagos históricos;
-* movimientos de caja;
-* operaciones anteriores de stock;
-* información histórica registrada.
-
-Las operaciones históricas deben conservar sus propios datos de origen.
-
----
-
-## 19.7. Productos y Compras
-
-La relación `Product → Supplier` permite identificar el proveedor asociado a un producto.
-
-El flujo funcional previsto es:
-
-```text
-SUPPLIER
-    ↓
-PRODUCT
-    ↓
-COMPRA / INGRESO
-    ↓
-STOCK
-```
-
-La relación producto-proveedor no reemplaza el registro de una compra.
-
-Una futura operación de compra deberá registrar sus propios datos transaccionales, como:
-
-* proveedor;
-* producto;
-* cantidad;
-* costo;
-* fecha;
-* número de comprobante;
-* operación de stock.
-
-Por lo tanto, `supplierId` identifica el proveedor asociado al producto, mientras que las operaciones de compra deberán conservar su propia trazabilidad histórica.
-
----
-
-# 20. Reportes
-
-El dominio ya posee un reporte central de pagos a proveedores:
-
-```http
-GET /reports/supplier-payments/excel
-```
-
-con:
-
-```text
-from
-to
-```
-
-El reporte utiliza los pagos registrados en `SupplierPaymentsService`.
-
-Por lo tanto:
-
-```text
-Supplier Payments
+Supplier Payment
         ↓
-Reports
-        ↓
-Excel
+Supplier Invoice
 ```
-
-El Frontend de Reportes puede ofrecerlo como reporte central.
 
 ---
 
-# 21. Permisos Frontend
+# 14. Estados de UI
 
-Las acciones de administración deben mostrarse de acuerdo con los roles:
+El frontend debe contemplar:
+
+### Loading
+
+Mientras se cargan:
+
+* proveedores;
+* productos;
+* pagos.
+
+### Empty
+
+Por ejemplo:
+
+* sin proveedores;
+* proveedor sin productos asociados;
+* proveedor sin pagos.
+
+### Error
+
+Mostrar errores provenientes de la API de manera consistente con el resto del proyecto.
+
+### Success
+
+Confirmar:
+
+* proveedor creado;
+* proveedor actualizado;
+* proveedor desactivado;
+* pago registrado;
+* asociación de proveedor modificada en un producto.
+
+---
+
+# 15. Permisos
+
+La UI debe respetar los permisos devueltos por el sistema de autenticación.
+
+Operaciones administrativas:
 
 ```text
 ADMIN
@@ -587,81 +334,52 @@ MANAGER
 SUPER_ADMIN
 ```
 
-Frontend debe ocultar acciones no permitidas cuando corresponda, pero el Backend continúa siendo responsable de validar los permisos.
+Las validaciones definitivas deben realizarse siempre en Backend.
 
 ---
 
-# 22. Manejo de Errores
+# 16. Reportes
 
-Frontend debe contemplar como mínimo:
+Los pagos a proveedores pueden consultarse mediante el reporte existente:
 
-* proveedor inexistente;
-* factura inexistente;
-* factura anulada;
-* factura con pagos al intentar anular;
-* importe de imputación superior al saldo;
-* importe imputado superior al pago disponible;
-* usuario sin permisos;
-* sociedad no válida.
-
-Los mensajes definitivos provienen del Backend.
-
----
-
-# 23. Flujo General
-
-```text
-                    PROVEEDOR
-                        │
-             ┌──────────┴──────────┐
-             ↓                     ↓
-         FACTURAS                PAGOS
-             │                     │
-             │              ┌──────┴──────┐
-             │              ↓             ↓
-             │         IMPUTACIÓN      CAJA
-             │              │             │
-             └──────────────┴─────────────┘
-                            ↓
-                         DEUDA
+```http
+GET /api/v1/reports/supplier-payments/excel
 ```
 
----
+El frontend de reportes debe continuar utilizando este endpoint para la exportación correspondiente.
 
-# 24. Estado de Integración
-
-| Funcionalidad                 | Backend                              | Frontend               |
-| ----------------------------- | ------------------------------------ | ---------------------- |
-| Listado proveedores           | Implementado                         | Pendiente              |
-| Alta proveedor                | Implementado                         | Pendiente              |
-| Edición proveedor             | Implementado                         | Pendiente              |
-| Desactivación                 | Implementado                         | Pendiente              |
-| Detalle proveedor             | Implementado                         | Pendiente              |
-| Facturas                      | Implementado                         | Pendiente              |
-| Deuda                         | Implementado                         | Pendiente              |
-| Pagos                         | Implementado                         | Pendiente              |
-| Imputaciones                  | Implementado                         | Pendiente              |
-| Integración Caja              | Backend preparado                    | Pendiente              |
-| Reporte pagos proveedores     | Implementado                         | Pendiente              |
-| Relación Producto → Proveedor | No implementada                      | No implementar todavía |
-| Compras / abastecimiento      | No implementado como módulo completo | Pendiente              |
+No se debe crear un reporte de facturas de proveedores.
 
 ---
 
-# 25. Estado Actual
+# 17. Alcance final
 
-**Documento actualizado Sprint 05.**
+El módulo de proveedores queda compuesto por:
 
-El Backend del dominio de Proveedores, Facturas y Pagos se encuentra implementado.
+```text
+PROVEEDORES
+│
+├── CRUD de proveedores
+│
+├── Relación con productos
+│     └── Product.supplierId
+│
+├── Historial de pagos
+│
+├── Registro de pagos
+│
+└── Integración con caja
+```
 
-El Frontend de Proveedores se encuentra actualmente en estado placeholder y debe desarrollarse.
+Queda fuera:
 
-La implementación Frontend debe respetar los contratos definidos en:
+```text
+Supplier Invoices
+├── Facturas
+├── Vencimientos
+├── Deuda por factura
+├── Aplicaciones
+└── Imputaciones
+```
 
-* `/suppliers`;
-* `/supplier-invoices`;
-* `/supplier-payments`.
-
-La integración con Caja debe respetar las relaciones financieras existentes.
-
-La integración directa con Productos/Stock requiere un contrato específico antes de ser desarrollada.
+La solución debe mantenerse simple, trazable y preparada para una futura incorporación de un módulo de compras/stock si el negocio lo requiere.
