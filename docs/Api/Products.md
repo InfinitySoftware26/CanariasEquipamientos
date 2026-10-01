@@ -8,7 +8,6 @@ El módulo será responsable de:
 
 * gestión productos
 * precios
-* financiación
 * configuración comercial
 * proveedores
 * control disponibilidad
@@ -124,25 +123,6 @@ POST /products
 | description | string | No          |
 | price       | number | Sí          |
 | costPrice   | number | No          |
-
----
-
-# Cambio de Categorías
-
-Las categorías dejarán de formar parte del modelo funcional definitivo de productos.
-
-Por lo tanto, `category` no debe formar parte del modelo definitivo del producto.
-
-La eliminación de este campo requiere actualización de:
-
-* Entity
-* DTO
-* Seed
-* migración/base de datos
-* Frontend
-* documentación
-
-Esta modificación todavía no está implementada en el código revisado.
 
 ---
 
@@ -321,7 +301,6 @@ El endpoint y DTO específicos deberán definirse durante su implementación.
 
 La operación deberá contemplar:
 
-* selección de sociedad;
 * porcentaje o criterio de aumento definido por negocio;
 * actualización de los productos alcanzados;
 * conservación del precio anterior;
@@ -391,7 +370,7 @@ Esto permite conservar el producto utilizado en una venta y el precio aplicado e
 
 No existe actualmente un endpoint específico para consultar el historial de ventas de un producto.
 
-La implementación de dicha consulta queda pendiente.
+La implementación de dicha consulta debe desarrollarse.
 
 ---
 
@@ -507,7 +486,6 @@ Integración Back ↔ Front pendiente para el desarrollo completo del módulo.
 
 Funcionalidades pendientes:
 
-* eliminación de categorías;
 * identificación de producto devuelto;
 * historial específico de precios;
 * aumento global de precios;

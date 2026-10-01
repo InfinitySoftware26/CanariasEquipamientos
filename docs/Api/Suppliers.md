@@ -1,28 +1,26 @@
-# Canarias System — Suppliers API
+# API — Suppliers
 
-## 1. Objetivo
+**Documento actualizado — Sprint 05**
 
-Documentar las APIs actualmente implementadas para la gestión de:
+---
 
-* proveedores;
-* facturas de proveedores;
-* pagos a proveedores;
-* imputaciones de pagos;
-* deuda de proveedores.
+# 1. Objetivo
 
-El dominio se encuentra dividido en tres recursos:
+Definir los contratos API correspondientes a proveedores y pagos a proveedores.
 
-```text
-/suppliers
-/supplier-invoices
-/supplier-payments
-```
+La API se limita a:
+
+* gestión de proveedores;
+* relación proveedor/producto mediante `supplierId`;
+* registro y consulta de pagos a proveedores.
+
+La gestión de facturas de proveedores queda fuera del alcance.
 
 ---
 
 # 2. Seguridad
 
-Todos los endpoints utilizan:
+Los endpoints requieren:
 
 ```text
 JwtAuthGuard
@@ -30,7 +28,63 @@ RolesGuard
 SocietyGuard
 ```
 
-Las operaciones administrativas requieren:
+La sociedad se obtiene desde el usuario autenticado.
+
+No se debe enviar `societyId` desde el frontend como fuente de autoridad.
+
+---
+
+# 3. Suppliers
+
+Base:
+
+```text
+/api/v1/suppliers
+```
+
+---
+
+## 3.1 Listar proveedores
+
+```http
+GET /api/v1/suppliers
+```
+
+Query opcional:
+
+```text
+activeOnly=true
+```
+
+Ejemplo:
+
+```http
+GET /api/v1/suppliers?activeOnly=true
+```
+
+Retorna los proveedores correspondientes a la sociedad del usuario autenticado.
+
+---
+
+## 3.2 Obtener proveedor
+
+```http
+GET /api/v1/suppliers/:id
+```
+
+`id` debe ser UUID.
+
+Retorna el proveedor solicitado.
+
+---
+
+## 3.3 Crear proveedor
+
+```http
+POST /api/v1/suppliers
+```
+
+Roles:
 
 ```text
 ADMIN
@@ -38,511 +92,262 @@ MANAGER
 SUPER_ADMIN
 ```
 
-La sociedad se obtiene desde:
-
-```ts
-user.societyId
-```
-
-No se debe enviar `societyId` como parámetro para seleccionar otra sociedad.
-
----
-
-# 3. Suppliers
-
-## 3.1. Listar proveedores
-
-```http
-GET /suppliers
-```
-
-### Query Params
-
-| Parámetro  | Tipo    | Obligatorio |
-| ---------- | ------- | ----------- |
-| activeOnly | boolean | No          |
-
-Ejemplo:
-
-```http
-GET /suppliers?activeOnly=true
-```
-
-La consulta utiliza la sociedad del usuario autenticado.
-
----
-
-## 3.2. Obtener proveedor
-
-```http
-GET /suppliers/:id
-```
-
-### Parámetro
-
-| Parámetro | Tipo |
-| --------- | ---- |
-| id        | UUID |
-
-Devuelve el detalle del proveedor.
-
----
-
-## 3.3. Crear proveedor
-
-```http
-POST /suppliers
-```
-
-### Roles
-
-* ADMIN
-* MANAGER
-* SUPER_ADMIN
-
-### Body
+Body:
 
 ```json
 {
   "name": "Distribuidora del Sur S.A.",
   "taxId": "30-12345678-9",
-  "phone": "3870000000",
+  "phone": "3871234567",
   "email": "contacto@proveedor.com",
   "address": "Av. Ejemplo 123"
 }
 ```
 
-### Campos
+`name` es obligatorio.
 
-| Campo   | Tipo   | Obligatorio |
-| ------- | ------ | ----------- |
-| name    | string | Sí          |
-| taxId   | string | No          |
-| phone   | string | No          |
-| email   | string | No          |
-| address | string | No          |
+Los demás campos son opcionales.
 
-El proveedor se crea asociado a:
+La sociedad se determina mediante el usuario autenticado.
+
+---
+
+## 3.4 Actualizar proveedor
+
+```http
+PATCH /api/v1/suppliers/:id
+```
+
+Roles:
 
 ```text
-user.societyId
+ADMIN
+MANAGER
+SUPER_ADMIN
 ```
 
-y comienza como activo.
+Permite modificar los datos comerciales del proveedor.
 
 ---
 
-# 4. Actualizar proveedor
+## 3.5 Desactivar proveedor
 
 ```http
-PATCH /suppliers/:id
+DELETE /api/v1/suppliers/:id
 ```
 
-### Roles
-
-* ADMIN
-* MANAGER
-* SUPER_ADMIN
-
-Todos los campos del DTO de creación son opcionales durante la actualización.
-
-Respuesta:
-
-```http
-204 No Content
-```
-
----
-
-# 5. Desactivar proveedor
-
-```http
-DELETE /suppliers/:id
-```
-
-### Roles
-
-* ADMIN
-* MANAGER
-* SUPER_ADMIN
-
-La operación no elimina físicamente el proveedor.
-
-Lo establece como:
+Roles:
 
 ```text
-active = false
+ADMIN
+MANAGER
+SUPER_ADMIN
 ```
 
-Respuesta:
+La operación corresponde a una desactivación lógica.
 
-```http
-204 No Content
-```
+No se elimina físicamente el proveedor.
 
 ---
 
-# 6. Supplier Invoices
+# 4. Relación con Products
 
-Las facturas de proveedores utilizan el recurso:
-
-```http
-/supplier-invoices
-```
-
----
-
-## 6.1. Listar facturas
-
-```http
-GET /supplier-invoices
-```
-
-### Query Params
-
-| Parámetro  | Tipo       | Obligatorio |
-| ---------- | ---------- | ----------- |
-| supplierId | UUID       | No          |
-| status     | enum       | No          |
-| from       | YYYY-MM-DD | No          |
-| to         | YYYY-MM-DD | No          |
-
-Estados disponibles:
+El producto debe almacenar:
 
 ```text
-pending
-partially_paid
-paid
-cancelled
+supplierId: UUID
 ```
 
----
-
-# 7. Obtener factura
-
-```http
-GET /supplier-invoices/:id
-```
-
-### Parámetro
+Relación:
 
 ```text
-id = UUID
+PRODUCTS.supplierId
+        ↓
+SUPPLIERS.supplierId
 ```
+
+Al crear o modificar un producto, el backend debe validar que:
+
+1. el proveedor exista;
+2. pertenezca a la sociedad correspondiente;
+3. esté activo cuando se trate de una nueva asociación.
+
+La API de Products es responsable de recibir y validar `supplierId`.
 
 ---
 
-# 8. Saldo de factura
+# 5. Supplier Payments
 
-```http
-GET /supplier-invoices/:id/balance
-```
-
-Devuelve:
-
-```json
-{
-  "invoiceId": "uuid",
-  "totalAmount": 120000,
-  "paidAmount": 50000,
-  "balance": 70000,
-  "status": "partially_paid"
-}
-```
-
----
-
-# 9. Aplicaciones de una factura
-
-```http
-GET /supplier-invoices/:id/applications
-```
-
-Devuelve los pagos imputados a la factura.
-
----
-
-# 10. Deuda de proveedor
-
-```http
-GET /supplier-invoices/supplier/:supplierId/debt
-```
-
-Devuelve:
-
-```json
-{
-  "supplierId": "uuid",
-  "totalInvoiced": 500000,
-  "totalPaid": 300000,
-  "balance": 200000
-}
-```
-
----
-
-# 11. Crear factura
-
-```http
-POST /supplier-invoices
-```
-
-### Roles
-
-* ADMIN
-* MANAGER
-* SUPER_ADMIN
-
-### Body
-
-```json
-{
-  "supplierId": "uuid",
-  "invoiceNumber": "A-0001-00012345",
-  "issueDate": "2026-08-01",
-  "dueDate": "2026-09-01",
-  "totalAmount": 120000,
-  "notes": "Compra de mercadería"
-}
-```
-
-### Campos
-
-| Campo         | Tipo   | Obligatorio |
-| ------------- | ------ | ----------- |
-| supplierId    | UUID   | Sí          |
-| invoiceNumber | string | Sí          |
-| issueDate     | date   | Sí          |
-| dueDate       | date   | No          |
-| totalAmount   | number | Sí          |
-| notes         | string | No          |
-
-La factura se crea inicialmente con estado:
+Base:
 
 ```text
-pending
+/api/v1/supplier-payments
 ```
 
 ---
 
-# 12. Actualizar factura
+## 5.1 Listar pagos
 
 ```http
-PATCH /supplier-invoices/:id
+GET /api/v1/supplier-payments
 ```
 
-Actualmente permite modificar:
+Query opcional:
 
-* `dueDate`;
-* `notes`.
-
-Respuesta:
-
-```http
-204 No Content
+```text
+from=YYYY-MM-DD
+to=YYYY-MM-DD
 ```
 
----
-
-# 13. Anular factura
+Ejemplo:
 
 ```http
-DELETE /supplier-invoices/:id
+GET /api/v1/supplier-payments?from=2026-09-01&to=2026-09-30
 ```
 
-La factura solo puede anularse cuando no posee pagos imputados.
+Roles:
 
-Respuesta:
-
-```http
-204 No Content
+```text
+ADMIN
+MANAGER
+SUPER_ADMIN
 ```
 
 ---
 
-# 14. Supplier Payments
-
-Los pagos utilizan:
+## 5.2 Resumen de pagos de un proveedor
 
 ```http
-/supplier-payments
+GET /api/v1/supplier-payments/supplier/:supplierId
 ```
+
+Retorna el resumen de pagos realizados al proveedor y el total abonado.
 
 ---
 
-## 14.1. Listar pagos
+## 5.3 Registrar pago
 
 ```http
-GET /supplier-payments
+POST /api/v1/supplier-payments
 ```
 
-### Query Params
+Roles:
 
-| Parámetro | Tipo       | Obligatorio |
-| --------- | ---------- | ----------- |
-| from      | YYYY-MM-DD | No          |
-| to        | YYYY-MM-DD | No          |
-
-La sociedad se obtiene del usuario autenticado.
-
----
-
-# 15. Resumen de pagos de proveedor
-
-```http
-GET /supplier-payments/supplier/:supplierId
+```text
+ADMIN
+MANAGER
+SUPER_ADMIN
 ```
 
-Devuelve:
-
-* `supplierId`;
-* `totalPaid`;
-* listado de pagos.
-
----
-
-# 16. Aplicaciones de un pago
-
-```http
-GET /supplier-payments/:id/applications
-```
-
-Devuelve las facturas cubiertas por el pago.
-
----
-
-# 17. Registrar pago
-
-```http
-POST /supplier-payments
-```
-
-### Body
+Body objetivo:
 
 ```json
 {
   "supplierId": "uuid",
   "amount": 50000,
-  "method": "transfer",
-  "supplierInvoiceId": "uuid",
-  "notes": "Pago parcial"
+  "method": "cash",
+  "notes": "Pago correspondiente a compra"
 }
 ```
 
-### Campos
+El backend debe:
 
-| Campo             | Tipo          | Obligatorio |
-| ----------------- | ------------- | ----------- |
-| supplierId        | UUID          | Sí          |
-| amount            | number        | Sí          |
-| method            | PaymentMethod | Sí          |
-| supplierInvoiceId | UUID          | No          |
-| notes             | string        | No          |
-
-Si se indica `supplierInvoiceId`, el pago intenta imputarse automáticamente a esa factura.
+* validar el proveedor;
+* registrar la sociedad desde el usuario autenticado;
+* registrar el usuario responsable;
+* validar que el importe sea positivo;
+* registrar fecha y método;
+* guardar las observaciones.
 
 ---
 
-# 18. Imputar pago manualmente
+# 6. Eliminación de Supplier Invoices API
 
-```http
+Actualmente existe:
+
+```text
+/api/v1/supplier-invoices
+```
+
+Este recurso debe eliminarse del diseño final.
+
+Deben retirarse:
+
+```text
+GET /supplier-invoices
+GET /supplier-invoices/supplier/:supplierId/debt
+GET /supplier-invoices/:id
+GET /supplier-invoices/:id/balance
+GET /supplier-invoices/:id/applications
+POST /supplier-invoices
+PATCH /supplier-invoices/:id
+DELETE /supplier-invoices/:id
+```
+
+También deben eliminarse de `supplier-payments` los endpoints relacionados con imputaciones:
+
+```text
+GET /supplier-payments/:id/applications
 POST /supplier-payments/:id/applications
 ```
 
-### Body
-
-```json
-{
-  "applications": [
-    {
-      "supplierInvoiceId": "uuid",
-      "amount": 30000
-    },
-    {
-      "supplierInvoiceId": "uuid",
-      "amount": 20000
-    }
-  ]
-}
-```
-
-Permite distribuir un pago entre una o más facturas.
-
-La suma imputada no puede superar el importe disponible del pago.
-
-Respuesta:
-
-```http
-204 No Content
-```
-
----
-
-# 19. Relación con Caja
-
-Los pagos de proveedores forman parte del dominio financiero y `CASH_MOVEMENTS` contempla:
+El endpoint de creación de pagos tampoco debe recibir:
 
 ```text
-related_supplier_payment_id
+supplierInvoiceId
 ```
 
-Esto permite asociar un movimiento de caja con un pago de proveedor.
+---
 
-La API de Caja/Cash Movements continúa siendo responsable de sus propios endpoints.
+# 7. Contrato final de Supplier Payment
 
-Este módulo no debe crear endpoints duplicados para Caja.
+El contrato final debe representar únicamente un pago realizado a un proveedor.
+
+```text
+SupplierPayment
+├── supplierId
+├── societyId
+├── staffId
+├── amount
+├── method
+├── paymentDate
+├── notes
+└── createdAt
+```
+
+No debe contener referencias a facturas.
 
 ---
 
-# 20. Resumen de Endpoints
+# 8. Errores esperados
 
-## Suppliers
+La API debe contemplar, entre otros:
 
-| Método | Endpoint         |
-| ------ | ---------------- |
-| GET    | `/suppliers`     |
-| GET    | `/suppliers/:id` |
-| POST   | `/suppliers`     |
-| PATCH  | `/suppliers/:id` |
-| DELETE | `/suppliers/:id` |
-
-## Supplier Invoices
-
-| Método | Endpoint                                       |
-| ------ | ---------------------------------------------- |
-| GET    | `/supplier-invoices`                           |
-| GET    | `/supplier-invoices/supplier/:supplierId/debt` |
-| GET    | `/supplier-invoices/:id`                       |
-| GET    | `/supplier-invoices/:id/balance`               |
-| GET    | `/supplier-invoices/:id/applications`          |
-| POST   | `/supplier-invoices`                           |
-| PATCH  | `/supplier-invoices/:id`                       |
-| DELETE | `/supplier-invoices/:id`                       |
-
-## Supplier Payments
-
-| Método | Endpoint                                  |
-| ------ | ----------------------------------------- |
-| GET    | `/supplier-payments`                      |
-| GET    | `/supplier-payments/supplier/:supplierId` |
-| GET    | `/supplier-payments/:id/applications`     |
-| POST   | `/supplier-payments`                      |
-| POST   | `/supplier-payments/:id/applications`     |
+* UUID inválido;
+* proveedor inexistente;
+* proveedor perteneciente a otra sociedad;
+* importe inválido;
+* proveedor inactivo cuando no corresponda operar;
+* usuario sin permisos;
+* acceso a otra sociedad.
 
 ---
 
-# 21. Estado Actual
+# 9. Reportes
 
-**Documento actualizado Sprint 05.**
+Los pagos a proveedores continúan siendo fuente de información para reportes.
 
-El Backend cuenta actualmente con módulos implementados para:
+Endpoint existente:
 
-* proveedores;
-* facturas de proveedores;
-* pagos a proveedores;
-* imputaciones;
-* deuda de proveedores.
+```http
+GET /api/v1/reports/supplier-payments/excel
+```
 
-El Frontend de proveedores actualmente se encuentra en estado placeholder y requiere implementación.
+Query opcional:
 
-El módulo de compras/abastecimiento y la relación directa Producto → Proveedor no deben considerarse implementados actualmente.
+```text
+from
+to
+```
+
+El reporte debe trabajar sobre `SupplierPayment` y no depender de facturas de proveedores.

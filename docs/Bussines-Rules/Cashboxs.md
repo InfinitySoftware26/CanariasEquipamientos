@@ -239,3 +239,9 @@ Futuras versiones podrán incorporar:
 * exportación contable
 * arqueos digitales
 * dashboards financieros avanzados
+
+---
+
+# Estado
+
+Documento actualizado Sprint 05.
