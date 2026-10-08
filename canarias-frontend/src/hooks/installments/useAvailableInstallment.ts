@@ -2,9 +2,9 @@
 
 import { useCallback, useState } from "react";
 
-import { getAvailableInstallments } from "@/services/route-sheets/routeSheets.service";
+import type { AvailableRouteInstallment } from "@/types/rotue-sheets/available-installment.type";
 
-import { AvailableRouteInstallment } from "@/types/rotue-sheets/available-installment.type";
+import { getAvailableInstallments } from "@/services/route-sheets/routeSheets.service";
 
 export function useAvailableInstallments() {
   const [installments, setInstallments] = useState<AvailableRouteInstallment[]>(
@@ -19,6 +19,7 @@ export function useAvailableInstallments() {
     async (zoneId: string, staffId: string, routeDate: string) => {
       if (!zoneId || !staffId || !routeDate) {
         setInstallments([]);
+        setError(null);
         return;
       }
 
