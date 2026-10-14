@@ -451,26 +451,8 @@ try {
 
 ---
 
-## Estado Actual (2026-08-25)
+## Estado 
 
-✅ Completado:
-
-1. **FinancingService** y **FinancingController** únicos (módulo `financing`)
-2. Repositorios separados por entidad (Config / Plan / Promotion)
-3. **Endpoints REST** completos para las 3 entidades
-4. **Frontend**: forms de create/edit para las 3 entidades con validación y alertas del sistema (`ConfirmDialog`)
-5. Manejo de errores de FK en borrado (400 con mensaje claro)
-6. Campo `discountPercentage` con signo (descuento/recargo)
-
-🔴 Pendiente (Fase 2):
-
-1. **Integración en Sales**: `SalesService.createSale()` resuelva `FinancingPlan` + `FinancingConfiguration` + `Promotion` en vez de usar la tasa fija temporal (12%)
-2. Generación real de cuotas a partir del plan seleccionado
-
----
-
-## Contacto y Cambios
-
-Esta documentación es viva y se actualiza conforme evoluciona el sistema.
-
-Último update: 2026-08-25
+Documento actualizado Sprint 05.
+Backend y Frontend operativos.
+Integración Back ↔ Front operativa.

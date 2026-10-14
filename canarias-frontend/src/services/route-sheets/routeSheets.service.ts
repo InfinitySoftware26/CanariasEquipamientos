@@ -17,6 +17,7 @@ import {
 } from "@/types/rotue-sheets/createRouteSheets.type";
 
 import { UpdateRouteSheetStatusPayload } from "@/types/rotue-sheets/updateRouteSheets";
+import { AvailableRouteInstallment } from "@/types/rotue-sheets/available-installment.type";
 
 // ============================================================
 // AUTH
@@ -324,5 +325,45 @@ export async function getAvailableInstallmentsForRouteSheet(
 
   const result =
     await parseResponse<AvailableRouteSheetInstallment[]>(response);
+  return Array.isArray(result) ? result : [];
+}
+
+// ============================================================
+// CUOTAS DISPONIBLES POR ZONA, COBRADOR Y FECHA
+// ============================================================
+
+export async function getAvailableInstallments(
+  zoneId: string,
+  staffId: string,
+  routeDate: string,
+): Promise<AvailableRouteInstallment[]> {
+  if (!zoneId || !staffId || !routeDate) {
+    return [];
+  }
+
+  const params = new URLSearchParams({
+    zoneId,
+    staffId,
+    routeDate,
+  });
+
+  const response = await apiFetch(
+    `/route-sheets/available-installments?${params.toString()}`,
+    {
+      headers: authHeaders(),
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      await getErrorMessage(
+        response,
+        `Error obteniendo cuotas disponibles (${response.status})`,
+      ),
+    );
+  }
+
+  const result = await parseResponse<AvailableRouteInstallment[]>(response);
+
   return Array.isArray(result) ? result : [];
 }

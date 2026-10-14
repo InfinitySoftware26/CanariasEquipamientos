@@ -46,6 +46,7 @@ El objetivo es dejar operativo:
 * payment_installments
 * failed_visits
 * daily_closures
+* reports
 
 ---
 

@@ -188,19 +188,6 @@ El cliente creado quedará asociado a la venta.
 
 ## BR-SALES-021
 
-Toda venta deberá permitir configurar la modalidad de pago.
-
-Modalidades permitidas:
-
-- diaria;
-- semanal;
-- quincenal;
-- mensual.
-
----
-
-## BR-SALES-022
-
 El detalle de la venta deberá mostrar:
 
 - nombre del cliente;
@@ -208,6 +195,57 @@ El detalle de la venta deberá mostrar:
 - teléfono;
 - dirección;
 - referencia telefónica.
+
+---
+
+# Condiciones efectivas
+
+Las condiciones finales de la venta deben determinar:
+
+porcentaje de ganancia;
+cantidad de cuotas;
+frecuencia de pago;
+financiación utilizada;
+plan utilizado, cuando corresponda;
+promoción utilizada, cuando corresponda.
+
+Cuando una promoción está basada en un plan, puede sobrescribir las condiciones que permita la promoción.
+
+Las condiciones que no sean sobrescritas deben heredarse del plan.
+
+Esta resolución ya está contemplada en el backend
+
+---
+
+# Financiación de la venta
+
+Una venta financiada debe utilizar una de las alternativas de financiación disponibles:
+
+Plan de financiación.
+Promoción.
+
+La venta no debe seleccionar simultáneamente un plan y una promoción.
+
+El backend actualmente valida esta condición al resolver las condiciones efectivas de la venta.
+
+---
+
+# Retiro por falta de pago
+
+El retiro del producto puede producirse como consecuencia de incumplimiento de pago.
+
+La condición definida por la empresa es:
+
+Dos cuotas consecutivas impagas.
+
+Cuando se cumple esta condición:
+
+El sistema debe identificar el incumplimiento.
+Debe generar una notificación interna dirigida a Administración.
+Administración puede gestionar el retiro del producto.
+Una vez registrado el retiro, debe actualizarse la información correspondiente a la deuda y a la plata en calle según las reglas de Caja.
+
+El retiro no debe borrar el historial de la venta ni los pagos realizados previamente.
 
 ---
 
