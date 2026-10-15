@@ -49,7 +49,6 @@ Los principales cambios son:
 * las transferencias representan movimientos reales entre cuentas;
 * el saldo que permanece entre períodos no se considera una transferencia;
 * las rendiciones y liquidaciones forman parte del flujo financiero;
-* se incorpora el concepto de Fondo de Gestión con acceso restringido a MANAGER y SUPER_ADMIN;
 * no se incorpora conciliación bancaria;
 * se mantiene Excel como herramienta complementaria para procesos administrativos y financieros que no forman parte de esta versión.
 
@@ -322,9 +321,6 @@ Los reportes financieros avanzados permanecen fuera del alcance inicial.
 * cuentas financieras básicas
 * transferencias
 * rendiciones/liquidaciones relacionadas
-* Fondo de Gestión según permisos
-
-La información restringida del Fondo de Gestión deberá respetar los permisos definidos para MANAGER y SUPER_ADMIN.
 
 ---
 
@@ -367,7 +363,6 @@ La información restringida del Fondo de Gestión deberá respetar los permisos 
 * generación recibos
 * generación PDF
 * generación Excel
-* permisos sobre Fondo de Gestión
 
 ---
 
@@ -381,7 +376,6 @@ La información restringida del Fondo de Gestión deberá respetar los permisos 
 | cambios catálogo productos                          | parametrización flexible                  |
 | movimientos financieros duplicados                  | validaciones y trazabilidad               |
 | transferencias incorrectas                          | identificación de cuenta origen y destino |
-| acceso no autorizado al Fondo de Gestión            | permisos aplicados en Backend             |
 
 ---
 
@@ -396,7 +390,6 @@ La información restringida del Fondo de Gestión deberá respetar los permisos 
 * movimientos financieros
 * transferencias internas
 * rendiciones y liquidaciones integradas al flujo financiero
-* Fondo de Gestión con acceso restringido
 * recibos automáticos
 * reportes financieros básicos
 
@@ -428,6 +421,7 @@ Estos procesos quedan documentados como parte de la evolución futura del sistem
 
 Se mantiene una arquitectura preparada para incorporar posteriormente:
 
+* fondo de gestion restringido
 * compras completas;
 * stock avanzado;
 * clasificación avanzada de gastos;
