@@ -157,23 +157,6 @@ La información del proveedor se obtiene desde la entidad `Supplier`.
 
 ---
 
-# 10. Cambio de proveedor de un producto
-
-El proveedor asociado a un producto puede modificarse.
-
-Modificar `Product.supplierId` no debe modificar:
-
-* ventas históricas;
-* pagos;
-* movimientos de caja;
-* información histórica de operaciones anteriores.
-
-La relación representa el proveedor actualmente asociado al producto.
-
-Cuando el sistema incorpore un módulo formal de compras/ingresos de stock, las operaciones de compra deberán conservar su propio proveedor para mantener trazabilidad histórica.
-
----
-
 # 11. Desactivación de un proveedor asociado a productos
 
 La desactivación de un proveedor no debe eliminar ni romper las relaciones existentes con productos.

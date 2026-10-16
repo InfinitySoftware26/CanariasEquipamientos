@@ -34,7 +34,7 @@ Cliente
 
 ↓
 
-Selección de producto
+Selección de plan/promocion/producto
 
 ↓
 
@@ -128,14 +128,6 @@ Entre otros aspectos:
 
 ---
 
-## BR-CLIENT-011
-
-El sistema deberá permitir clasificar el comportamiento comercial del cliente a partir de su historial.
-
-Esta clasificación servirá como apoyo para futuras decisiones comerciales y administrativas.
-
----
-
 # Búsquedas
 
 ## BR-CLIENT-012
@@ -148,6 +140,7 @@ Como mínimo:
 * DNI;
 * teléfono;
 * domicilio.
+* estado
 
 ---
 
@@ -156,8 +149,6 @@ Como mínimo:
 ## BR-CLIENT-013
 
 El estado comercial del cliente será calculado a partir de su historial operativo.
-
-La clasificación podrá evolucionar durante futuras etapas del proyecto.
 
 ---
 
