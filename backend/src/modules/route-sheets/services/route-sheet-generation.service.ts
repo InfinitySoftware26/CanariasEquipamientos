@@ -12,6 +12,7 @@ import {
 } from "../interfaces/route-sheets-repository.interface";
 import {
   IRouteSheetItemsRepository,
+  OPEN_INSTALLMENT_STATUSES,
   ROUTE_SHEET_ITEMS_REPOSITORY,
 } from "../interfaces/route-sheet-items-repository.interface";
 import { RouteSheet } from "../entities/route-sheet.entity";
@@ -22,7 +23,6 @@ import { Sale } from "../../sales/entities/sale.entity";
 import { JwtPayload } from "../../auth/interfaces/jwt-payload.interface";
 import { RouteSheetCalculationsService } from "./route-sheet-calculations.service";
 import { RouteSheetValidationService } from "./route-sheet-validation.service";
-import { OPEN_INSTALLMENT_STATUSES } from "../route-sheet.constants";
 
 interface RouteCandidate {
   installment: Installment;

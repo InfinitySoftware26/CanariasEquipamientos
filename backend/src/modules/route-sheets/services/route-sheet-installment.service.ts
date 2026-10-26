@@ -15,6 +15,7 @@ import { InstallmentStatus } from "../../../common/enums/installment-status.enum
 import { SaleStatus } from "../../../common/enums/sale-status.enum";
 import {
   IRouteSheetItemsRepository,
+  OPEN_INSTALLMENT_STATUSES,
   ROUTE_SHEET_ITEMS_REPOSITORY,
 } from "../interfaces/route-sheet-items-repository.interface";
 import { RouteSheetItem } from "../entities/route-sheet-item.entity";
@@ -24,7 +25,6 @@ import { Sale } from "../../sales/entities/sale.entity";
 import { JwtPayload } from "../../auth/interfaces/jwt-payload.interface";
 import { RouteSheetQueryService } from "./route-sheet-query.service";
 import { RouteSheetCalculationsService } from "./route-sheet-calculations.service";
-import { OPEN_INSTALLMENT_STATUSES } from "../route-sheet.constants";
 
 @Injectable()
 export class RouteSheetInstallmentService {
