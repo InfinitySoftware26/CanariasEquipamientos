@@ -92,8 +92,8 @@ Los ingresos provenientes de cobranzas deberán conservar la referencia a la ope
 
 Cuando corresponda deberán poder relacionarse con:
 
-* pago;
-* rendición;
+* pago.
+* rendición.
 * cierre del cobrador.
 
 ---
@@ -189,58 +189,11 @@ El saldo inicial de una nueva jornada deberá representar la continuidad del sal
 
 ---
 
-# Fondo de Gestión
-
----
-
-## BR-MOVEMENT-016
-
-El sistema deberá permitir realizar transferencias desde una cuenta operativa hacia el Fondo de Gestión.
-
-Estas transferencias deberán registrarse como:
-
-```text
-TRANSFER
-```
-
-y deberán identificar la cuenta origen y la cuenta de destino.
-
----
-
-## BR-MOVEMENT-017
-
-Los movimientos realizados dentro del Fondo de Gestión deberán conservar su trazabilidad financiera.
-
----
-
-## BR-MOVEMENT-018
-
-Los egresos realizados desde el Fondo de Gestión deberán registrarse como:
-
-```text
-EXPENSE
-```
-
-asociados a dicha cuenta.
-
----
-
-## BR-MOVEMENT-019
-
-Los movimientos internos del Fondo de Gestión solo podrán ser consultados y administrados por:
-
-* MANAGER;
-* SUPER_ADMIN.
-
-El ADMIN podrá registrar transferencias hacia el Fondo de Gestión, pero no podrá consultar su saldo ni sus egresos internos.
-
----
-
 # Relación con Cobranzas
 
 ---
 
-## BR-MOVEMENT-020
+## BR-MOVEMENT-016
 
 El registro de un pago de cliente representa una cobranza realizada.
 
@@ -248,7 +201,7 @@ El movimiento financiero de la sociedad deberá producirse dentro del flujo de r
 
 ---
 
-## BR-MOVEMENT-021
+## BR-MOVEMENT-017
 
 Cuando la administración valide una rendición, el sistema deberá generar o confirmar el movimiento financiero correspondiente en la cuenta definida para recibir la cobranza.
 
@@ -298,7 +251,6 @@ Los cálculos deberán realizarse en backend.
 * No se permiten transferencias superiores al saldo disponible de la cuenta origen.
 * No se permiten movimientos financieros duplicados para una misma operación.
 * No se permiten eliminaciones físicas de movimientos.
-* No se permite acceder a movimientos restringidos del Fondo de Gestión sin autorización correspondiente.
 
 ---
 
@@ -323,7 +275,6 @@ Los cálculos deberán realizarse en backend.
 * Toda operación deberá conservar trazabilidad.
 * Las transferencias deberán procesarse de forma transaccional.
 * Las relaciones con pagos, rendiciones y proveedores deberán permitir identificar el origen del movimiento.
-* Las restricciones de acceso al Fondo de Gestión deberán aplicarse en backend.
 
 ---
 
@@ -334,7 +285,6 @@ Los cálculos deberán realizarse en backend.
 * Egresos sin concepto.
 * Ingresos no asociados a su operación de origen.
 * Diferencias entre saldo calculado y dinero físico.
-* Acceso no autorizado a movimientos del Fondo de Gestión.
 
 ---
 
@@ -390,6 +340,5 @@ Alcance definido para la primera versión:
 * transferencias internas;
 * impacto de rendiciones validadas;
 * trazabilidad de pagos y proveedores;
-* Fondo de Gestión con acceso restringido.
 
 La gestión financiera detallada que actualmente se realiza mediante Excel continuará fuera del alcance inicial.

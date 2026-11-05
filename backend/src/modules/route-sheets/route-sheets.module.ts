@@ -5,6 +5,12 @@ import { RouteSheetsController } from "./controllers/route-sheets.controller";
 import { RouteSheetItemsController } from "./controllers/route-sheet-items.controller";
 
 import { RouteSheetsService } from "./services/route-sheets.service";
+import { RouteSheetQueryService } from "./services/route-sheet-query.service";
+import { RouteSheetGenerationService } from "./services/route-sheet-generation.service";
+import { RouteSheetInstallmentService } from "./services/route-sheet-installment.service";
+import { RouteSheetManagementService } from "./services/route-sheet-management.service";
+import { RouteSheetCalculationsService } from "./services/route-sheet-calculations.service";
+import { RouteSheetValidationService } from "./services/route-sheet-validation.service";
 import { RouteSheetItemsService } from "./services/route-sheet-items.service";
 import { RouteSheetsAutomationService } from "./services/route-sheet-automation.service";
 import { RouteSheetsCronService } from "./services/route-sheet-cron.service";
@@ -53,6 +59,12 @@ import { FailedVisitsModule } from "../failed-visits/failed-visits.module";
 
   providers: [
     RouteSheetsService,
+    RouteSheetQueryService,
+    RouteSheetGenerationService,
+    RouteSheetInstallmentService,
+    RouteSheetManagementService,
+    RouteSheetCalculationsService,
+    RouteSheetValidationService,
     RouteSheetItemsService,
     RouteSheetsAutomationService,
     RouteSheetsCronService,

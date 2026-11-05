@@ -2,7 +2,15 @@ import { RouteSheetItem } from "../entities/route-sheet-item.entity";
 
 import { RouteSheetItemResult } from "../../../common/enums/route-sheet-item-result.enum";
 
+import { InstallmentStatus } from "../../../common/enums/installment-status.enum";
+
 export const ROUTE_SHEET_ITEMS_REPOSITORY = "ROUTE_SHEET_ITEMS_REPOSITORY";
+
+export const OPEN_INSTALLMENT_STATUSES = [
+  InstallmentStatus.PENDING,
+  InstallmentStatus.OVERDUE,
+  InstallmentStatus.PARTIAL,
+];
 
 export interface IRouteSheetItemsRepository {
   createMany(items: Partial<RouteSheetItem>[]): Promise<RouteSheetItem[]>;

@@ -14,7 +14,7 @@ Una venta representa una solicitud comercial realizada por un vendedor o un admi
 
 La operación contempla:
 
-- selección de producto
+- selección de plan/promocion/producto
 - validación administrativa
 - visita ambiental
 - coordinación de entrega
@@ -29,8 +29,8 @@ La operación contempla:
 | Rol | Responsabilidad |
 |------|-----------------|
 | SELLER | Registra solicitudes de venta. |
-| ADMIN | Registra ventas administrativas, valida información, aprueba visitas ambientales, coordina entregas y realiza el cierre administrativo. |
-| COLLECTOR | Ejecuta visitas ambientales, realiza la entrega del producto, recibe la documentación requerida y registra el cobro de la primera cuota. |
+| ADMIN | Registra ventas administrativas, valida información, coordina entregas y realiza el cierre administrativo. |
+| COLLECTOR | Aprueba visitas ambientales, realiza la entrega del producto, recibe la documentación requerida y registra el cobro de la primera cuota. |
 | MANAGER | Supervisa la operación comercial y administrativa. |
 
 ---
@@ -45,7 +45,7 @@ Toda venta debe estar asociada a un cliente existente.
 
 ## BR-SALES-002
 
-Toda venta debe registrar al menos un producto solicitado.
+Toda venta debe registrar al menos un plan, promocion o producto solicitado.
 
 ---
 
@@ -101,7 +101,7 @@ Toda venta aprobada administrativamente requiere una evaluación ambiental.
 
 ## BR-SALES-010
 
-El resultado de la visita ambiental determinará si la operación continúa o finaliza.
+El resultado de la visita ambiental a cargo del cobrador de la zona asignado determinará si la operación continúa o finaliza.
 
 ---
 
@@ -170,31 +170,11 @@ La comisión del vendedor será acreditada únicamente cuando la venta alcance e
 
 ---
 
-# Cuotas
-
-## BR-SALES-019
-
-Las cuotas generadas quedarán asociadas a la venta que les dio origen.
-
----
-
 ## BR-SALES-020
 
 La creación de una venta podrá generar el alta inicial de un nuevo cliente.
 
 El cliente creado quedará asociado a la venta.
-
----
-
-## BR-SALES-021
-
-El detalle de la venta deberá mostrar:
-
-- nombre del cliente;
-- DNI;
-- teléfono;
-- dirección;
-- referencia telefónica.
 
 ---
 
@@ -222,6 +202,7 @@ Esta resolución ya está contemplada en el backend
 Una venta financiada debe utilizar una de las alternativas de financiación disponibles:
 
 Plan de financiación.
+
 Promoción.
 
 La venta no debe seleccionar simultáneamente un plan y una promoción.
@@ -256,16 +237,12 @@ El sistema deberá registrar:
 - vendedor creador;
 - administrador interviniente;
 - cobrador asignado;
-- fecha de validación administrativa;
-- fecha de aprobación ambiental;
 - fecha de coordinación de entrega;
-- fecha de generación del plan de cuotas;
 - fecha de entrega;
-- cambios de estado;
 - observaciones.
 
 ---
 
 # Estado
 
-Documento vigente Sprint 03.
+Documento vigente Sprint 05.

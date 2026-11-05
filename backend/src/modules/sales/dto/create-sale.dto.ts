@@ -26,11 +26,11 @@ export class CreateSaleDto {
 
   @ApiProperty({
     example: 12,
-    description: "Cantidad de cuotas entre 1 y 100",
+    description: "Cantidad de cuotas entre 1 y 400",
   })
   @IsNumber()
   @Min(1)
-  @Max(100)
+  @Max(400)
   installmentsCount!: number;
 
   @ApiProperty({

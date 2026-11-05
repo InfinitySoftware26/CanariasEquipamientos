@@ -16,7 +16,6 @@ El sistema utilizará un modelo básico y configurable de cuentas financieras, p
 
 * caja operativa;
 * cuentas utilizadas por la sociedad;
-* cuentas destinadas a fondos de gestión.
 
 La gestión financiera del sistema no reemplazará la administración contable completa de la empresa.
 
@@ -246,39 +245,6 @@ La transferencia deberá quedar registrada y auditada.
 
 ---
 
-## BR-CASH-021
-
-El ADMIN podrá visualizar que el dinero fue transferido al Fondo de Gestión y deberá poder consultar la información necesaria para documentar la operación.
-
-El ADMIN no podrá consultar:
-
-* saldo total del Fondo de Gestión;
-* saldo disponible del Fondo de Gestión;
-* egresos internos del Fondo de Gestión;
-* detalle financiero interno administrado por los gerentes.
-
----
-
-## BR-CASH-022
-
-El MANAGER y el SUPER_ADMIN podrán consultar el saldo y los movimientos del Fondo de Gestión.
-
----
-
-## BR-CASH-023
-
-Los egresos realizados desde el Fondo de Gestión deberán quedar registrados como movimientos financieros asociados a dicha cuenta.
-
----
-
-## BR-CASH-024
-
-Los movimientos del Fondo de Gestión deberán mantener la misma trazabilidad financiera que el resto de las cuentas.
-
-La restricción será de acceso y visibilidad, no de auditoría.
-
----
-
 # Transferencias
 
 ---
@@ -337,7 +303,6 @@ El saldo que permanece de un día al siguiente no genera una transferencia.
 * No se permiten cierres duplicados.
 * No se permiten rendiciones duplicadas.
 * No se permiten eliminaciones físicas de movimientos financieros.
-* No se deberá permitir que un usuario acceda a información financiera restringida por su rol.
 
 ---
 
@@ -348,7 +313,6 @@ El saldo que permanece de un día al siguiente no genera una transferencia.
 * Las rendiciones de cobradores pueden realizarse posteriormente al cierre de la jornada.
 * Administración valida la rendición antes de su impacto financiero.
 * Las cuentas permiten representar diferentes lugares o medios donde se encuentra el dinero.
-* El Fondo de Gestión será administrado por MANAGER y SUPER_ADMIN.
 * La empresa podrá continuar utilizando Excel para controles administrativos y financieros que no formen parte del alcance inicial.
 
 ---
@@ -359,7 +323,6 @@ El saldo que permanece de un día al siguiente no genera una transferencia.
 * Las operaciones financieras deberán mantener trazabilidad.
 * Los movimientos deberán ser inmutables.
 * Los saldos deberán calcularse a partir de los movimientos registrados.
-* Las restricciones de acceso al Fondo de Gestión deberán aplicarse en backend y no únicamente en frontend.
 * Las operaciones críticas deberán ejecutarse de forma transaccional.
 * El modelo deberá permitir agregar nuevas cuentas sin modificar la lógica de negocio principal.
 
@@ -372,7 +335,6 @@ El saldo que permanece de un día al siguiente no genera una transferencia.
 * Rendiciones duplicadas.
 * Transferencias incorrectas.
 * Movimientos sin trazabilidad.
-* Acceso no autorizado a fondos de gestión.
 
 ---
 
@@ -398,6 +360,7 @@ Registrar:
 
 Futuras versiones podrán incorporar:
 
+* Fondo de Gestión con acceso restringido;
 * gestión financiera detallada;
 * mayor clasificación de gastos;
 * gestión completa de compras;
@@ -429,7 +392,6 @@ Alcance definido para la primera versión:
 * transferencias;
 * rendiciones;
 * impacto financiero de rendiciones validadas;
-* Fondo de Gestión con acceso restringido;
 * resumen financiero básico.
 
 El detalle financiero y administrativo actualmente gestionado mediante Excel permanecerá parcialmente fuera del sistema hasta futuras versiones.

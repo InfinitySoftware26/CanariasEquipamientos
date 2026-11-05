@@ -33,7 +33,7 @@ La descripción es opcional.
 
 ## BR-PRODUCT-002
 
-Un producto debe encontrarse en estado `ACTIVE` para poder ser seleccionado en una nueva venta.
+Un producto debe encontrarse en estado `ACTIVE` para poder ser seleccionado en una nueva venta/plan/promocion.
 
 ---
 
@@ -46,8 +46,6 @@ Los productos `INACTIVE` no deben aparecer como productos disponibles para nueva
 ## BR-PRODUCT-004
 
 La desactivación de un producto no elimina información histórica.
-
-Las ventas existentes deben conservar la referencia al producto utilizado.
 
 ---
 
@@ -75,14 +73,6 @@ La información histórica debe conservarse.
 
 ---
 
-## DISCONTINUED
-
-Producto descontinuado.
-
-La utilización de este estado debe respetar el flujo que se defina para productos discontinuados.
-
----
-
 # Producto Devuelto
 
 ## BR-PRODUCT-006
@@ -91,8 +81,7 @@ El sistema debe permitir identificar un producto como producto devuelto mediante
 
 La identificación de producto devuelto:
 
-* no constituye una `Promotion`;
-* no debe crear una relación con `Promotion`;
+* no debe crear una relación con `Plan/Promotion`;
 * no modifica la existencia del producto dentro del catálogo;
 * permite que el producto continúe apareciendo en el listado pero diferenciado;
 * permite seleccionarlo posteriormente dentro del plan comercial correspondiente.
@@ -126,8 +115,6 @@ La propiedad utilizada para identificar el producto devuelto no reemplaza al est
 
 El Frontend podrá diferenciar visualmente los productos devueltos para facilitar su identificación al usuario administrativo.
 
-La forma visual todavía no está definida.
-
 ---
 
 # Precio
@@ -154,53 +141,9 @@ Por lo tanto, una modificación posterior del precio del producto no debe modifi
 
 ---
 
-# Historial de Precios
-
-## BR-PRODUCT-012
-
-Los cambios de precio deben poder auditarse.
-
-La auditoría deberá permitir identificar:
-
-* precio anterior;
-* precio nuevo;
-* fecha del cambio;
-* usuario que realizó el cambio.
-
-La implementación de este historial todavía está pendiente.
-
----
-
-# Aumento Global de Precios
-
-## BR-PRODUCT-013
-
-El sistema deberá permitir realizar un aumento de precios sobre múltiples productos de una sociedad.
-
-La operación deberá:
-
-* aplicar el criterio de aumento definido;
-* actualizar los precios alcanzados;
-* conservar el precio anterior;
-* registrar el nuevo precio;
-* registrar el usuario responsable;
-* registrar la fecha de la operación.
-
-La funcionalidad todavía no está implementada.
-
----
-
-## BR-PRODUCT-014
-
-El aumento global de precios no debe modificar los precios históricos registrados en ventas existentes.
-
-El cambio únicamente afecta el precio vigente de los productos alcanzados por la operación.
-
----
-
 # Ventas
 
-## BR-PRODUCT-015
+## BR-PRODUCT-012
 
 Cuando un producto participa en una venta:
 
@@ -212,33 +155,13 @@ Cuando un producto participa en una venta:
 
 ---
 
-## BR-PRODUCT-016
+## BR-PRODUCT-013
 
 El historial de ventas debe conservarse aunque el producto posteriormente pase a `INACTIVE` o `DISCONTINUED`.
 
 ---
 
-# Historial de Ventas por Producto
-
-## BR-PRODUCT-017
-
-El sistema deberá permitir consultar el historial de ventas asociado a un producto.
-
-La información deberá basarse en las relaciones existentes entre:
-
-```text
-PRODUCTS
-
-SALE_PRODUCTS
-
-SALES
-```
-
-La implementación del endpoint de consulta todavía está pendiente.
-
----
-
-## BR-PRODUCT-018
+## BR-PRODUCT-014
 
 La información histórica de `SALE_PRODUCTS` debe conservarse aunque posteriormente se modifique:
 
@@ -251,7 +174,7 @@ La información histórica de `SALE_PRODUCTS` debe conservarse aunque posteriorm
 
 # Productos Más Vendidos
 
-## BR-PRODUCT-019
+## BR-PRODUCT-015
 
 El sistema deberá permitir obtener un índice de ventas por producto.
 
@@ -261,31 +184,9 @@ Como mínimo deberá poder determinar la cantidad total de unidades vendidas por
 
 ---
 
-## BR-PRODUCT-020
-
-El cálculo de productos más vendidos no debe depender del precio actual del producto.
-
-Debe utilizar los datos históricos registrados en las ventas.
-
----
-
-## BR-PRODUCT-021
-
-La consulta de estadísticas podrá utilizar períodos de tiempo cuando dicha funcionalidad sea incorporada.
-
-Los filtros temporales todavía no están definidos en la implementación actual.
-
----
-
-## BR-PRODUCT-022
-
-Las estadísticas deberán poder calcularse a partir del historial de ventas sin modificar ni eliminar los registros históricos utilizados para el cálculo.
-
----
-
 # Financiación
 
-## BR-PRODUCT-024
+## BR-PRODUCT-016
 
 La financiación no se almacena directamente como una propiedad del producto.
 
@@ -293,7 +194,7 @@ La relación con financiación se gestiona mediante las configuraciones, planes 
 
 ---
 
-## BR-PRODUCT-025
+## BR-PRODUCT-017
 
 Un producto puede participar en configuraciones específicas de financiación mediante las relaciones correspondientes.
 
@@ -307,7 +208,7 @@ docs/Bussines-Rules/Financings.md
 
 # Eliminación
 
-## BR-PRODUCT-026
+## BR-PRODUCT-018
 
 Los productos no deben eliminarse físicamente.
 
@@ -315,32 +216,9 @@ La eliminación operativa se realiza mediante desactivación.
 
 ---
 
-## BR-PRODUCT-027
-
-Un producto utilizado históricamente en ventas debe conservarse para mantener la integridad histórica de las operaciones.
-
----
-
-# Auditoría
-
-## BR-PRODUCT-028
-
-El sistema debe registrar los cambios relevantes realizados sobre productos.
-
-Como mínimo:
-
-* creación;
-* modificación;
-* cambios de precio;
-* cambios de estado;
-* identificación como producto devuelto;
-* aumentos globales.
-
----
-
 # Integración con Ventas
 
-## BR-PRODUCT-029
+## BR-PRODUCT-019
 
 La información histórica de una venta debe conservar el precio aplicado al momento de la operación.
 
@@ -358,7 +236,3 @@ Reglas pendientes de implementación:
 
 * eliminación de categorías;
 * identificación de productos devueltos;
-* historial de precios;
-* aumento global de precios;
-* consulta de historial de ventas;
-* índice de productos más vendidos.

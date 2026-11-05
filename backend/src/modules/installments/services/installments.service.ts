@@ -4,41 +4,26 @@ import {
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
-
 import { InjectRepository } from "@nestjs/typeorm";
-
 import { DataSource, Repository } from "typeorm";
-
 import { randomUUID } from "crypto";
-
 import {
   IInstallmentsRepository,
   INSTALLMENTS_REPOSITORY,
 } from "../interfaces/installments-repository.interface";
-
 import { Installment } from "../entities/installment.entity";
-
 import { RefinanceInstallmentsDto } from "../dto/refinance-installments.dto";
-
 import { UpdateLateInterestDto } from "../dto/update-late-interest.dto";
-
 import { InstallmentStatus } from "../../../common/enums/installment-status.enum";
-
 import { PaymentFrequency } from "../../../common/enums/payment-frequency.enum";
 
 export interface InstallmentPaymentResult {
   installmentId: string;
-
   receivedAmount: number;
-
   appliedToLateInterest: number;
-
   appliedToCapital: number;
-
   remainingLateInterest: number;
-
   remainingCapital: number;
-
   status: InstallmentStatus;
 }
 
