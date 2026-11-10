@@ -29,13 +29,13 @@ export class SuppliersService {
     return this.suppliersRepo.create({ ...dto, societyId, active: true });
   }
 
-  async update(id: string, dto: UpdateSupplierDto): Promise<void> {
-    await this.findById(id);
+  async update(id: string, dto: UpdateSupplierDto, societyId?: string): Promise<void> {
+    await this.findById(id, societyId);
     await this.suppliersRepo.update(id, dto);
   }
 
-  async setActive(id: string, active: boolean): Promise<void> {
-    await this.findById(id);
+  async setActive(id: string, active: boolean, societyId?: string): Promise<void> {
+    await this.findById(id, societyId);
     await this.suppliersRepo.setActive(id, active);
   }
 }

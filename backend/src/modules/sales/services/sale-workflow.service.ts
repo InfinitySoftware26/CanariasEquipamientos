@@ -36,6 +36,7 @@ import { InstallmentStatus } from "../../../common/enums/installment-status.enum
 import { StaffRole } from "../../../common/enums/staff-role.enum";
 
 import { JwtPayload } from "../../auth/interfaces/jwt-payload.interface";
+import { societyScopeOf } from "../../../common/utils/society-scope.util";
 
 import { SalesQueryService } from "./sales-query.service";
 import { SaleInstallmentScheduleService } from "./sale-installment-schedule.service";
@@ -71,7 +72,7 @@ export class SaleWorkflowService {
   ): Promise<void> {
     const { staffId, name } = this.extractUser(user);
 
-    const sale = await this.queryService.findById(saleId);
+    const sale = await this.queryService.findById(saleId, societyScopeOf(user));
 
     if (sale.status !== SaleStatus.PENDING_ADMIN_VALIDATION) {
       throw new BadRequestException(
@@ -132,7 +133,7 @@ export class SaleWorkflowService {
   ): Promise<void> {
     const { staffId, name, role } = this.extractUser(user);
 
-    const sale = await this.queryService.findById(saleId);
+    const sale = await this.queryService.findById(saleId, societyScopeOf(user));
 
     // ============================================================
     // ESTADO
@@ -292,7 +293,7 @@ export class SaleWorkflowService {
   ): Promise<void> {
     const { staffId, name } = this.extractUser(user);
 
-    const sale = await this.queryService.findById(saleId);
+    const sale = await this.queryService.findById(saleId, societyScopeOf(user));
 
     if (sale.status !== SaleStatus.DELIVERED) {
       throw new BadRequestException(
@@ -397,7 +398,7 @@ export class SaleWorkflowService {
   ): Promise<void> {
     const { staffId, name } = this.extractUser(user);
 
-    const sale = await this.queryService.findById(saleId);
+    const sale = await this.queryService.findById(saleId, societyScopeOf(user));
 
     const previousCollectorId = sale.assignedCollectorId;
 
@@ -435,15 +436,7 @@ export class SaleWorkflowService {
   ): Promise<Sale> {
     const { staffId, name } = this.extractUser(user);
 
-    const sale = await this.queryService.findById(saleId);
-
-    // ============================================================
-    // SOCIEDAD
-    // ============================================================
-
-    if (sale.societyId !== user.societyId) {
-      throw new ForbiddenException("La venta no pertenece a esta sociedad");
-    }
+    const sale = await this.queryService.findById(saleId, societyScopeOf(user));
 
     // ============================================================
     // ETAPA VÁLIDA

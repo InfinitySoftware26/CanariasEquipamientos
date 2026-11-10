@@ -52,3 +52,34 @@ describe('ReportsService.cashboxClosurePdf — aislamiento por sociedad', () => 
     expect(cashboxRepo.findById).toHaveBeenCalledWith(CASHBOX_ID, undefined);
   });
 });
+
+describe('ReportsService.receiptPdf — aislamiento por sociedad (Bloque 0b)', () => {
+  const RECEIPT_ID = '22222222-2222-4222-8222-222222222222';
+  const build = () => {
+    const receiptsService = { generatePdf: jest.fn(async (id: string, societyId?: string) => {
+      if (id !== RECEIPT_ID || (societyId !== undefined && societyId !== OWN_SOCIETY)) {
+        throw new NotFoundException();
+      }
+      return Buffer.from('pdf');
+    }) };
+    const n = null as any;
+    return { receiptsService, service: new ReportsService(n, n, n, n, n, n, n, receiptsService as any) };
+  };
+
+  it('propio → PDF', async () => {
+    const { service, receiptsService } = build();
+    await expect(service.receiptPdf(RECEIPT_ID, user(StaffRole.ADMIN, OWN_SOCIETY))).resolves.toBeInstanceOf(Buffer);
+    expect(receiptsService.generatePdf).toHaveBeenCalledWith(RECEIPT_ID, OWN_SOCIETY);
+  });
+
+  it('otra sociedad → 404', async () => {
+    const { service } = build();
+    await expect(service.receiptPdf(RECEIPT_ID, user(StaffRole.ADMIN, OTHER_SOCIETY))).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('SUPER_ADMIN → PDF sin filtro', async () => {
+    const { service, receiptsService } = build();
+    await expect(service.receiptPdf(RECEIPT_ID, user(StaffRole.SUPER_ADMIN, OTHER_SOCIETY))).resolves.toBeInstanceOf(Buffer);
+    expect(receiptsService.generatePdf).toHaveBeenCalledWith(RECEIPT_ID, undefined);
+  });
+});

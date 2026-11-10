@@ -3,7 +3,11 @@ import { QueryRunner } from "typeorm";
 
 export interface IStaffRepository {
   findAll(societyId: string): Promise<Staff[]>;
-  findById(id: string): Promise<Staff | null>;
+  /**
+   * societyId opcional: si se pasa, el empleado debe pertenecer a esa
+   * sociedad (sociedad primaria o asignación activa en STAFF_SOCIETIES).
+   */
+  findById(id: string, societyId?: string): Promise<Staff | null>;
   findByEmail(email: string): Promise<Staff | null>;
   findByDni(dni: string): Promise<Staff | null>;
   findByEmailWithPassword(email: string): Promise<Staff | null>;

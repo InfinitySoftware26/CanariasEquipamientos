@@ -146,8 +146,11 @@ export class SalesController {
   findHistory(
     @Param("id", ParseUUIDPipe)
     id: string,
+
+    @CurrentUser()
+    user: JwtPayload,
   ) {
-    return this.salesService.findHistory(id);
+    return this.salesService.findHistory(id, societyScopeOf(user));
   }
 
   @Get(":id/validations")
@@ -158,8 +161,11 @@ export class SalesController {
   findValidations(
     @Param("id", ParseUUIDPipe)
     id: string,
+
+    @CurrentUser()
+    user: JwtPayload,
   ) {
-    return this.salesService.findValidations(id);
+    return this.salesService.findValidations(id, societyScopeOf(user));
   }
 
   @Get(":id/delivery-attempts")
@@ -170,8 +176,11 @@ export class SalesController {
   findDeliveryAttempts(
     @Param("id", ParseUUIDPipe)
     id: string,
+
+    @CurrentUser()
+    user: JwtPayload,
   ) {
-    return this.salesService.findDeliveryAttempts(id);
+    return this.salesService.findDeliveryAttempts(id, societyScopeOf(user));
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -396,8 +405,15 @@ export class SalesController {
 
     @Body()
     dto: UpdateObservationDto,
+
+    @CurrentUser()
+    user: JwtPayload,
   ) {
-    return this.salesService.updateObservation(id, dto.observation);
+    return this.salesService.updateObservation(
+      id,
+      dto.observation,
+      societyScopeOf(user),
+    );
   }
 
   @Patch(":id/collector-documents")

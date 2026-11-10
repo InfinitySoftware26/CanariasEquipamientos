@@ -55,3 +55,35 @@ describe('ProductsService.findById — aislamiento por sociedad', () => {
     await expect(service.findById('22222222-2222-4222-8222-222222222222', OWN_SOCIETY)).rejects.toBeInstanceOf(NotFoundException);
   });
 });
+
+describe('ProductsService.update / deactivate — aislamiento por sociedad (Bloque 0b)', () => {
+  const build = () => {
+    const repo = {
+      findById: fakeFindById(),
+      update: jest.fn().mockResolvedValue(record),
+      softDelete: jest.fn().mockResolvedValue(undefined),
+    };
+    return { repo, service: new ProductsService(repo as any) };
+  };
+  const own = () => societyScopeOf(user(StaffRole.ADMIN, OWN_SOCIETY));
+  const cross = () => societyScopeOf(user(StaffRole.ADMIN, OTHER_SOCIETY));
+  const sa = () => societyScopeOf(user(StaffRole.SUPER_ADMIN, OTHER_SOCIETY));
+
+  it('update: propio OK, SUPER_ADMIN OK, cruzado 404 sin escribir', async () => {
+    const { repo, service } = build();
+    await service.update(RECORD_ID, { name: 'x' } as any, own());
+    await service.update(RECORD_ID, { name: 'x' } as any, sa());
+    expect(repo.update).toHaveBeenCalledTimes(2);
+    await expect(service.update(RECORD_ID, { name: 'x' } as any, cross())).rejects.toBeInstanceOf(NotFoundException);
+    expect(repo.update).toHaveBeenCalledTimes(2);
+  });
+
+  it('deactivate: propio OK, SUPER_ADMIN OK, cruzado 404 sin escribir', async () => {
+    const { repo, service } = build();
+    await service.deactivate(RECORD_ID, own());
+    await service.deactivate(RECORD_ID, sa());
+    expect(repo.softDelete).toHaveBeenCalledTimes(2);
+    await expect(service.deactivate(RECORD_ID, cross())).rejects.toBeInstanceOf(NotFoundException);
+    expect(repo.softDelete).toHaveBeenCalledTimes(2);
+  });
+});

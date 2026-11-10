@@ -1,6 +1,6 @@
 import {
   Controller, Get, Post, Body, Query,
-  UseGuards,
+  UseGuards, ParseUUIDPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { CashMovementsService } from '../services/cash-movements.service';
@@ -12,6 +12,7 @@ import { Roles } from '../../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 import { StaffRole } from '../../../common/enums/staff-role.enum';
 import { JwtPayload } from '../../auth/interfaces/jwt-payload.interface';
+import { societyScopeOf } from '../../../common/utils/society-scope.util';
 
 @ApiTags('cash-movements')
 @ApiBearerAuth('access-token')
@@ -28,11 +29,13 @@ export class CashMovementsController {
   @ApiOperation({ summary: 'Listar movimientos de caja' })
   findAll(
     @CurrentUser() user: JwtPayload,
-    @Query('cashboxId') cashboxId?: string,
+    @Query('cashboxId', new ParseUUIDPipe({ optional: true })) cashboxId?: string,
     @Query('from') from?: string,
     @Query('to') to?: string,
   ) {
-    if (cashboxId) return this.cashMovementsService.findByCashbox(cashboxId);
+    if (cashboxId) {
+      return this.cashMovementsService.findByCashbox(cashboxId, societyScopeOf(user));
+    }
     return this.cashMovementsService.findBySociety(user.societyId, from, to);
   }
 

@@ -66,3 +66,29 @@ describe('CashMovementsService.create — sociedad y caja abierta', () => {
     expect(movementsRepo.create).not.toHaveBeenCalled();
   });
 });
+
+describe('CashMovementsService.findByCashbox — aislamiento por sociedad (Bloque 0b)', () => {
+  const setup = () => {
+    const ctx = build(CashboxStatus.OPEN);
+    (ctx.movementsRepo as any).findByCashbox = jest.fn().mockResolvedValue(['m']);
+    return ctx;
+  };
+  const scope = (role: StaffRole, soc: string) => (role === StaffRole.SUPER_ADMIN ? undefined : soc);
+
+  it('caja propia → lista', async () => {
+    const { service, cashboxRepo } = setup();
+    await expect(service.findByCashbox(CASHBOX_ID, scope(StaffRole.ADMIN, OWN_SOCIETY))).resolves.toEqual(['m']);
+    expect(cashboxRepo.findById).toHaveBeenCalledWith(CASHBOX_ID, OWN_SOCIETY);
+  });
+
+  it('caja de otra sociedad → 404 sin listar', async () => {
+    const { service, movementsRepo } = setup();
+    await expect(service.findByCashbox(CASHBOX_ID, scope(StaffRole.ADMIN, OTHER_SOCIETY))).rejects.toBeInstanceOf(NotFoundException);
+    expect((movementsRepo as any).findByCashbox).not.toHaveBeenCalled();
+  });
+
+  it('SUPER_ADMIN → lista', async () => {
+    const { service } = setup();
+    await expect(service.findByCashbox(CASHBOX_ID, scope(StaffRole.SUPER_ADMIN, OTHER_SOCIETY))).resolves.toEqual(['m']);
+  });
+});

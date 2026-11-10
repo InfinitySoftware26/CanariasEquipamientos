@@ -412,7 +412,7 @@ export class ReportsService {
     ]);
   }
 
-  receiptPdf(receiptId: string): Promise<Buffer> {
-    return this.receiptsService.generatePdf(receiptId);
+  receiptPdf(receiptId: string, user: JwtPayload): Promise<Buffer> {
+    return this.receiptsService.generatePdf(receiptId, societyScopeOf(user));
   }
 }

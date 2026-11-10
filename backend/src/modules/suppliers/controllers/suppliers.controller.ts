@@ -46,15 +46,19 @@ export class SuppliersController {
   @Roles(StaffRole.ADMIN, StaffRole.MANAGER, StaffRole.SUPER_ADMIN)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Editar proveedor' })
-  update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateSupplierDto) {
-    return this.suppliersService.update(id, dto);
+  update(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateSupplierDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.suppliersService.update(id, dto, societyScopeOf(user));
   }
 
   @Delete(':id')
   @Roles(StaffRole.ADMIN, StaffRole.MANAGER, StaffRole.SUPER_ADMIN)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Desactivar proveedor' })
-  deactivate(@Param('id', ParseUUIDPipe) id: string) {
-    return this.suppliersService.setActive(id, false);
+  deactivate(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: JwtPayload) {
+    return this.suppliersService.setActive(id, false, societyScopeOf(user));
   }
 }

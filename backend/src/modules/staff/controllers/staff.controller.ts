@@ -161,7 +161,10 @@ export class StaffController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: "Desactivar empleado — soft delete" })
   @ApiParam({ name: "id", description: "UUID del empleado" })
-  deactivate(@Param("id", ParseUUIDPipe) id: string) {
-    return this.staffService.deactivate(id);
+  deactivate(
+    @Param("id", ParseUUIDPipe) id: string,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.staffService.deactivate(id, user);
   }
 }

@@ -1,8 +1,9 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository, QueryRunner } from "typeorm";
+import { Repository, QueryRunner, Brackets } from "typeorm";
 import { Staff } from "../entities/staff.entity";
 import { IStaffRepository } from "../interfaces/staff-repository.interface";
+import { StaffSocietyStatus } from "../../societies/entities/staff-society.entity";
 
 @Injectable()
 export class StaffRepository implements IStaffRepository {
@@ -18,8 +19,29 @@ export class StaffRepository implements IStaffRepository {
     });
   }
 
-  findById(id: string): Promise<Staff | null> {
-    return this.repo.findOne({ where: { staffId: id } });
+  findById(id: string, societyId?: string): Promise<Staff | null> {
+    if (societyId === undefined) {
+      return this.repo.findOne({ where: { staffId: id } });
+    }
+    // Pertenencia: sociedad primaria (STAFF.society_id) o asignación activa en
+    // STAFF_SOCIETIES — el mismo vínculo que habilita select-society.
+    return this.repo
+      .createQueryBuilder("staff")
+      .where("staff.staffId = :id", { id })
+      .andWhere(
+        new Brackets((b) =>
+          b
+            .where("staff.primarySocietyId = :societyId", { societyId })
+            .orWhere(
+              `EXISTS (SELECT 1 FROM "STAFF_SOCIETIES" ss
+                        WHERE ss.staff_id = staff.staff_id
+                          AND ss.society_id = :societyId
+                          AND ss.status = :activeStatus)`,
+              { activeStatus: StaffSocietyStatus.ACTIVE },
+            ),
+        ),
+      )
+      .getOne();
   }
 
   findByEmail(email: string): Promise<Staff | null> {
