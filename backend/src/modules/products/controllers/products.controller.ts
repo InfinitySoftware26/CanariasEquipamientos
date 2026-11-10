@@ -22,6 +22,7 @@ import { Roles } from "../../../common/decorators/roles.decorator";
 import { CurrentUser } from "../../../common/decorators/current-user.decorator";
 import { StaffRole } from "../../../common/enums/staff-role.enum";
 import { JwtPayload } from "../../auth/interfaces/jwt-payload.interface";
+import { societyScopeOf } from "../../../common/utils/society-scope.util";
 
 @ApiTags("products")
 @ApiBearerAuth("access-token")
@@ -39,8 +40,8 @@ export class ProductsController {
 
   @Get(":id")
   @ApiOperation({ summary: "Obtener producto por ID" })
-  findOne(@Param("id", ParseUUIDPipe) id: string) {
-    return this.productsService.findById(id);
+  findOne(@Param("id", ParseUUIDPipe) id: string, @CurrentUser() user: JwtPayload) {
+    return this.productsService.findById(id, societyScopeOf(user));
   }
 
   @Post()

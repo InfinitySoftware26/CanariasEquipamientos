@@ -13,6 +13,7 @@ import { Roles } from '../../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 import { StaffRole } from '../../../common/enums/staff-role.enum';
 import { JwtPayload } from '../../auth/interfaces/jwt-payload.interface';
+import { societyScopeOf } from '../../../common/utils/society-scope.util';
 
 @ApiTags('receipts')
 @ApiBearerAuth('access-token')
@@ -30,15 +31,20 @@ export class ReceiptsController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Detalle de recibo' })
-  findOne(@Param('id', ParseUUIDPipe) id: string) {
-    return this.receiptsService.findById(id);
+  findOne(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: JwtPayload) {
+    return this.receiptsService.findById(id, societyScopeOf(user));
   }
 
   @Get(':id/pdf')
   @ApiOperation({ summary: 'Descargar recibo en PDF' })
-  async downloadPdf(@Param('id', ParseUUIDPipe) id: string, @Res() res: Response) {
-    const receipt = await this.receiptsService.findById(id);
-    const pdf = await this.receiptsService.generatePdf(id);
+  async downloadPdf(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: JwtPayload,
+    @Res() res: Response,
+  ) {
+    const societyId = societyScopeOf(user);
+    const receipt = await this.receiptsService.findById(id, societyId);
+    const pdf = await this.receiptsService.generatePdf(id, societyId);
     res.set({
       'Content-Type': 'application/pdf',
       'Content-Disposition': `attachment; filename="recibo-${receipt.receiptNumber}.pdf"`,

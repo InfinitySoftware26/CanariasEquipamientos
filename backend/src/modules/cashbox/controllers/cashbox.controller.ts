@@ -13,6 +13,7 @@ import { Roles } from '../../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 import { StaffRole } from '../../../common/enums/staff-role.enum';
 import { JwtPayload } from '../../auth/interfaces/jwt-payload.interface';
+import { societyScopeOf } from '../../../common/utils/society-scope.util';
 
 @ApiTags('cashbox')
 @ApiBearerAuth('access-token')
@@ -37,8 +38,8 @@ export class CashboxController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Detalle de caja' })
-  findOne(@Param('id', ParseUUIDPipe) id: string) {
-    return this.cashboxService.findById(id);
+  findOne(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: JwtPayload) {
+    return this.cashboxService.findById(id, societyScopeOf(user));
   }
 
   @Get(':id/balance')

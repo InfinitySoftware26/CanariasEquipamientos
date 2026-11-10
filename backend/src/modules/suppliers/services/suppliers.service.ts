@@ -15,8 +15,12 @@ export class SuppliersService {
     return this.suppliersRepo.findBySociety(societyId, activeOnly);
   }
 
-  async findById(id: string): Promise<Supplier> {
-    const supplier = await this.suppliersRepo.findById(id);
+  /**
+   * societyId opcional: si se pasa, un registro de otra sociedad responde 404
+   * (no 403) para no revelar su existencia. Ver common/utils/society-scope.util.
+   */
+  async findById(id: string, societyId?: string): Promise<Supplier> {
+    const supplier = await this.suppliersRepo.findById(id, societyId);
     if (!supplier) throw new NotFoundException(`Proveedor ${id} no encontrado`);
     return supplier;
   }

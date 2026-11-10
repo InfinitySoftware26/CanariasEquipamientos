@@ -12,8 +12,10 @@ export class SuppliersRepository implements ISuppliersRepository {
     return this.repo.save(this.repo.create(data));
   }
 
-  findById(id: string): Promise<Supplier | null> {
-    return this.repo.findOne({ where: { supplierId: id } });
+  findById(id: string, societyId?: string): Promise<Supplier | null> {
+    return this.repo.findOne({
+      where: { supplierId: id, ...(societyId !== undefined ? { societyId } : {}) },
+    });
   }
 
   findBySociety(societyId: string, activeOnly?: boolean): Promise<Supplier[]> {

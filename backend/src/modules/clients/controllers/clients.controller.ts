@@ -9,6 +9,7 @@ import {
   Patch,
   Query,
   ParseIntPipe,
+  ParseUUIDPipe,
   NotFoundException,
 } from "@nestjs/common";
 import { ApiTags, ApiOperation } from "@nestjs/swagger";
@@ -23,6 +24,7 @@ import { StaffRole } from "../../../common/enums/staff-role.enum";
 import { CurrentUser } from "../../../common/decorators/current-user.decorator";
 import { JwtPayload } from "../../auth/interfaces/jwt-payload.interface";
 import { SocietyGuard } from "../../../common/guards/society.guard";
+import { societyScopeOf } from "../../../common/utils/society-scope.util";
 
 @ApiTags("clients")
 @UseGuards(JwtAuthGuard, RolesGuard, SocietyGuard)
@@ -82,8 +84,11 @@ export class ClientsController {
     StaffRole.SUPER_ADMIN,
     StaffRole.COLLECTOR,
   )
-  getOne(@Param("id") id: string) {
-    return this.clientsService.findById(id);
+  getOne(
+    @Param("id", ParseUUIDPipe) id: string,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.clientsService.findById(id, societyScopeOf(user));
   }
 
   @Patch(":id")

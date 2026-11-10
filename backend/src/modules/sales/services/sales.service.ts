@@ -95,8 +95,8 @@ export class SalesService {
     return this.queryService.findByClient(clientId, societyId);
   }
 
-  findById(id: string): Promise<Sale> {
-    return this.queryService.findById(id);
+  findById(id: string, societyId?: string): Promise<Sale> {
+    return this.queryService.findById(id, societyId);
   }
 
   findValidations(saleId: string) {

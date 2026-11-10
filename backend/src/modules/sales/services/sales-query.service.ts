@@ -58,8 +58,12 @@ export class SalesQueryService {
     return this.salesRepo.findByClient(clientId, societyId);
   }
 
-  async findById(id: string): Promise<Sale> {
-    const sale = await this.salesRepo.findById(id);
+  /**
+   * societyId opcional: si se pasa, un registro de otra sociedad responde 404
+   * (no 403) para no revelar su existencia. Ver common/utils/society-scope.util.
+   */
+  async findById(id: string, societyId?: string): Promise<Sale> {
+    const sale = await this.salesRepo.findById(id, societyId);
 
     if (!sale) {
       throw new NotFoundException(`Venta ${id} no encontrada`);

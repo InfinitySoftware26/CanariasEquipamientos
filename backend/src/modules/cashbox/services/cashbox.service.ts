@@ -23,8 +23,12 @@ export class CashboxService {
     return this.cashboxRepo.findBySociety(societyId);
   }
 
-  async findById(id: string): Promise<Cashbox> {
-    const cashbox = await this.cashboxRepo.findById(id);
+  /**
+   * societyId opcional: si se pasa, un registro de otra sociedad responde 404
+   * (no 403) para no revelar su existencia. Ver common/utils/society-scope.util.
+   */
+  async findById(id: string, societyId?: string): Promise<Cashbox> {
+    const cashbox = await this.cashboxRepo.findById(id, societyId);
     if (!cashbox) throw new NotFoundException(`Caja ${id} no encontrada`);
     return cashbox;
   }
@@ -64,8 +68,11 @@ export class CashboxService {
    * Saldo calculado por el sistema en base a los movimientos registrados —
    * ingresos suman, egresos y transferencias salientes restan.
    */
-  async getBalance(id: string): Promise<{ openingBalance: number; systemBalance: number; declaredClosingBalance: number | null }> {
-    const cashbox = await this.findById(id);
+  async getBalance(
+    id: string,
+    societyId?: string,
+  ): Promise<{ openingBalance: number; systemBalance: number; declaredClosingBalance: number | null }> {
+    const cashbox = await this.findById(id, societyId);
 
     const movements = await this.cashMovementRepo.find({ where: { cashboxId: id } });
     const net = movements.reduce((sum, m) => {

@@ -12,8 +12,10 @@ export class NotificationsRepository implements INotificationsRepository {
     return this.repo.save(this.repo.create(data));
   }
 
-  findById(id: string): Promise<Notification | null> {
-    return this.repo.findOne({ where: { notificationId: id } });
+  findById(id: string, societyId?: string): Promise<Notification | null> {
+    return this.repo.findOne({
+      where: { notificationId: id, ...(societyId !== undefined ? { societyId } : {}) },
+    });
   }
 
   findBySociety(societyId: string): Promise<Notification[]> {

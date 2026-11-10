@@ -13,8 +13,10 @@ export class CashboxRepository implements ICashboxRepository {
     return this.repo.save(this.repo.create(data));
   }
 
-  findById(id: string): Promise<Cashbox | null> {
-    return this.repo.findOne({ where: { cashboxId: id } });
+  findById(id: string, societyId?: string): Promise<Cashbox | null> {
+    return this.repo.findOne({
+      where: { cashboxId: id, ...(societyId !== undefined ? { societyId } : {}) },
+    });
   }
 
   findBySociety(societyId: string): Promise<Cashbox[]> {

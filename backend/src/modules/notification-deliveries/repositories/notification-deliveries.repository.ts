@@ -24,6 +24,10 @@ export class NotificationDeliveriesRepository implements INotificationDeliveries
     return this.repo.findOne({ where: { deliveryId: id } });
   }
 
+  findByIdForStaff(id: string, staffId: string): Promise<NotificationDelivery | null> {
+    return this.repo.findOne({ where: { deliveryId: id, staffId } });
+  }
+
   findByStaff(staffId: string, status?: NotificationDeliveryStatus): Promise<NotificationDelivery[]> {
     return this.repo.find({
       where: { staffId, ...(status ? { status } : {}) },

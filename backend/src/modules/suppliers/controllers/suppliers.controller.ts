@@ -13,6 +13,7 @@ import { Roles } from '../../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 import { StaffRole } from '../../../common/enums/staff-role.enum';
 import { JwtPayload } from '../../auth/interfaces/jwt-payload.interface';
+import { societyScopeOf } from '../../../common/utils/society-scope.util';
 
 @ApiTags('suppliers')
 @ApiBearerAuth('access-token')
@@ -30,8 +31,8 @@ export class SuppliersController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Detalle de proveedor' })
-  findOne(@Param('id', ParseUUIDPipe) id: string) {
-    return this.suppliersService.findById(id);
+  findOne(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: JwtPayload) {
+    return this.suppliersService.findById(id, societyScopeOf(user));
   }
 
   @Post()
