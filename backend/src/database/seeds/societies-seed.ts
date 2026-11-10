@@ -10,10 +10,24 @@
  *
  * Opcional — vincular a un SUPER_ADMIN específico:
  *   SEED_SUPERADMIN_EMAIL=admin@empresa.com pnpm exec ts-node ...
+ *
+ * Solo desarrollo: con NODE_ENV=production se niega a correr salvo
+ * ALLOW_SEED_IN_PROD=true (ver seed-guards.ts).
+ *
+ * OBSOLETO (sin corregir, anotado en el Bloque 0c):
+ * - El INSERT en "FINANCING_CONFIGURATIONS" usa installments_3_rate,
+ *   installments_6_rate e installments_9_rate, que no existen desde
+ *   FinancingPlansPromotionsSchema20260823000001 (la tabla se recreó con
+ *   name, financing_rate, is_global). Además omite "name", que es NOT NULL.
+ *   Ese INSERT falla después de crear la primera sociedad y su vínculo con
+ *   el SUPER_ADMIN; el script no usa transacción, así que deja carga parcial.
+ * - CUIT: 3 de los 4 taxId (todos salvo 30-71234567-1) tienen dígito
+ *   verificador inválido.
  */
 import 'dotenv/config';
 import { DataSource } from 'typeorm';
 import * as path from 'path';
+import { assertDevSeedAllowed } from './seed-guards';
 
 const SOCIETIES = [
   {
@@ -51,6 +65,7 @@ const SOCIETIES = [
 ];
 
 async function run(): Promise<void> {
+  assertDevSeedAllowed('societies-seed');
   const isProduction = process.env.NODE_ENV === 'production';
 
   const ds = new DataSource({
