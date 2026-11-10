@@ -76,9 +76,6 @@ export class ClosuresRepository implements IClosuresRepository {
       },
     });
 
-    console.log("🔴 BACKEND CLOSURE:", closure);
-    console.log("🔴 BACKEND STAFF:", closure?.staff);
-
     return closure;
   }
 

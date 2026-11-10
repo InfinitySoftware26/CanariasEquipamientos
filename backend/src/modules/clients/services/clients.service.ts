@@ -29,7 +29,6 @@ export class ClientsService {
     dto: CreateClientDto,
     performer: { staffId: string; name: string; societyId?: string },
   ): Promise<Client> {
-    console.log("Creating client with DTO:", dto);
     const data: Partial<Client> = {
       name: dto.name,
       surname: dto.surname,

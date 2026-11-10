@@ -56,7 +56,6 @@ export class FinancingService {
             );
         }
 
-        console.log('Creando configuración de financiación', { societyId, name: dto.name });
         return this.configRepo.create(societyId, dto);
     }
 
@@ -83,13 +82,11 @@ export class FinancingService {
         dto: UpdateFinancingConfigDto,
     ): Promise<FinancingConfiguration> {
         await this.findOneConfig(societyId, financingConfigId);
-        console.log('Actualizando configuración de financiación', { societyId, financingConfigId });
         return this.configRepo.update(societyId, financingConfigId, dto);
     }
 
     async deleteConfig(societyId: string, financingConfigId: string): Promise<void> {
         await this.findOneConfig(societyId, financingConfigId);
-        console.log('Eliminando configuración de financiación', { societyId, financingConfigId });
         await this.runDelete(
             () => this.configRepo.delete(societyId, financingConfigId),
             'No se puede eliminar: esta configuración tiene planes de financiación vinculados.',
@@ -119,7 +116,6 @@ export class FinancingService {
             );
         }
 
-        console.log('Creando plan de financiación', { societyId, name: dto.name });
         return this.planRepo.create(societyId, dto);
     }
 
@@ -160,13 +156,11 @@ export class FinancingService {
             await this.findOneConfig(societyId, dto.financingConfigId);
         }
 
-        console.log('Actualizando plan de financiación', { societyId, financingPlanId });
         return this.planRepo.update(societyId, financingPlanId, dto);
     }
 
     async deletePlan(societyId: string, financingPlanId: string): Promise<void> {
         await this.findOnePlan(societyId, financingPlanId);
-        console.log('Eliminando plan de financiación', { societyId, financingPlanId });
         await this.runDelete(
             () => this.planRepo.delete(societyId, financingPlanId),
             'No se puede eliminar: este plan tiene promociones o ventas vinculadas.',
@@ -187,7 +181,6 @@ export class FinancingService {
             );
         }
 
-        console.log('Creando promoción de financiación', { societyId, name: dto.name });
         return this.promotionRepo.create(societyId, dto);
     }
 
@@ -219,13 +212,11 @@ export class FinancingService {
             await this.findOnePlan(societyId, dto.financingPlanId);
         }
 
-        console.log('Actualizando promoción de financiación', { societyId, promotionId });
         return this.promotionRepo.update(societyId, promotionId, dto);
     }
 
     async deletePromotion(societyId: string, promotionId: string): Promise<void> {
         await this.findOnePromotion(societyId, promotionId);
-        console.log('Eliminando promoción de financiación', { societyId, promotionId });
         await this.runDelete(
             () => this.promotionRepo.delete(societyId, promotionId),
             'No se puede eliminar: esta promoción tiene ventas vinculadas.',
