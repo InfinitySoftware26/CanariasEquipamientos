@@ -7,7 +7,7 @@ import {
   MaxLength,
 } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { StaffRole } from '../../../common/enums/staff-role.enum';
+import { AssignableRole } from '../../../common/enums/assignable-role.enum';
 
 export class UpdateStaffDto {
   @ApiPropertyOptional({ example: 'Juan Perez' })
@@ -33,10 +33,14 @@ export class UpdateStaffDto {
   @MaxLength(200)
   address?: string;
 
-  @ApiPropertyOptional({ enum: StaffRole })
+  /**
+   * Solo roles asignables: SUPER_ADMIN se crea únicamente por
+   * POST /staff/super-admin y no se puede asignar por edición.
+   */
+  @ApiPropertyOptional({ enum: AssignableRole })
   @IsOptional()
-  @IsEnum(StaffRole)
-  role?: StaffRole;
+  @IsEnum(AssignableRole)
+  role?: AssignableRole;
 
   @ApiPropertyOptional({ description: 'Activar o desactivar el empleado' })
   @IsOptional()

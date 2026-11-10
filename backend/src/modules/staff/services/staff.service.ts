@@ -41,6 +41,25 @@ const CREATION_PERMISSIONS: Readonly<Record<string, StaffRole[]>> = {
   [StaffRole.ADMIN]: [StaffRole.SELLER, StaffRole.COLLECTOR],
 };
 
+/**
+ * Jerarquía para editar/desactivar: un actor solo opera sobre rangos
+ * estrictamente menores. SELLER y COLLECTOR comparten el rango más bajo.
+ */
+const ROLE_RANK: Readonly<Record<StaffRole, number>> = {
+  [StaffRole.SUPER_ADMIN]: 4,
+  [StaffRole.MANAGER]: 3,
+  [StaffRole.ADMIN]: 2,
+  [StaffRole.SELLER]: 1,
+  [StaffRole.COLLECTOR]: 1,
+};
+
+/** Campos que cada empleado puede editar sobre sí mismo. */
+const SELF_EDITABLE_FIELDS: ReadonlyArray<keyof UpdateStaffDto> = [
+  "name",
+  "phone",
+  "address",
+];
+
 @Injectable()
 export class StaffService {
   constructor(
@@ -171,7 +190,11 @@ export class StaffService {
     currentUser: JwtPayload,
   ): Promise<Staff> {
     await this.assertCanUpdate(id, dto, currentUser);
-    return this.staffRepo.update(id, dto);
+    const { role, ...rest } = dto;
+    const changes: Partial<Staff> = { ...rest };
+    // AssignableRole y StaffRole comparten valores; SUPER_ADMIN ya está excluido por el DTO.
+    if (role !== undefined) changes.role = role as unknown as StaffRole;
+    return this.staffRepo.update(id, changes);
   }
 
   async changePassword(
@@ -199,15 +222,23 @@ export class StaffService {
     await this.staffRepo.updatePassword(id, newHash);
   }
 
+  /**
+   * Nadie se desactiva a sí mismo; solo se desactivan roles estrictamente
+   * inferiores (SUPER_ADMIN exento). 404 si el empleado es de otra sociedad.
+   */
   async deactivate(id: string, currentUser: JwtPayload): Promise<void> {
-    await this.findById(id, societyScopeOf(currentUser));
+    const target = await this.findById(id, societyScopeOf(currentUser));
+    if (currentUser.sub === id) {
+      throw new ForbiddenException("No podés desactivarte a vos mismo");
+    }
+    this.assertOutranks(currentUser.role, target.role);
     await this.staffRepo.update(id, { isActive: false });
   }
 
   // ─── GUARDS DE NEGOCIO ────────────────────────────────────────────────────
 
   private assertCanCreateRole(
-    creatorRole: string,
+    creatorRole: StaffRole,
     targetRole: StaffRole,
   ): void {
     const allowed = CREATION_PERMISSIONS[creatorRole] ?? [];
@@ -232,42 +263,52 @@ export class StaffService {
       throw new ConflictException("El DNI " + dni + " ya esta registrado");
   }
 
+  /**
+   * Reglas de edición (PATCH /staff/:id):
+   * - Sobre sí mismo: solo datos no sensibles (SELF_EDITABLE_FIELDS). Nadie,
+   *   ni SUPER_ADMIN, cambia su propio rol ni su propio isActive.
+   * - Sobre otro: el destino debe tener rol estrictamente inferior al del
+   *   actor (SUPER_ADMIN exento) y el rol nuevo debe estar en
+   *   CREATION_PERMISSIONS del actor.
+   * El destino se busca con la sociedad del actor (404 si es de otra).
+   */
   private async assertCanUpdate(
     targetId: string,
     dto: UpdateStaffDto,
     currentUser: JwtPayload,
   ): Promise<void> {
-    const isSuperAdmin = currentUser.role === StaffRole.SUPER_ADMIN;
-    const isManager = currentUser.role === StaffRole.MANAGER;
-    const isAdmin = currentUser.role === StaffRole.ADMIN;
-    const isSelf = currentUser.sub === targetId;
-
     const target = await this.findById(targetId, societyScopeOf(currentUser));
-    if (
-      (dto.role !== undefined || dto.isActive !== undefined) &&
-      !isSuperAdmin &&
-      !isManager &&
-      !isAdmin
-    ) {
-      throw new ForbiddenException(
-        "No tienes permiso para cambiar el rol o estado",
+
+    if (currentUser.sub === targetId) {
+      const forbidden = Object.keys(dto).filter(
+        (k) =>
+          (dto as Record<string, unknown>)[k] !== undefined &&
+          !SELF_EDITABLE_FIELDS.includes(k as keyof UpdateStaffDto),
       );
+      if (forbidden.length > 0) {
+        throw new ForbiddenException(
+          "Solo podés editar tus datos personales (" +
+            SELF_EDITABLE_FIELDS.join(", ") +
+            "). No podés modificar: " +
+            forbidden.join(", "),
+        );
+      }
+      return;
     }
 
-    if (
-      isAdmin &&
-      !isSelf &&
-      target.role !== StaffRole.SELLER &&
-      target.role !== StaffRole.COLLECTOR
-    ) {
-      throw new ForbiddenException(
-        "Solo puedes editar vendedores y cobradores",
-      );
-    }
+    this.assertOutranks(currentUser.role, target.role);
 
-    if (!isSuperAdmin && !isManager && !isAdmin && !isSelf) {
+    if (dto.role !== undefined) {
+      this.assertCanCreateRole(currentUser.role, dto.role as unknown as StaffRole);
+    }
+  }
+
+  /** SUPER_ADMIN exento; el resto solo actúa sobre roles estrictamente inferiores. */
+  private assertOutranks(actorRole: StaffRole, targetRole: StaffRole): void {
+    if (actorRole === StaffRole.SUPER_ADMIN) return;
+    if (ROLE_RANK[targetRole] >= ROLE_RANK[actorRole]) {
       throw new ForbiddenException(
-        "No tienes permiso para editar este empleado",
+        "Solo podés modificar empleados con un rol inferior al tuyo",
       );
     }
   }
