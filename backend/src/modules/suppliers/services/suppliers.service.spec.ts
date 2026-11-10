@@ -55,3 +55,32 @@ describe('SuppliersService.findById — aislamiento por sociedad', () => {
     await expect(service.findById('22222222-2222-4222-8222-222222222222', OWN_SOCIETY)).rejects.toBeInstanceOf(NotFoundException);
   });
 });
+
+describe('SuppliersService.update / setActive — aislamiento por sociedad (Bloque 0b)', () => {
+  const build = () => {
+    const repo = {
+      findById: fakeFindById(),
+      update: jest.fn().mockResolvedValue(undefined),
+      setActive: jest.fn().mockResolvedValue(undefined),
+    };
+    return { repo, service: new SuppliersService(repo as any) };
+  };
+  const own = () => societyScopeOf(user(StaffRole.MANAGER, OWN_SOCIETY));
+  const cross = () => societyScopeOf(user(StaffRole.MANAGER, OTHER_SOCIETY));
+  const sa = () => societyScopeOf(user(StaffRole.SUPER_ADMIN, OTHER_SOCIETY));
+
+  it('update: propio OK, SUPER_ADMIN OK, cruzado 404 sin escribir', async () => {
+    const { repo, service } = build();
+    await service.update(RECORD_ID, { name: 'x' } as any, own());
+    await service.update(RECORD_ID, { name: 'x' } as any, sa());
+    expect(repo.update).toHaveBeenCalledTimes(2);
+    await expect(service.update(RECORD_ID, { name: 'x' } as any, cross())).rejects.toBeInstanceOf(NotFoundException);
+    expect(repo.update).toHaveBeenCalledTimes(2);
+  });
+
+  it('setActive (DELETE :id): cruzado 404 sin escribir', async () => {
+    const { repo, service } = build();
+    await expect(service.setActive(RECORD_ID, false, cross())).rejects.toBeInstanceOf(NotFoundException);
+    expect(repo.setActive).not.toHaveBeenCalled();
+  });
+});

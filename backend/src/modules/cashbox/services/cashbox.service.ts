@@ -55,8 +55,8 @@ export class CashboxService {
     });
   }
 
-  async close(id: string, dto: CloseCashboxDto): Promise<void> {
-    const cashbox = await this.findById(id);
+  async close(id: string, dto: CloseCashboxDto, societyId?: string): Promise<void> {
+    const cashbox = await this.findById(id, societyId);
     if (cashbox.status !== CashboxStatus.OPEN) {
       throw new BadRequestException('La caja ya se encuentra cerrada');
     }

@@ -19,6 +19,7 @@ import { Staff } from "../entities/staff.entity";
 import { StaffRole } from "../../../common/enums/staff-role.enum";
 import { JwtPayload } from "../../../common/interfaces/jwt-payload.interface";
 import { SocietiesService } from "../../societies/services/societies.service";
+import { societyScopeOf } from "../../../common/utils/society-scope.util";
 
 const SALT_ROUNDS = 12;
 
@@ -54,8 +55,12 @@ export class StaffService {
     return this.staffRepo.findAll(societyId);
   }
 
-  async findById(id: string): Promise<Staff> {
-    const staff = await this.staffRepo.findById(id);
+  /**
+   * societyId opcional: si se pasa, un empleado que no pertenece a esa
+   * sociedad responde 404 (ver StaffRepository.findById).
+   */
+  async findById(id: string, societyId?: string): Promise<Staff> {
+    const staff = await this.staffRepo.findById(id, societyId);
     if (!staff)
       throw new NotFoundException("Empleado " + id + " no encontrado");
     return staff;
@@ -194,8 +199,8 @@ export class StaffService {
     await this.staffRepo.updatePassword(id, newHash);
   }
 
-  async deactivate(id: string): Promise<void> {
-    await this.findById(id);
+  async deactivate(id: string, currentUser: JwtPayload): Promise<void> {
+    await this.findById(id, societyScopeOf(currentUser));
     await this.staffRepo.update(id, { isActive: false });
   }
 
@@ -237,7 +242,7 @@ export class StaffService {
     const isAdmin = currentUser.role === StaffRole.ADMIN;
     const isSelf = currentUser.sub === targetId;
 
-    const target = await this.findById(targetId);
+    const target = await this.findById(targetId, societyScopeOf(currentUser));
     if (
       (dto.role !== undefined || dto.isActive !== undefined) &&
       !isSuperAdmin &&

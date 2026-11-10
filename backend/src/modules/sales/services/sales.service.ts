@@ -33,6 +33,7 @@ import { CommissionPeriod } from "../../../common/enums/commission-period.enum";
 import { CollectionScheduleType } from "../../../common/enums/collection-schedule-type.enum";
 
 import { JwtPayload } from "../../auth/interfaces/jwt-payload.interface";
+import { societyScopeOf } from "../../../common/utils/society-scope.util";
 import { MarkCollectorDocumentsDto } from "../dto/mark-collector-documents.dto";
 
 import { SalesQueryService } from "./sales-query.service";
@@ -99,15 +100,22 @@ export class SalesService {
     return this.queryService.findById(id, societyId);
   }
 
-  findValidations(saleId: string) {
+  /**
+   * Las consultas de detalle verifican primero que la venta pertenezca a la
+   * sociedad (404 si no) y recién después leen los registros asociados.
+   */
+  async findValidations(saleId: string, societyId?: string) {
+    await this.queryService.findById(saleId, societyId);
     return this.queryService.findValidations(saleId);
   }
 
-  findDeliveryAttempts(saleId: string) {
+  async findDeliveryAttempts(saleId: string, societyId?: string) {
+    await this.queryService.findById(saleId, societyId);
     return this.queryService.findDeliveryAttempts(saleId);
   }
 
-  findHistory(saleId: string) {
+  async findHistory(saleId: string, societyId?: string) {
+    await this.queryService.findById(saleId, societyId);
     return this.queryService.findHistory(saleId);
   }
 
@@ -373,7 +381,7 @@ export class SalesService {
   ): Promise<Sale> {
     const { staffId, name } = this.extractUser(user);
 
-    const sale = await this.findById(saleId);
+    const sale = await this.findById(saleId, societyScopeOf(user));
 
     /*
      * REGLA DE NEGOCIO:
@@ -662,8 +670,9 @@ export class SalesService {
   async updateObservation(
     saleId: string,
     observation: string | undefined,
+    societyId?: string,
   ): Promise<void> {
-    await this.findById(saleId);
+    await this.findById(saleId, societyId);
 
     await this.salesRepo.update(saleId, {
       observation: observation ?? (null as any),

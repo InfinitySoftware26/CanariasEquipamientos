@@ -45,8 +45,8 @@ export class CashboxController {
   @Get(':id/balance')
   @Roles(StaffRole.ADMIN, StaffRole.MANAGER, StaffRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Saldo calculado por el sistema para la caja' })
-  getBalance(@Param('id', ParseUUIDPipe) id: string) {
-    return this.cashboxService.getBalance(id);
+  getBalance(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: JwtPayload) {
+    return this.cashboxService.getBalance(id, societyScopeOf(user));
   }
 
   @Post()
@@ -60,7 +60,11 @@ export class CashboxController {
   @Roles(StaffRole.ADMIN, StaffRole.MANAGER, StaffRole.SUPER_ADMIN)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Cerrar caja' })
-  close(@Param('id', ParseUUIDPipe) id: string, @Body() dto: CloseCashboxDto) {
-    return this.cashboxService.close(id, dto);
+  close(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: CloseCashboxDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.cashboxService.close(id, dto, societyScopeOf(user));
   }
 }

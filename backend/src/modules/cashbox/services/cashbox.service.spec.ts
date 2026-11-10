@@ -70,3 +70,34 @@ describe('CashboxService.getBalance — aislamiento por sociedad', () => {
     expect(movementsRepo.find).not.toHaveBeenCalled();
   });
 });
+
+describe('CashboxService.close — aislamiento por sociedad (Bloque 0b)', () => {
+  const build = () => {
+    const open = { ...record, status: 'open' };
+    const repo = {
+      findById: jest.fn(async (id: string, societyId?: string) =>
+        id === RECORD_ID && (societyId === undefined || societyId === OWN_SOCIETY) ? open : null),
+      updateStatus: jest.fn().mockResolvedValue(undefined),
+    };
+    return { repo, service: new CashboxService(repo as any, {} as any) };
+  };
+
+  it('propia → cierra', async () => {
+    const { repo, service } = build();
+    await service.close(RECORD_ID, { closingBalance: 10 } as any, societyScopeOf(user(StaffRole.ADMIN, OWN_SOCIETY)));
+    expect(repo.updateStatus).toHaveBeenCalled();
+  });
+
+  it('otra sociedad → 404 sin cerrar', async () => {
+    const { repo, service } = build();
+    await expect(service.close(RECORD_ID, { closingBalance: 10 } as any, societyScopeOf(user(StaffRole.ADMIN, OTHER_SOCIETY))))
+      .rejects.toBeInstanceOf(NotFoundException);
+    expect(repo.updateStatus).not.toHaveBeenCalled();
+  });
+
+  it('SUPER_ADMIN → cierra', async () => {
+    const { repo, service } = build();
+    await service.close(RECORD_ID, { closingBalance: 10 } as any, societyScopeOf(user(StaffRole.SUPER_ADMIN, OTHER_SOCIETY)));
+    expect(repo.updateStatus).toHaveBeenCalled();
+  });
+});

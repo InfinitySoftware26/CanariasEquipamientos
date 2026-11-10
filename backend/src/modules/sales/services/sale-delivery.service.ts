@@ -27,6 +27,7 @@ import { SaleStatus } from "../../../common/enums/sale-status.enum";
 import { StaffRole } from "../../../common/enums/staff-role.enum";
 
 import { JwtPayload } from "../../auth/interfaces/jwt-payload.interface";
+import { societyScopeOf } from "../../../common/utils/society-scope.util";
 
 import { SalesQueryService } from "./sales-query.service";
 import { SaleInstallmentScheduleService } from "./sale-installment-schedule.service";
@@ -55,7 +56,7 @@ export class SaleDeliveryService {
   async deliver(saleId: string, user: JwtPayload): Promise<void> {
     const { staffId, name, role } = this.extractUser(user);
 
-    const sale = await this.queryService.findById(saleId);
+    const sale = await this.queryService.findById(saleId, societyScopeOf(user));
 
     if (sale.status !== SaleStatus.PENDING_DELIVERY) {
       throw new BadRequestException(
@@ -117,7 +118,7 @@ export class SaleDeliveryService {
   ): Promise<void> {
     const { staffId, name, role } = this.extractUser(user);
 
-    const sale = await this.queryService.findById(saleId);
+    const sale = await this.queryService.findById(saleId, societyScopeOf(user));
 
     if (sale.status !== SaleStatus.PENDING_DELIVERY) {
       throw new BadRequestException(
@@ -174,7 +175,7 @@ export class SaleDeliveryService {
   ): Promise<void> {
     const { staffId, name } = this.extractUser(user);
 
-    const sale = await this.queryService.findById(saleId);
+    const sale = await this.queryService.findById(saleId, societyScopeOf(user));
 
     if (
       sale.status !== SaleStatus.PENDING_DELIVERY &&

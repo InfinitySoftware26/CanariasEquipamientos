@@ -17,7 +17,9 @@ export class CashMovementsService {
     private readonly cashboxService: CashboxService,
   ) {}
 
-  findByCashbox(cashboxId: string): Promise<CashMovement[]> {
+  /** La caja debe pertenecer a la sociedad (404 si no) antes de listar. */
+  async findByCashbox(cashboxId: string, societyId?: string): Promise<CashMovement[]> {
+    await this.cashboxService.findById(cashboxId, societyId);
     return this.cashMovementsRepo.findByCashbox(cashboxId);
   }
 

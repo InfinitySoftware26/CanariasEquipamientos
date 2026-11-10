@@ -28,13 +28,13 @@ export class ProductsService {
     return this.productsRepo.create({ ...dto, societyId });
   }
 
-  async update(id: string, dto: UpdateProductDto): Promise<Product> {
-    await this.findById(id);
+  async update(id: string, dto: UpdateProductDto, societyId?: string): Promise<Product> {
+    await this.findById(id, societyId);
     return this.productsRepo.update(id, dto);
   }
 
-  async deactivate(id: string): Promise<void> {
-    await this.findById(id);
+  async deactivate(id: string, societyId?: string): Promise<void> {
+    await this.findById(id, societyId);
     await this.productsRepo.softDelete(id);
   }
 }
