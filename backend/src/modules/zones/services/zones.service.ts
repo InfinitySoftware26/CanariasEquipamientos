@@ -41,9 +41,6 @@ export class ZonesService {
   }
 
   async findById(id: string, societyId: string): Promise<Zone> {
-    console.log("ZONE ID:", id);
-    console.log("SOCIETY:", societyId);
-
     const zone = await this.zonesRepo.findById(id);
     if (!zone || zone.societyId !== societyId)
       throw new NotFoundException("Zona " + id + " no encontrada");

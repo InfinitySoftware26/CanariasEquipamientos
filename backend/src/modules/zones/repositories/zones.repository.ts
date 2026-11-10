@@ -16,7 +16,6 @@ export class ZonesRepository implements IZonesRepository {
   }
 
   findById(id: string): Promise<Zone | null> {
-    console.log("BUSCANDO:", id);
     return this.repo.findOne({ where: { zoneId: id } });
   }
 
