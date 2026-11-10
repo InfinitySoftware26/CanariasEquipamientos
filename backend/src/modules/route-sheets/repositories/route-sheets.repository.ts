@@ -111,10 +111,11 @@ export class RouteSheetsRepository implements IRouteSheetsRepository {
   // BUSCAR POR ID
   // ============================================================
 
-  findById(id: string): Promise<RouteSheet | null> {
+  findById(id: string, societyId?: string): Promise<RouteSheet | null> {
     return this.repo.findOne({
       where: {
         routeSheetId: id,
+        ...(societyId !== undefined ? { societyId } : {}),
       },
     });
   }

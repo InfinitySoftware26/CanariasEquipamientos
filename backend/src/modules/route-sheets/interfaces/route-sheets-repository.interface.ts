@@ -21,7 +21,8 @@ export interface IRouteSheetsRepository {
     filters?: RouteSheetFilters,
   ): Promise<RouteSheet[]>;
 
-  findById(id: string): Promise<RouteSheet | null>;
+  /** societyId opcional: si se pasa, filtra por sociedad en la consulta. */
+  findById(id: string, societyId?: string): Promise<RouteSheet | null>;
 
   findActiveForStaffZoneDate(
     staffId: string,

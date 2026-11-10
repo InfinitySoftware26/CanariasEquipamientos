@@ -107,8 +107,9 @@ export class InstallmentsService {
     return installments;
   }
 
-  async findById(id: string): Promise<Installment> {
-    const installment = await this.installmentsRepo.findById(id);
+  /** societyId opcional: una cuota de otra sociedad responde 404. */
+  async findById(id: string, societyId?: string): Promise<Installment> {
+    const installment = await this.installmentsRepo.findById(id, societyId);
 
     if (!installment) {
       throw new NotFoundException(`Cuota ${id} no encontrada`);
@@ -218,8 +219,9 @@ export class InstallmentsService {
   async payInstallment(
     id: string,
     amount: number,
+    societyId?: string,
   ): Promise<InstallmentPaymentResult> {
-    let installment = await this.findById(id);
+    let installment = await this.findById(id, societyId);
 
     if (installment.isRefinanced) {
       throw new BadRequestException(
@@ -360,8 +362,8 @@ export class InstallmentsService {
   // MODIFICAR VENCIMIENTO
   // ============================================================
 
-  async updateDueDate(id: string, dueDate: string): Promise<void> {
-    const installment = await this.findById(id);
+  async updateDueDate(id: string, dueDate: string, societyId?: string): Promise<void> {
+    const installment = await this.findById(id, societyId);
 
     if (installment.status === InstallmentStatus.PAID) {
       throw new BadRequestException(
@@ -415,8 +417,9 @@ export class InstallmentsService {
   async updateLateInterest(
     id: string,
     dto: UpdateLateInterestDto,
+    societyId?: string,
   ): Promise<void> {
-    let installment = await this.findById(id);
+    let installment = await this.findById(id, societyId);
 
     if (installment.isRefinanced) {
       throw new BadRequestException(

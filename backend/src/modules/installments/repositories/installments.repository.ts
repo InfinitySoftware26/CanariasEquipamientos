@@ -76,10 +76,11 @@ export class InstallmentsRepository implements IInstallmentsRepository {
     });
   }
 
-  findById(id: string): Promise<Installment | null> {
+  findById(id: string, societyId?: string): Promise<Installment | null> {
     return this.repo.findOne({
       where: {
         installmentId: id,
+        ...(societyId !== undefined ? { societyId } : {}),
       },
     });
   }

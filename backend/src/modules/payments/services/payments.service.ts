@@ -54,8 +54,9 @@ export class PaymentsService {
   // CONSULTAS
   // ============================================================
 
-  async findById(id: string): Promise<Payment> {
-    const payment = await this.paymentsRepo.findById(id);
+  /** societyId opcional: un pago de otra sociedad responde 404. */
+  async findById(id: string, societyId?: string): Promise<Payment> {
+    const payment = await this.paymentsRepo.findById(id, societyId);
 
     if (!payment) {
       throw new NotFoundException(`Pago ${id} no encontrado`);
@@ -75,9 +76,11 @@ export class PaymentsService {
     return this.paymentsRepo.findBySociety(societyId, filters);
   }
 
-  findApplications(
+  async findApplications(
     paymentId: string,
+    societyId?: string,
   ): Promise<PaymentInstallmentApplication[]> {
+    await this.findById(paymentId, societyId);
     return this.applicationsRepo.findByPayment(paymentId);
   }
 
@@ -112,6 +115,7 @@ export class PaymentsService {
         payment.paymentId,
         dto.installmentId,
         dto.amount,
+        payment.societyId,
       );
     }
 
@@ -169,6 +173,7 @@ export class PaymentsService {
       payment.paymentId,
       params.installmentId,
       amount,
+      payment.societyId,
     );
 
     return payment;
@@ -178,8 +183,8 @@ export class PaymentsService {
   // IMPUTACIÓN MANUAL DE PAGO
   // ============================================================
 
-  async applyPayment(paymentId: string, dto: ApplyPaymentDto): Promise<void> {
-    const payment = await this.findById(paymentId);
+  async applyPayment(paymentId: string, dto: ApplyPaymentDto, societyId?: string): Promise<void> {
+    const payment = await this.findById(paymentId, societyId);
 
     const alreadyApplied = await this.applicationsRepo.sumByPayment(paymentId);
 
@@ -202,6 +207,7 @@ export class PaymentsService {
         paymentId,
         application.installmentId,
         application.amount,
+        payment.societyId,
       );
     }
   }
@@ -210,11 +216,18 @@ export class PaymentsService {
   // IMPUTAR A UNA CUOTA
   // ============================================================
 
+  /**
+   * La cuota debe ser de la misma sociedad que el pago (404 si no): un pago
+   * no puede imputarse a cuotas de otra sociedad.
+   */
   private async applyToInstallment(
     paymentId: string,
     installmentId: string,
     amount: number,
+    paymentSocietyId: string,
   ): Promise<void> {
+    await this.installmentsService.findById(installmentId, paymentSocietyId);
+
     const normalizedAmount = this.roundMoney(amount);
 
     if (normalizedAmount <= 0) {

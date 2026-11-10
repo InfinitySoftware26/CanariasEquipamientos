@@ -23,6 +23,7 @@ import { Client } from "../../clients/entities/client.entity";
 import { Installment } from "../../installments/entities/installment.entity";
 import { Sale } from "../../sales/entities/sale.entity";
 import { JwtPayload } from "../../auth/interfaces/jwt-payload.interface";
+import { societyScopeOf } from "../../../common/utils/society-scope.util";
 import { RouteSheetQueryService } from "./route-sheet-query.service";
 import { RouteSheetCalculationsService } from "./route-sheet-calculations.service";
 
@@ -47,13 +48,7 @@ export class RouteSheetInstallmentService {
     routeSheetId: string,
     user: JwtPayload,
   ) {
-    const routeSheet = await this.queryService.findById(routeSheetId);
-
-    if (routeSheet.societyId !== user.societyId) {
-      throw new ForbiddenException(
-        "La hoja de ruta no pertenece a esta sociedad",
-      );
-    }
+    const routeSheet = await this.queryService.findById(routeSheetId, societyScopeOf(user));
 
     if (
       routeSheet.status === RouteSheetStatus.COMPLETED ||
@@ -64,7 +59,7 @@ export class RouteSheetInstallmentService {
 
     const installments = await this.installmentRepo.find({
       where: {
-        societyId: user.societyId,
+        societyId: routeSheet.societyId,
         status: In(OPEN_INSTALLMENT_STATUSES),
       },
       order: {
@@ -189,13 +184,7 @@ export class RouteSheetInstallmentService {
     installmentId: string,
     user: JwtPayload,
   ) {
-    const routeSheet = await this.queryService.findById(routeSheetId);
-
-    if (routeSheet.societyId !== user.societyId) {
-      throw new ForbiddenException(
-        "La hoja de ruta no pertenece a esta sociedad",
-      );
-    }
+    const routeSheet = await this.queryService.findById(routeSheetId, societyScopeOf(user));
 
     if (
       routeSheet.status === RouteSheetStatus.COMPLETED ||
@@ -212,12 +201,10 @@ export class RouteSheetInstallmentService {
       },
     });
 
-    if (!installment) {
+    // La cuota debe ser de la misma sociedad que la hoja (404 si no; con
+    // SUPER_ADMIN se compara contra la sociedad de la hoja, no la del token).
+    if (!installment || installment.societyId !== routeSheet.societyId) {
       throw new NotFoundException(`Cuota ${installmentId} no encontrada`);
-    }
-
-    if (installment.societyId !== user.societyId) {
-      throw new ForbiddenException("La cuota no pertenece a esta sociedad");
     }
 
     // ======================================================

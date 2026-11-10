@@ -41,6 +41,7 @@ import { CurrentUser } from "../../../common/decorators/current-user.decorator";
 import { StaffRole } from "../../../common/enums/staff-role.enum";
 
 import { JwtPayload } from "../../auth/interfaces/jwt-payload.interface";
+import { societyScopeOf } from "../../../common/utils/society-scope.util";
 
 class PayInstallmentDto {
   @ApiProperty({
@@ -177,8 +178,11 @@ export class InstallmentsController {
 
     @Body()
     dto: PayInstallmentDto,
+
+    @CurrentUser()
+    user: JwtPayload,
   ) {
-    return this.installmentsService.payInstallment(id, dto.amount);
+    return this.installmentsService.payInstallment(id, dto.amount, societyScopeOf(user));
   }
 
   // ============================================================
@@ -197,8 +201,11 @@ export class InstallmentsController {
 
     @Body()
     dto: UpdateInstallmentDateDto,
+
+    @CurrentUser()
+    user: JwtPayload,
   ) {
-    return this.installmentsService.updateDueDate(id, dto.dueDate);
+    return this.installmentsService.updateDueDate(id, dto.dueDate, societyScopeOf(user));
   }
 
   // ============================================================
@@ -217,7 +224,10 @@ export class InstallmentsController {
 
     @Body()
     dto: UpdateLateInterestDto,
+
+    @CurrentUser()
+    user: JwtPayload,
   ) {
-    return this.installmentsService.updateLateInterest(id, dto);
+    return this.installmentsService.updateLateInterest(id, dto, societyScopeOf(user));
   }
 }

@@ -23,6 +23,7 @@ import { RouteSheet } from "../entities/route-sheet.entity";
 import { RouteSheetItem } from "../entities/route-sheet-item.entity";
 import { CreateRouteSheetDto } from "../dto/create-route-sheet.dto";
 import { JwtPayload } from "../../auth/interfaces/jwt-payload.interface";
+import { societyScopeOf } from "../../../common/utils/society-scope.util";
 import { RouteSheetQueryService } from "./route-sheet-query.service";
 import { RouteSheetValidationService } from "./route-sheet-validation.service";
 import { RouteSheetCalculationsService } from "./route-sheet-calculations.service";
@@ -112,13 +113,7 @@ export class RouteSheetManagementService {
     staffId: string,
     user: JwtPayload,
   ) {
-    const routeSheet = await this.queryService.findById(routeSheetId);
-
-    if (routeSheet.societyId !== user.societyId) {
-      throw new ForbiddenException(
-        "La hoja de ruta no pertenece a esta sociedad",
-      );
-    }
+    const routeSheet = await this.queryService.findById(routeSheetId, societyScopeOf(user));
 
     if (
       routeSheet.status === RouteSheetStatus.COMPLETED ||
@@ -128,7 +123,7 @@ export class RouteSheetManagementService {
     }
 
     await this.validation.validateZoneAndCollector(
-      user.societyId,
+      routeSheet.societyId,
       routeSheet.zoneId,
       staffId,
     );
@@ -161,13 +156,7 @@ export class RouteSheetManagementService {
     status: RouteSheetStatus,
     user: JwtPayload,
   ): Promise<void> {
-    const routeSheet = await this.queryService.findById(id);
-
-    if (routeSheet.societyId !== user.societyId) {
-      throw new ForbiddenException(
-        "La hoja de ruta no pertenece a esta sociedad",
-      );
-    }
+    const routeSheet = await this.queryService.findById(id, societyScopeOf(user));
 
     if (user.role === StaffRole.COLLECTOR && routeSheet.staffId !== user.sub) {
       throw new ForbiddenException(

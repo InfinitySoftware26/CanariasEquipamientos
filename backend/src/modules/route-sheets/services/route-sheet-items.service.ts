@@ -37,6 +37,7 @@ import { PaymentsService } from "../../payments/services/payments.service";
 import { FailedVisitsService } from "../../failed-visits/services/failed-visits.service";
 
 import { JwtPayload } from "../../auth/interfaces/jwt-payload.interface";
+import { societyScopeOf } from "../../../common/utils/society-scope.util";
 
 @Injectable()
 export class RouteSheetItemsService {
@@ -58,7 +59,12 @@ export class RouteSheetItemsService {
   // LISTAR ITEMS DE UNA HOJA
   // ============================================================
 
-  findByRouteSheet(routeSheetId: string): Promise<RouteSheetItem[]> {
+  /** La hoja debe ser de la sociedad del usuario (404 si no) antes de listar. */
+  async findByRouteSheet(routeSheetId: string, societyId?: string): Promise<RouteSheetItem[]> {
+    const routeSheet = await this.routeSheetsRepo.findById(routeSheetId, societyId);
+    if (!routeSheet) {
+      throw new NotFoundException(`Hoja de ruta ${routeSheetId} no encontrada`);
+    }
     return this.itemsRepo.findByRouteSheet(routeSheetId);
   }
 
@@ -83,22 +89,15 @@ export class RouteSheetItemsService {
   async removePendingItem(id: string, user: JwtPayload): Promise<void> {
     const item = await this.findById(id);
 
-    const routeSheet = await this.routeSheetsRepo.findById(item.routeSheetId);
+    // La hoja se busca con la sociedad del usuario: un ítem de otra sociedad
+    // responde 404 con el mismo mensaje que un ítem inexistente.
+    const routeSheet = await this.routeSheetsRepo.findById(
+      item.routeSheetId,
+      societyScopeOf(user),
+    );
 
     if (!routeSheet) {
-      throw new NotFoundException(
-        `Hoja de ruta ${item.routeSheetId} no encontrada`,
-      );
-    }
-
-    // ==========================================================
-    // SOCIEDAD
-    // ==========================================================
-
-    if (routeSheet.societyId !== user.societyId) {
-      throw new ForbiddenException(
-        "La hoja de ruta no pertenece a esta sociedad",
-      );
+      throw new NotFoundException(`Ítem de hoja de ruta ${id} no encontrado`);
     }
 
     // ==========================================================
@@ -154,22 +153,15 @@ export class RouteSheetItemsService {
   ): Promise<void> {
     const item = await this.findById(id);
 
-    const routeSheet = await this.routeSheetsRepo.findById(item.routeSheetId);
+    // La hoja se busca con la sociedad del usuario: un ítem de otra sociedad
+    // responde 404 con el mismo mensaje que un ítem inexistente.
+    const routeSheet = await this.routeSheetsRepo.findById(
+      item.routeSheetId,
+      societyScopeOf(user),
+    );
 
     if (!routeSheet) {
-      throw new NotFoundException(
-        `Hoja de ruta ${item.routeSheetId} no encontrada`,
-      );
-    }
-
-    // ==========================================================
-    // VALIDAR SOCIEDAD
-    // ==========================================================
-
-    if (routeSheet.societyId !== user.societyId) {
-      throw new ForbiddenException(
-        "La hoja de ruta no pertenece a esta sociedad",
-      );
+      throw new NotFoundException(`Ítem de hoja de ruta ${id} no encontrado`);
     }
 
     // ==========================================================

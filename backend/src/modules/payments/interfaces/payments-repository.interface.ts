@@ -10,7 +10,8 @@ export interface PaymentFilters {
 
 export interface IPaymentsRepository {
   create(data: Partial<Payment>): Promise<Payment>;
-  findById(id: string): Promise<Payment | null>;
+  /** societyId opcional: si se pasa, filtra por sociedad en la consulta. */
+  findById(id: string, societyId?: string): Promise<Payment | null>;
   findBySale(saleId: string): Promise<Payment[]>;
   findBySociety(societyId: string, filters?: PaymentFilters): Promise<Payment[]>;
   findByStaffAndDateRange(staffId: string, from: Date, to: Date): Promise<Payment[]>;

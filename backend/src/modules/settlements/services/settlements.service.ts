@@ -28,14 +28,21 @@ export class SettlementsService {
     return this.settlementsRepo.findBySociety(societyId, filters);
   }
 
-  async findById(id: string): Promise<Settlement> {
-    const settlement = await this.settlementsRepo.findById(id);
+  /** societyId opcional: una liquidación de otra sociedad responde 404. */
+  async findById(id: string, societyId?: string): Promise<Settlement> {
+    const settlement = await this.settlementsRepo.findById(id, societyId);
     if (!settlement) throw new NotFoundException(`Liquidación ${id} no encontrada`);
     return settlement;
   }
 
-  async create(dto: CreateSettlementDto): Promise<Settlement> {
-    const closure = await this.closureRepo.findOne({ where: { closureId: dto.closureId } });
+  /**
+   * El cierre debe ser de la sociedad del usuario (404 si no; SUPER_ADMIN
+   * exento). La liquidación hereda la sociedad del cierre.
+   */
+  async create(dto: CreateSettlementDto, societyId?: string): Promise<Settlement> {
+    const closure = await this.closureRepo.findOne({
+      where: { closureId: dto.closureId, ...(societyId !== undefined ? { societyId } : {}) },
+    });
     if (!closure) throw new NotFoundException(`Cierre ${dto.closureId} no encontrado`);
     if (closure.status !== DailyClosureStatus.VALIDATED) {
       throw new BadRequestException('El cierre debe estar validado antes de generar la liquidación');
@@ -79,8 +86,8 @@ export class SettlementsService {
     return installments.reduce((sum, inst) => sum + Number(inst.amount), 0);
   }
 
-  async validate(id: string, dto: ValidateSettlementDto): Promise<void> {
-    const settlement = await this.findById(id);
+  async validate(id: string, dto: ValidateSettlementDto, societyId?: string): Promise<void> {
+    const settlement = await this.findById(id, societyId);
     if (settlement.status !== SettlementStatus.PENDING) {
       throw new BadRequestException('La liquidación ya fue validada');
     }

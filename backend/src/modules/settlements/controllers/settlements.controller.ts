@@ -14,6 +14,7 @@ import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 import { StaffRole } from '../../../common/enums/staff-role.enum';
 import { SettlementStatus } from '../../../common/enums/settlement-status.enum';
 import { JwtPayload } from '../../auth/interfaces/jwt-payload.interface';
+import { societyScopeOf } from '../../../common/utils/society-scope.util';
 
 @ApiTags('settlements')
 @ApiBearerAuth('access-token')
@@ -42,22 +43,26 @@ export class SettlementsController {
   @Get(':id')
   @Roles(StaffRole.ADMIN, StaffRole.MANAGER, StaffRole.SUPER_ADMIN, StaffRole.COLLECTOR)
   @ApiOperation({ summary: 'Detalle de liquidación' })
-  findOne(@Param('id', ParseUUIDPipe) id: string) {
-    return this.settlementsService.findById(id);
+  findOne(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: JwtPayload) {
+    return this.settlementsService.findById(id, societyScopeOf(user));
   }
 
   @Post()
   @Roles(StaffRole.ADMIN, StaffRole.MANAGER, StaffRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Generar liquidación a partir de un cierre validado' })
-  create(@Body() dto: CreateSettlementDto) {
-    return this.settlementsService.create(dto);
+  create(@Body() dto: CreateSettlementDto, @CurrentUser() user: JwtPayload) {
+    return this.settlementsService.create(dto, societyScopeOf(user));
   }
 
   @Patch(':id/validate')
   @Roles(StaffRole.ADMIN, StaffRole.MANAGER, StaffRole.SUPER_ADMIN)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Validar o rechazar liquidación' })
-  validate(@Param('id', ParseUUIDPipe) id: string, @Body() dto: ValidateSettlementDto) {
-    return this.settlementsService.validate(id, dto);
+  validate(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ValidateSettlementDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.settlementsService.validate(id, dto, societyScopeOf(user));
   }
 }

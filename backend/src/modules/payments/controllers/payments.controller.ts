@@ -26,6 +26,7 @@ import { Roles } from "../../../common/decorators/roles.decorator";
 import { CurrentUser } from "../../../common/decorators/current-user.decorator";
 import { StaffRole } from "../../../common/enums/staff-role.enum";
 import { JwtPayload } from "../../auth/interfaces/jwt-payload.interface";
+import { societyScopeOf } from "../../../common/utils/society-scope.util";
 
 @ApiTags("payments")
 @ApiBearerAuth("access-token")
@@ -61,14 +62,14 @@ export class PaymentsController {
 
   @Get(":id")
   @ApiOperation({ summary: "Detalle de un pago" })
-  findOne(@Param("id", ParseUUIDPipe) id: string) {
-    return this.paymentsService.findById(id);
+  findOne(@Param("id", ParseUUIDPipe) id: string, @CurrentUser() user: JwtPayload) {
+    return this.paymentsService.findById(id, societyScopeOf(user));
   }
 
   @Get(":id/applications")
   @ApiOperation({ summary: "Imputaciones (cuotas) cubiertas por un pago" })
-  findApplications(@Param("id", ParseUUIDPipe) id: string) {
-    return this.paymentsService.findApplications(id);
+  findApplications(@Param("id", ParseUUIDPipe) id: string, @CurrentUser() user: JwtPayload) {
+    return this.paymentsService.findApplications(id, societyScopeOf(user));
   }
 
   @Post()
@@ -92,7 +93,8 @@ export class PaymentsController {
   applyPayment(
     @Param("id", ParseUUIDPipe) id: string,
     @Body() dto: ApplyPaymentDto,
+    @CurrentUser() user: JwtPayload,
   ) {
-    return this.paymentsService.applyPayment(id, dto);
+    return this.paymentsService.applyPayment(id, dto, societyScopeOf(user));
   }
 }

@@ -23,6 +23,7 @@ import { Installment } from "../../installments/entities/installment.entity";
 import { Staff } from "../../staff/entities/staff.entity";
 import { Zone } from "../../zones/entities/zone.entity";
 import { JwtPayload } from "../../auth/interfaces/jwt-payload.interface";
+import { societyScopeOf } from "../../../common/utils/society-scope.util";
 import { RouteSheetCalculationsService } from "./route-sheet-calculations.service";
 
 @Injectable()
@@ -63,8 +64,11 @@ export class RouteSheetQueryService {
   // BUSCAR HOJA
   // ============================================================
 
-  async findById(id: string): Promise<RouteSheet> {
-    const routeSheet = await this.routeSheetsRepo.findById(id);
+  /**
+   * societyId opcional: una hoja de otra sociedad responde 404 (no 403).
+   */
+  async findById(id: string, societyId?: string): Promise<RouteSheet> {
+    const routeSheet = await this.routeSheetsRepo.findById(id, societyId);
 
     if (!routeSheet) {
       throw new NotFoundException(`Hoja de ruta ${id} no encontrada`);
@@ -78,13 +82,7 @@ export class RouteSheetQueryService {
   // ============================================================
 
   async findByIdWithItems(id: string, user: JwtPayload) {
-    const routeSheet = await this.findById(id);
-
-    if (routeSheet.societyId !== user.societyId) {
-      throw new ForbiddenException(
-        "La hoja de ruta no pertenece a esta sociedad",
-      );
-    }
+    const routeSheet = await this.findById(id, societyScopeOf(user));
 
     if (user.role === StaffRole.COLLECTOR && routeSheet.staffId !== user.sub) {
       throw new ForbiddenException(

@@ -11,7 +11,8 @@ export interface IInstallmentsRepository {
 
   findPendingBySociety(societyId: string): Promise<Installment[]>;
 
-  findById(id: string): Promise<Installment | null>;
+  /** societyId opcional: si se pasa, filtra por sociedad en la consulta. */
+  findById(id: string, societyId?: string): Promise<Installment | null>;
 
   createMany(data: Partial<Installment>[]): Promise<Installment[]>;
 

@@ -37,6 +37,7 @@ import { CurrentUser } from "../../../common/decorators/current-user.decorator";
 import { StaffRole } from "../../../common/enums/staff-role.enum";
 
 import { JwtPayload } from "../../auth/interfaces/jwt-payload.interface";
+import { societyScopeOf } from "../../../common/utils/society-scope.util";
 
 @ApiTags("route-sheet-items")
 @ApiBearerAuth("access-token")
@@ -72,8 +73,14 @@ export class RouteSheetItemsController {
   async findByRouteSheet(
     @Query("routeSheetId", ParseUUIDPipe)
     routeSheetId: string,
+
+    @CurrentUser()
+    user: JwtPayload,
   ) {
-    return this.routeSheetItemsService.findByRouteSheet(routeSheetId);
+    return this.routeSheetItemsService.findByRouteSheet(
+      routeSheetId,
+      societyScopeOf(user),
+    );
   }
 
   // ============================================================

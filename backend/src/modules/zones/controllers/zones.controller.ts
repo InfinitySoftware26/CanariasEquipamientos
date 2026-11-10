@@ -29,6 +29,7 @@ import { Roles } from "../../../common/decorators/roles.decorator";
 import { CurrentUser } from "../../../common/decorators/current-user.decorator";
 import { StaffRole } from "../../../common/enums/staff-role.enum";
 import { JwtPayload } from "../../../common/interfaces/jwt-payload.interface";
+import { societyScopeOf } from "../../../common/utils/society-scope.util";
 
 @ApiTags("zones")
 @ApiBearerAuth("access-token")
@@ -64,7 +65,7 @@ export class ZonesController {
     @Param("id", ParseUUIDPipe) id: string,
     @CurrentUser() user: JwtPayload,
   ) {
-    return this.zonesService.findById(id, user.societyId);
+    return this.zonesService.findById(id, societyScopeOf(user));
   }
 
   @Post()
@@ -85,7 +86,7 @@ export class ZonesController {
     @Body() dto: UpdateZoneDto,
     @CurrentUser() user: JwtPayload,
   ) {
-    return this.zonesService.update(id, dto, user.societyId);
+    return this.zonesService.update(id, dto, societyScopeOf(user));
   }
 
   @Delete(":id")
@@ -97,7 +98,7 @@ export class ZonesController {
     @Param("id", ParseUUIDPipe) id: string,
     @CurrentUser() user: JwtPayload,
   ) {
-    return this.zonesService.deactivate(id, user.societyId);
+    return this.zonesService.deactivate(id, societyScopeOf(user));
   }
 
   @Get(":id/staff")
@@ -108,7 +109,7 @@ export class ZonesController {
     @Param("id", ParseUUIDPipe) id: string,
     @CurrentUser() user: JwtPayload,
   ) {
-    return this.zonesService.getZoneStaff(id, user.societyId);
+    return this.zonesService.getZoneStaff(id, societyScopeOf(user));
   }
 
   @Post(":id/staff")
@@ -121,7 +122,7 @@ export class ZonesController {
     @Body() dto: AssignStaffZoneDto,
     @CurrentUser() user: JwtPayload,
   ) {
-    return this.zonesService.assignStaff(id, dto, user.societyId);
+    return this.zonesService.assignStaff(id, dto, societyScopeOf(user));
   }
 
   @Delete(":id/staff/:staffId")
@@ -135,6 +136,6 @@ export class ZonesController {
     @Param("staffId", ParseUUIDPipe) staffId: string,
     @CurrentUser() user: JwtPayload,
   ) {
-    return this.zonesService.unassignStaff(id, staffId, user.societyId);
+    return this.zonesService.unassignStaff(id, staffId, societyScopeOf(user));
   }
 }

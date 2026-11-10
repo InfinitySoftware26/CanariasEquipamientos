@@ -15,8 +15,10 @@ export class ZonesRepository implements IZonesRepository {
     return this.repo.find({ where: { societyId }, order: { name: "ASC" } });
   }
 
-  findById(id: string): Promise<Zone | null> {
-    return this.repo.findOne({ where: { zoneId: id } });
+  findById(id: string, societyId?: string): Promise<Zone | null> {
+    return this.repo.findOne({
+      where: { zoneId: id, ...(societyId !== undefined ? { societyId } : {}) },
+    });
   }
 
   findByNameAndSociety(name: string, societyId: string): Promise<Zone | null> {

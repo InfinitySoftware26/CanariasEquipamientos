@@ -40,10 +40,13 @@ export class ZonesService {
     return this.zonesRepo.findBySociety(societyId);
   }
 
-  async findById(id: string, societyId: string): Promise<Zone> {
-    const zone = await this.zonesRepo.findById(id);
-    if (!zone || zone.societyId !== societyId)
-      throw new NotFoundException("Zona " + id + " no encontrada");
+  /**
+   * societyId: sociedad por la que filtrar (societyScopeOf); undefined para
+   * SUPER_ADMIN. Una zona de otra sociedad responde 404.
+   */
+  async findById(id: string, societyId: string | undefined): Promise<Zone> {
+    const zone = await this.zonesRepo.findById(id, societyId);
+    if (!zone) throw new NotFoundException("Zona " + id + " no encontrada");
     return zone;
   }
 
@@ -55,21 +58,22 @@ export class ZonesService {
   async update(
     id: string,
     dto: UpdateZoneDto,
-    societyId: string,
+    societyId: string | undefined,
   ): Promise<Zone> {
-    await this.findById(id, societyId);
-    if (dto.name) await this.assertUniqueNameInSociety(dto.name, societyId, id);
+    const zone = await this.findById(id, societyId);
+    // Unicidad dentro de la sociedad de la zona (no la del token: SUPER_ADMIN).
+    if (dto.name) await this.assertUniqueNameInSociety(dto.name, zone.societyId, id);
     return this.zonesRepo.update(id, dto);
   }
 
-  async deactivate(id: string, societyId: string): Promise<void> {
+  async deactivate(id: string, societyId: string | undefined): Promise<void> {
     const zone = await this.findById(id, societyId);
     if (zone.status === ZoneStatus.INACTIVE)
       throw new BadRequestException("La zona ya está inactiva");
     await this.zonesRepo.softDelete(id);
   }
 
-  async getZoneStaff(zoneId: string, societyId: string): Promise<any[]> {
+  async getZoneStaff(zoneId: string, societyId: string | undefined): Promise<any[]> {
     await this.findById(zoneId, societyId);
     return this.staffZonesRepo.findByZone(zoneId);
   }
@@ -77,7 +81,7 @@ export class ZonesService {
   async assignStaff(
     zoneId: string,
     dto: AssignStaffZoneDto,
-    societyId: string,
+    societyId: string | undefined,
   ): Promise<void> {
     await this.findById(zoneId, societyId);
     await this.assertCanAssignStaff(dto.staffId);
@@ -91,7 +95,7 @@ export class ZonesService {
   async unassignStaff(
     zoneId: string,
     staffId: string,
-    societyId: string,
+    societyId: string | undefined,
   ): Promise<void> {
     await this.findById(zoneId, societyId);
     await this.staffZonesRepo.unassign(staffId, zoneId);

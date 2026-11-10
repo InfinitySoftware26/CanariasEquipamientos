@@ -22,8 +22,10 @@ export class SettlementsRepository implements ISettlementsRepository {
     });
   }
 
-  findById(id: string): Promise<Settlement | null> {
-    return this.repo.findOne({ where: { settlementId: id } });
+  findById(id: string, societyId?: string): Promise<Settlement | null> {
+    return this.repo.findOne({
+      where: { settlementId: id, ...(societyId !== undefined ? { societyId } : {}) },
+    });
   }
 
   findByClosure(closureId: string): Promise<Settlement | null> {

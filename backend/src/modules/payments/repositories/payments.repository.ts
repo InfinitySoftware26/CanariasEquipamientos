@@ -12,8 +12,10 @@ export class PaymentsRepository implements IPaymentsRepository {
     return this.repo.save(this.repo.create(data));
   }
 
-  findById(id: string): Promise<Payment | null> {
-    return this.repo.findOne({ where: { paymentId: id } });
+  findById(id: string, societyId?: string): Promise<Payment | null> {
+    return this.repo.findOne({
+      where: { paymentId: id, ...(societyId !== undefined ? { societyId } : {}) },
+    });
   }
 
   findBySale(saleId: string): Promise<Payment[]> {
