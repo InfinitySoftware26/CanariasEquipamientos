@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { Not, Repository } from "typeorm";
 
 import { DailyClosure } from "../entities/daily-closure.entity";
 import {
@@ -82,7 +82,7 @@ export class ClosuresRepository implements IClosuresRepository {
     return closure;
   }
 
-  findByStaffAndDate(
+  findActiveByStaffAndDate(
     staffId: string,
     closingDate: string,
   ): Promise<DailyClosure | null> {
@@ -90,6 +90,7 @@ export class ClosuresRepository implements IClosuresRepository {
       where: {
         staffId,
         closingDate: closingDate as unknown as Date,
+        status: Not(DailyClosureStatus.REJECTED),
       },
 
       relations: {
