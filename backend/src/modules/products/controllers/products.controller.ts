@@ -35,7 +35,6 @@ export class ProductsController {
   @Get()
   @ApiOperation({ summary: "Listar productos activos de la sociedad" })
   async findAll(@CurrentUser() user: JwtPayload) {
-    console.log("USER RAW:", user);
     const products = await this.productsService.findAll(user.societyId);
     return products.map((p) => toProductResponse(p, user.role));
   }
