@@ -54,6 +54,44 @@ function getEnv(key, defaultValue) {
   return (process.env[key] || defaultValue).trim();
 }
 
+// ─── Contraseñas de seed ──────────────────────────────────────────────────────
+// En desarrollo se admite el valor por defecto. En NODE_ENV=production cada
+// contraseña debe venir explícita en el entorno: no hay valores por defecto.
+const DEV_DEFAULT_PASSWORD = 'Pass1234!';
+
+const SEED_PASSWORD_KEYS = [
+  'SEED_SUPERADMIN_PASSWORD',
+  'SEED_MANAGER_PASSWORD',
+  'SEED_ADMIN_PASSWORD',
+  'SEED_SELLER_PASSWORD',
+  'SEED_COLLECTOR_PASSWORD',
+];
+
+function isProduction() {
+  return process.env.NODE_ENV === 'production';
+}
+
+/**
+ * En producción falla antes de conectarse si falta alguna contraseña, para
+ * no dejar la base con una carga parcial.
+ */
+function assertProductionPasswords() {
+  if (!isProduction()) return;
+  const missing = SEED_PASSWORD_KEYS.filter(
+    (k) => !process.env[k] || process.env[k].trim() === '',
+  );
+  if (missing.length > 0) {
+    throw new Error(
+      'NODE_ENV=production: faltan contraseñas explícitas para ' +
+        missing.join(', ') + '. No se usan valores por defecto en producción.',
+    );
+  }
+}
+
+function seedPassword(key) {
+  return isProduction() ? requireEnv(key) : getEnv(key, DEV_DEFAULT_PASSWORD);
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 async function emailExists(client, email) {
   const res = await client.query(
@@ -98,6 +136,7 @@ async function run() {
   const envFile = process.argv[2] || '.env';
   console.log('\n[seed] Cargando variables desde: ' + envFile);
   loadEnv(envFile);
+  assertProductionPasswords();
 
   const db = new Client({
     host:     requireEnv('DB_HOST'),
@@ -153,7 +192,7 @@ async function run() {
       name:      'Manager Seed',
       dni:       getEnv('SEED_MANAGER_DNI', '70000001'),
       email:     getEnv('SEED_MANAGER_EMAIL', 'manager@seed.local'),
-      password:  getEnv('SEED_MANAGER_PASSWORD', 'Pass1234!'),
+      password:  seedPassword('SEED_MANAGER_PASSWORD'),
       role:      'gerente',
       societyId,
     });
@@ -164,7 +203,7 @@ async function run() {
       name:      'Admin Seed',
       dni:       getEnv('SEED_ADMIN_DNI', '70000002'),
       email:     getEnv('SEED_ADMIN_EMAIL', 'admin@seed.local'),
-      password:  getEnv('SEED_ADMIN_PASSWORD', 'Pass1234!'),
+      password:  seedPassword('SEED_ADMIN_PASSWORD'),
       role:      'administrativo',
       societyId,
     });
@@ -175,7 +214,7 @@ async function run() {
       name:      'Vendedor Seed',
       dni:       getEnv('SEED_SELLER_DNI', '70000003'),
       email:     getEnv('SEED_SELLER_EMAIL', 'seller@seed.local'),
-      password:  getEnv('SEED_SELLER_PASSWORD', 'Pass1234!'),
+      password:  seedPassword('SEED_SELLER_PASSWORD'),
       role:      'vendedor',
       societyId,
     });
@@ -186,7 +225,7 @@ async function run() {
       name:      'Cobrador Seed',
       dni:       getEnv('SEED_COLLECTOR_DNI', '70000004'),
       email:     getEnv('SEED_COLLECTOR_EMAIL', 'collector@seed.local'),
-      password:  getEnv('SEED_COLLECTOR_PASSWORD', 'Pass1234!'),
+      password:  seedPassword('SEED_COLLECTOR_PASSWORD'),
       role:      'cobrador',
       societyId,
     });
@@ -264,7 +303,11 @@ async function run() {
   }
 }
 
-run().catch((err) => {
-  console.error('\n[seed] Error:', err.message);
-  process.exit(1);
-});
+if (require.main === module) {
+  run().catch((err) => {
+    console.error('\n[seed] Error:', err.message);
+    process.exit(1);
+  });
+}
+
+module.exports = { assertProductionPasswords, seedPassword, SEED_PASSWORD_KEYS };
