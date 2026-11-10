@@ -154,8 +154,9 @@ export class StaffController {
     return this.staffService.changePassword(id, dto, user);
   }
 
-  // ── PATCH /staff/:id ──────────────────────────────────────────────────────
-  @Patch(":id")
+  // ── PATCH /staff/:id/deactivate ───────────────────────────────────────────
+  // Antes compartía la ruta PATCH :id con update y quedaba inalcanzable.
+  @Patch(":id/deactivate")
   @Roles(StaffRole.SUPER_ADMIN, StaffRole.MANAGER, StaffRole.ADMIN)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: "Desactivar empleado — soft delete" })
