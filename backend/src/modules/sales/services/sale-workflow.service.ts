@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  NotFoundException,
   ForbiddenException,
   Inject,
   Injectable,
@@ -37,6 +38,7 @@ import { StaffRole } from "../../../common/enums/staff-role.enum";
 
 import { JwtPayload } from "../../auth/interfaces/jwt-payload.interface";
 import { societyScopeOf } from "../../../common/utils/society-scope.util";
+import { StaffService } from "../../staff/services/staff.service";
 
 import { SalesQueryService } from "./sales-query.service";
 import { SaleInstallmentScheduleService } from "./sale-installment-schedule.service";
@@ -59,6 +61,8 @@ export class SaleWorkflowService {
     private readonly queryService: SalesQueryService,
 
     private readonly scheduleService: SaleInstallmentScheduleService,
+
+    private readonly staffService: StaffService,
   ) {}
 
   // ─────────────────────────────────────────────────────────────
@@ -400,6 +404,8 @@ export class SaleWorkflowService {
 
     const sale = await this.queryService.findById(saleId, societyScopeOf(user));
 
+    await this.assertAssignableCollector(collectorId, sale.societyId);
+
     const previousCollectorId = sale.assignedCollectorId;
 
     await this.salesRepo.update(saleId, {
@@ -521,6 +527,36 @@ export class SaleWorkflowService {
     });
 
     return this.queryService.findById(saleId);
+  }
+
+  /**
+   * El cobrador debe existir, pertenecer a la sociedad de la venta (sociedad
+   * primaria o asignación activa en STAFF_SOCIETIES, el mismo criterio que
+   * StaffRepository.findById), tener rol COLLECTOR y estar activo.
+   * Se usa la sociedad de la venta, no la del token, para que SUPER_ADMIN
+   * no pueda asignar un cobrador de otra sociedad.
+   */
+  private async assertAssignableCollector(
+    collectorId: string,
+    saleSocietyId: string,
+  ): Promise<void> {
+    let collector;
+    try {
+      collector = await this.staffService.findById(collectorId, saleSocietyId);
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw new NotFoundException(`Cobrador ${collectorId} no encontrado`);
+      }
+      throw error;
+    }
+
+    if (collector.role !== StaffRole.COLLECTOR) {
+      throw new BadRequestException("El empleado indicado no tiene rol de cobrador");
+    }
+
+    if (!collector.isActive) {
+      throw new BadRequestException("El cobrador indicado está inactivo");
+    }
   }
 
   private extractUser(user: JwtPayload) {

@@ -28,6 +28,7 @@ import { Promotion } from "../financing/entities/promotion.entity";
 import { Society } from "../societies/entities/society.entity";
 
 import { FinancingModule } from "../financing/financing.module";
+import { StaffModule } from "../staff/staff.module";
 
 import { SALES_REPOSITORY } from "./interfaces/sales-repository.interface";
 import { SALE_VALIDATIONS_REPOSITORY } from "./interfaces/sale-validations-repository.interface";
@@ -50,6 +51,7 @@ import { SALE_HISTORY_REPOSITORY } from "./interfaces/sale-history-repository.in
     ]),
 
     FinancingModule,
+    StaffModule,
   ],
 
   controllers: [SalesController],

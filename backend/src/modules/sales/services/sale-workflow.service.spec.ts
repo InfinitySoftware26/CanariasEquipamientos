@@ -31,7 +31,7 @@ function build(status = SaleStatus.PENDING_ADMIN_VALIDATION) {
   const queryService = new SalesQueryService(salesRepo as any, {} as any, {} as any, {} as any);
   const service = new SaleWorkflowService(
     salesRepo as any, autoMock() as any, autoMock() as any, autoMock() as any,
-    queryService, autoMock() as any,
+    queryService, autoMock() as any, autoMock() as any,
   );
   return { service, salesRepo };
 }
