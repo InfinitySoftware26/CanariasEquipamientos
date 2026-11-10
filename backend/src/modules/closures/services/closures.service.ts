@@ -94,15 +94,19 @@ export class ClosuresService {
   // CREAR CIERRE
   // ============================================================
 
+  /**
+   * Un cobrador tiene a lo sumo un cierre no rechazado por fecha: si el
+   * existente fue rechazado, se permite cargar uno nuevo.
+   */
   async create(dto: CreateClosureDto, user: JwtPayload): Promise<DailyClosure> {
-    const existing = await this.closuresRepo.findByStaffAndDate(
+    const existing = await this.closuresRepo.findActiveByStaffAndDate(
       user.sub,
       dto.closingDate,
     );
 
     if (existing) {
       throw new ConflictException(
-        "Ya existe un cierre para este cobrador en esta fecha",
+        "Ya existe un cierre pendiente o validado para este cobrador en esta fecha",
       );
     }
 
