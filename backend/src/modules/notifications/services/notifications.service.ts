@@ -13,8 +13,12 @@ export class NotificationsService {
     private readonly deliveriesService: NotificationDeliveriesService,
   ) {}
 
-  async findById(id: string): Promise<Notification> {
-    const notification = await this.notificationsRepo.findById(id);
+  /**
+   * societyId opcional: si se pasa, un registro de otra sociedad responde 404
+   * (no 403) para no revelar su existencia. Ver common/utils/society-scope.util.
+   */
+  async findById(id: string, societyId?: string): Promise<Notification> {
+    const notification = await this.notificationsRepo.findById(id, societyId);
     if (!notification) throw new NotFoundException(`Notificación ${id} no encontrada`);
     return notification;
   }

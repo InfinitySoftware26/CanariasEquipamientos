@@ -14,8 +14,12 @@ export class ProductsService {
     return this.productsRepo.findAll(societyId);
   }
 
-  async findById(id: string): Promise<Product> {
-    const product = await this.productsRepo.findById(id);
+  /**
+   * societyId opcional: si se pasa, un registro de otra sociedad responde 404
+   * (no 403) para no revelar su existencia. Ver common/utils/society-scope.util.
+   */
+  async findById(id: string, societyId?: string): Promise<Product> {
+    const product = await this.productsRepo.findById(id, societyId);
     if (!product) throw new NotFoundException(`Producto ${id} no encontrado`);
     return product;
   }

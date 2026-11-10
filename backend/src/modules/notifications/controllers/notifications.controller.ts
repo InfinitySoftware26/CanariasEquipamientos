@@ -12,6 +12,7 @@ import { Roles } from '../../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 import { StaffRole } from '../../../common/enums/staff-role.enum';
 import { JwtPayload } from '../../auth/interfaces/jwt-payload.interface';
+import { societyScopeOf } from '../../../common/utils/society-scope.util';
 
 @ApiTags('notifications')
 @ApiBearerAuth('access-token')
@@ -30,8 +31,8 @@ export class NotificationsController {
   @Get(':id')
   @Roles(StaffRole.ADMIN, StaffRole.MANAGER, StaffRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Detalle de notificación' })
-  findOne(@Param('id', ParseUUIDPipe) id: string) {
-    return this.notificationsService.findById(id);
+  findOne(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: JwtPayload) {
+    return this.notificationsService.findById(id, societyScopeOf(user));
   }
 
   @Post()

@@ -13,6 +13,7 @@ import { SupplierPaymentsService } from "../../supplier-payments/services/suppli
 import { ReceiptsService } from "../../receipts/services/receipts.service";
 
 import { JwtPayload } from "../../auth/interfaces/jwt-payload.interface";
+import { societyScopeOf } from "../../../common/utils/society-scope.util";
 
 @Injectable()
 export class ReportsService {
@@ -259,10 +260,12 @@ export class ReportsService {
 
   // ─── SPRINT 05 · FINANCIERO ───────────────────────────────────────────────
 
-  async cashboxClosurePdf(cashboxId: string): Promise<Buffer> {
-    const cashbox = await this.cashboxService.findById(cashboxId);
+  async cashboxClosurePdf(cashboxId: string, user: JwtPayload): Promise<Buffer> {
+    const societyId = societyScopeOf(user);
 
-    const balance = await this.cashboxService.getBalance(cashboxId);
+    const cashbox = await this.cashboxService.findById(cashboxId, societyId);
+
+    const balance = await this.cashboxService.getBalance(cashboxId, societyId);
 
     return buildPdfTable(
       `Cierre de Caja — ${new Date(cashbox.openingDate).toLocaleDateString(

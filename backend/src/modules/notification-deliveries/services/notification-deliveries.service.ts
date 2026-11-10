@@ -1,4 +1,4 @@
-import { Injectable, Inject, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, Inject, NotFoundException } from '@nestjs/common';
 import {
   INotificationDeliveriesRepository, NOTIFICATION_DELIVERIES_REPOSITORY,
 } from '../interfaces/notification-deliveries-repository.interface';
@@ -23,12 +23,15 @@ export class NotificationDeliveriesService {
     );
   }
 
+  /**
+   * La entrega se busca filtrando por destinatario en la consulta: una entrega
+   * de otro usuario (y por lo tanto de cualquier otra sociedad) responde 404,
+   * sin revelar su existencia. La bandeja es personal, por lo que SUPER_ADMIN
+   * tampoco puede marcar como leída una entrega ajena.
+   */
   async markAsRead(id: string, user: JwtPayload): Promise<void> {
-    const delivery = await this.deliveriesRepo.findById(id);
+    const delivery = await this.deliveriesRepo.findByIdForStaff(id, user.sub);
     if (!delivery) throw new NotFoundException(`Entrega de notificación ${id} no encontrada`);
-    if (delivery.staffId !== user.sub) {
-      throw new ForbiddenException('No podés marcar como leída una notificación de otro usuario');
-    }
     await this.deliveriesRepo.updateStatus(id, NotificationDeliveryStatus.READ);
   }
 }

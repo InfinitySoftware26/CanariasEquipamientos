@@ -194,8 +194,14 @@ export class ClientsService {
     };
   }
 
-  findById(id: string): Promise<Client | null> {
-    return this.clientsRepo.findById(id);
+  /**
+   * societyId opcional: si se pasa, un registro de otra sociedad responde 404
+   * (no 403) para no revelar su existencia. Ver common/utils/society-scope.util.
+   */
+  async findById(id: string, societyId?: string): Promise<Client> {
+    const client = await this.clientsRepo.findById(id, societyId);
+    if (!client) throw new NotFoundException("Cliente no encontrado");
+    return client;
   }
 
   findAllBySociety(societyId: string): Promise<Client[]> {

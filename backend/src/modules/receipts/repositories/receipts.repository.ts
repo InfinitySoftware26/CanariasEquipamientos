@@ -12,8 +12,10 @@ export class ReceiptsRepository implements IReceiptsRepository {
     return this.repo.save(this.repo.create(data));
   }
 
-  findById(id: string): Promise<Receipt | null> {
-    return this.repo.findOne({ where: { receiptId: id } });
+  findById(id: string, societyId?: string): Promise<Receipt | null> {
+    return this.repo.findOne({
+      where: { receiptId: id, ...(societyId !== undefined ? { societyId } : {}) },
+    });
   }
 
   findBySociety(societyId: string): Promise<Receipt[]> {

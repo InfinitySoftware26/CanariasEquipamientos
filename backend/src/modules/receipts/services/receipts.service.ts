@@ -12,8 +12,12 @@ export class ReceiptsService {
     private readonly receiptsRepo: IReceiptsRepository,
   ) {}
 
-  async findById(id: string): Promise<Receipt> {
-    const receipt = await this.receiptsRepo.findById(id);
+  /**
+   * societyId opcional: si se pasa, un registro de otra sociedad responde 404
+   * (no 403) para no revelar su existencia. Ver common/utils/society-scope.util.
+   */
+  async findById(id: string, societyId?: string): Promise<Receipt> {
+    const receipt = await this.receiptsRepo.findById(id, societyId);
     if (!receipt) throw new NotFoundException(`Recibo ${id} no encontrado`);
     return receipt;
   }
@@ -42,8 +46,8 @@ export class ReceiptsService {
     });
   }
 
-  async generatePdf(id: string): Promise<Buffer> {
-    const receipt = await this.findById(id);
+  async generatePdf(id: string, societyId?: string): Promise<Buffer> {
+    const receipt = await this.findById(id, societyId);
     return buildReceiptPdf(receipt);
   }
 }

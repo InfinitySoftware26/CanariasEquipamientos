@@ -16,8 +16,10 @@ export class ProductsRepository implements IProductsRepository {
     });
   }
 
-  findById(id: string): Promise<Product | null> {
-    return this.repo.findOne({ where: { productId: id } });
+  findById(id: string, societyId?: string): Promise<Product | null> {
+    return this.repo.findOne({
+      where: { productId: id, ...(societyId !== undefined ? { societyId } : {}) },
+    });
   }
 
   async create(data: Partial<Product>): Promise<Product> {

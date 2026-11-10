@@ -20,8 +20,11 @@ const SALE_RELATIONS = [
 export class SalesRepository implements ISalesRepository {
   constructor(@InjectRepository(Sale) private readonly repo: Repository<Sale>) {}
 
-  findById(id: string): Promise<Sale | null> {
-    return this.repo.findOne({ where: { saleId: id }, relations: SALE_RELATIONS });
+  findById(id: string, societyId?: string): Promise<Sale | null> {
+    return this.repo.findOne({
+      where: { saleId: id, ...(societyId !== undefined ? { societyId } : {}) },
+      relations: SALE_RELATIONS,
+    });
   }
 
   findByClient(clientId: string, societyId: string): Promise<Sale[]> {

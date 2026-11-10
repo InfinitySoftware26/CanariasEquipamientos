@@ -172,10 +172,13 @@ export class ReportsController {
     @Param("id", ParseUUIDPipe)
     id: string,
 
+    @CurrentUser()
+    user: JwtPayload,
+
     @Res()
     res: Response,
   ) {
-    const pdf = await this.reportsService.cashboxClosurePdf(id);
+    const pdf = await this.reportsService.cashboxClosurePdf(id, user);
 
     res.set({
       "Content-Type": "application/pdf",

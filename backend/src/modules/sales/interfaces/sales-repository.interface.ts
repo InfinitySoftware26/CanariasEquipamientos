@@ -2,7 +2,8 @@ import { Sale } from '../entities/sale.entity';
 import { SaleStatus } from '../../../common/enums/sale-status.enum';
 
 export interface ISalesRepository {
-  findById(id: string): Promise<Sale | null>;
+  /** societyId opcional: si se pasa, filtra por sociedad en la consulta. */
+  findById(id: string, societyId?: string): Promise<Sale | null>;
   findByClient(clientId: string, societyId: string): Promise<Sale[]>;
   findBySociety(societyId: string): Promise<Sale[]>;
   findByStatus(societyId: string, status: SaleStatus): Promise<Sale[]>;

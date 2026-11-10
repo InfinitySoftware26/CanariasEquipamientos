@@ -43,6 +43,7 @@ import { CommissionPeriod } from "../../../common/enums/commission-period.enum";
 
 import { JwtPayload } from "../../auth/interfaces/jwt-payload.interface";
 import { MarkCollectorDocumentsDto } from "../dto/mark-collector-documents.dto";
+import { societyScopeOf } from "../../../common/utils/society-scope.util";
 
 @ApiTags("sales")
 @ApiBearerAuth("access-token")
@@ -131,8 +132,11 @@ export class SalesController {
   findOne(
     @Param("id", ParseUUIDPipe)
     id: string,
+
+    @CurrentUser()
+    user: JwtPayload,
   ) {
-    return this.salesService.findById(id);
+    return this.salesService.findById(id, societyScopeOf(user));
   }
 
   @Get(":id/history")
