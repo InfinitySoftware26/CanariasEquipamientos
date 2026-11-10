@@ -23,6 +23,7 @@ import { CurrentUser } from "../../../common/decorators/current-user.decorator";
 import { StaffRole } from "../../../common/enums/staff-role.enum";
 import { JwtPayload } from "../../auth/interfaces/jwt-payload.interface";
 import { societyScopeOf } from "../../../common/utils/society-scope.util";
+import { toProductResponse } from "../mappers/product-response.mapper";
 
 @ApiTags("products")
 @ApiBearerAuth("access-token")
@@ -33,15 +34,17 @@ export class ProductsController {
 
   @Get()
   @ApiOperation({ summary: "Listar productos activos de la sociedad" })
-  findAll(@CurrentUser() user: JwtPayload) {
+  async findAll(@CurrentUser() user: JwtPayload) {
     console.log("USER RAW:", user);
-    return this.productsService.findAll(user.societyId);
+    const products = await this.productsService.findAll(user.societyId);
+    return products.map((p) => toProductResponse(p, user.role));
   }
 
   @Get(":id")
   @ApiOperation({ summary: "Obtener producto por ID" })
-  findOne(@Param("id", ParseUUIDPipe) id: string, @CurrentUser() user: JwtPayload) {
-    return this.productsService.findById(id, societyScopeOf(user));
+  async findOne(@Param("id", ParseUUIDPipe) id: string, @CurrentUser() user: JwtPayload) {
+    const product = await this.productsService.findById(id, societyScopeOf(user));
+    return toProductResponse(product, user.role);
   }
 
   @Post()
