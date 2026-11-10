@@ -44,6 +44,7 @@ import { CommissionPeriod } from "../../../common/enums/commission-period.enum";
 import { JwtPayload } from "../../auth/interfaces/jwt-payload.interface";
 import { MarkCollectorDocumentsDto } from "../dto/mark-collector-documents.dto";
 import { societyScopeOf } from "../../../common/utils/society-scope.util";
+import { toSaleResponse } from "../mappers/sale-response.mapper";
 
 @ApiTags("sales")
 @ApiBearerAuth("access-token")
@@ -79,8 +80,9 @@ export class SalesController {
   @ApiOperation({
     summary: "Mis ventas",
   })
-  findMy(@CurrentUser() user: JwtPayload) {
-    return this.salesService.findBySeller(user.sub, user.societyId);
+  async findMy(@CurrentUser() user: JwtPayload) {
+    const sales = await this.salesService.findBySeller(user.sub, user.societyId);
+    return sales.map((sale) => toSaleResponse(sale, user.role));
   }
 
   @Get("my/commissions")
@@ -129,14 +131,15 @@ export class SalesController {
   @ApiOperation({
     summary: "Obtener venta por ID",
   })
-  findOne(
+  async findOne(
     @Param("id", ParseUUIDPipe)
     id: string,
 
     @CurrentUser()
     user: JwtPayload,
   ) {
-    return this.salesService.findById(id, societyScopeOf(user));
+    const sale = await this.salesService.findById(id, societyScopeOf(user));
+    return toSaleResponse(sale, user.role);
   }
 
   @Get(":id/history")
