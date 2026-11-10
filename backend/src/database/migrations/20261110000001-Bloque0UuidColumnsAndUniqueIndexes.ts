@@ -26,7 +26,7 @@ import { MigrationInterface, QueryRunner } from "typeorm";
  *
  * ATENCIÓN: en producción migrationsRun está activo (database.config.ts); si
  * esta migración aborta por datos inválidos o duplicados, el arranque falla.
- * Correr antes el diagnóstico de solo lectura (docs/Data-Base/diagnostics).
+ * Correr antes docs/Data-Base/diagnostics/preflight-20261110000001.sql.
  */
 
 const TRACKING_TABLE = "migration_uuid_conversions_20261110000001";
