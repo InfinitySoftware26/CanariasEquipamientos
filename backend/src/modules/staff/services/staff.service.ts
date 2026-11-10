@@ -280,11 +280,17 @@ export class StaffService {
     const target = await this.findById(targetId, societyScopeOf(currentUser));
 
     if (currentUser.sub === targetId) {
-      const forbidden = Object.keys(dto).filter(
-        (k) =>
-          (dto as Record<string, unknown>)[k] !== undefined &&
-          !SELF_EDITABLE_FIELDS.includes(k as keyof UpdateStaffDto),
-      );
+      // Un campo sensible reenviado con su valor actual no es un cambio: el
+      // formulario del front envía siempre role y email.
+      const current = target as unknown as Record<string, unknown>;
+      const forbidden = Object.keys(dto).filter((k) => {
+        const value = (dto as Record<string, unknown>)[k];
+        return (
+          value !== undefined &&
+          !SELF_EDITABLE_FIELDS.includes(k as keyof UpdateStaffDto) &&
+          value !== current[k]
+        );
+      });
       if (forbidden.length > 0) {
         throw new ForbiddenException(
           "Solo podés editar tus datos personales (" +

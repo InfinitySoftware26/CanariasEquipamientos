@@ -61,6 +61,22 @@ describe('StaffService.update — permisos', () => {
     });
   });
 
+  describe('reenvío de valores sin cambio (el front envía siempre role y email)', () => {
+    it('ADMIN se edita enviando su mismo rol y su mismo email → OK', async () => {
+      const { repo, service } = build();
+      (people.adm as any).email = 'adm@x.com';
+      await service.update('adm', dto({ name: 'N', role: StaffRole.ADMIN, email: 'adm@x.com' }), actor('adm'));
+      expect(repo.update).toHaveBeenCalled();
+    });
+
+    it('ADMIN se edita enviando otro email → 403', async () => {
+      const { repo, service } = build();
+      (people.adm as any).email = 'adm@x.com';
+      await expect(service.update('adm', dto({ email: 'nuevo@x.com' }), actor('adm'))).rejects.toBeInstanceOf(ForbiddenException);
+      expect(repo.update).not.toHaveBeenCalled();
+    });
+  });
+
   describe('edición de datos propios', () => {
     it.each(['sel', 'col', 'adm', 'mgr', 'sa'] as const)('%s edita nombre, teléfono y dirección → OK', async (who) => {
       const { repo, service } = build();
