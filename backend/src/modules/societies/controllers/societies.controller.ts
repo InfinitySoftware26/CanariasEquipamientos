@@ -119,8 +119,11 @@ export class SocietiesController {
 
     @Body()
     dto: UpdateSocietyDto,
+
+    @CurrentUser()
+    user: JwtPayload,
   ) {
-    return this.societiesService.update(id, dto);
+    return this.societiesService.update(id, dto, user);
   }
 
   @Patch(":id/late-interest")

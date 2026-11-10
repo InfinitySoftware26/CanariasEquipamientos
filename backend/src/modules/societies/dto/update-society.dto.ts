@@ -1,6 +1,6 @@
 import type { Type } from "@nestjs/common";
 
-import { ApiPropertyOptional, OmitType, PartialType } from "@nestjs/swagger";
+import { ApiPropertyOptional, PartialType } from "@nestjs/swagger";
 
 import { IsEnum, IsNumber, IsOptional, Max, Min } from "class-validator";
 
@@ -8,11 +8,14 @@ import { CreateSocietyDto } from "./create-society.dto";
 
 import { SocietyStatus } from "../entities/society.entity";
 
-type UpdateSocietyBaseDto = Partial<Omit<CreateSocietyDto, "taxId">>;
+/**
+ * Todos los campos de alta son opcionales, incluido taxId (con la misma
+ * validación de formato). Editar taxId queda reservado a SUPER_ADMIN y se
+ * controla en SocietiesService.update, que además verifica unicidad.
+ */
+type UpdateSocietyBaseDto = Partial<CreateSocietyDto>;
 
-const UpdateSocietyBase: Type<UpdateSocietyBaseDto> = PartialType(
-  OmitType(CreateSocietyDto, ["taxId"] as const),
-);
+const UpdateSocietyBase: Type<UpdateSocietyBaseDto> = PartialType(CreateSocietyDto);
 
 export class UpdateSocietyDto extends UpdateSocietyBase {
   @ApiPropertyOptional({

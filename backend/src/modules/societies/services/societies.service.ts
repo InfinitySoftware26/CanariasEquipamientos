@@ -72,8 +72,18 @@ export class SocietiesService {
     return this.societiesRepo.create(dto);
   }
 
-  async update(id: string, dto: UpdateSocietyDto): Promise<Society> {
+  async update(id: string, dto: UpdateSocietyDto, user: JwtPayload): Promise<Society> {
     await this.findById(id);
+
+    if (dto.taxId !== undefined) {
+      if (user.role !== StaffRole.SUPER_ADMIN) {
+        throw new ForbiddenException("Solo un super admin puede modificar el CUIT");
+      }
+      const holder = await this.societiesRepo.findByTaxId(dto.taxId);
+      if (holder && holder.societyId !== id) {
+        throw new ConflictException(`Ya existe una sociedad con el CUIT ${dto.taxId}`);
+      }
+    }
 
     return this.societiesRepo.update(id, dto);
   }
