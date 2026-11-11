@@ -24,6 +24,8 @@ import { AddButton } from "@/components/button/AddButton";
 
 import { DangerButton } from "@/components/button/DangerButton";
 
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+
 import { useRouteSheet } from "@/hooks/route-sheets/useRouteSheet";
 
 import { useUpdateRouteSheetStatus } from "@/hooks/route-sheets/useUpdateRouteSheetStatus";
@@ -83,6 +85,8 @@ export default function RouteSheetDetailPage() {
   const [adding, setAdding] = useState(false);
 
   const [removingItemId, setRemovingItemId] = useState<string | null>(null);
+
+  const [itemToRemove, setItemToRemove] = useState<RouteSheetItem | null>(null);
 
   const [actionError, setActionError] = useState("");
 
@@ -188,16 +192,10 @@ export default function RouteSheetDetailPage() {
   // QUITAR ITEM
   // ============================================================
 
-  async function handleRemoveItem(item: RouteSheetItem) {
-    if (item.result !== "pending") {
-      return;
-    }
+  async function handleRemoveItem() {
+    const item = itemToRemove;
 
-    const confirmed = window.confirm(
-      `¿Quitar a ${item.clientName ?? "este cliente"} de esta hoja de ruta?`,
-    );
-
-    if (!confirmed) {
+    if (!item || item.result !== "pending") {
       return;
     }
 
@@ -207,6 +205,8 @@ export default function RouteSheetDetailPage() {
       setActionError("");
 
       await removeRouteSheetItem(item.itemId);
+
+      setItemToRemove(null);
 
       await reload();
 
@@ -334,7 +334,9 @@ export default function RouteSheetDetailPage() {
       <div className="grid gap-4">
         {routeSheet.items.length === 0 && (
           <div className="rounded-2xl border border-white/10 bg-[#101927] p-6 text-center text-sm text-white/50">
-            Esta hoja todavía no tiene visitas asignadas.
+            Esta hoja todavía no tiene visitas asignadas. Las hojas creadas
+            manualmente nacen vacías: agregá las cuotas desde el selector de
+            arriba.
           </div>
         )}
 
@@ -351,7 +353,7 @@ export default function RouteSheetDetailPage() {
                   type="button"
                   size="sm"
                   disabled={removingItemId === item.itemId}
-                  onClick={() => handleRemoveItem(item)}
+                  onClick={() => setItemToRemove(item)}
                   className="inline-flex items-center gap-2 px-4 py-2"
                 >
                   <Trash2 size={16} />
@@ -386,6 +388,22 @@ export default function RouteSheetDetailPage() {
           }}
         />
       )}
+
+      <ConfirmDialog
+        open={Boolean(itemToRemove)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setItemToRemove(null);
+          }
+        }}
+        title="Quitar de la hoja"
+        description={`¿Quitar a ${itemToRemove?.clientName ?? "este cliente"} de esta hoja de ruta?`}
+        confirmText="Quitar"
+        cancelText="Cancelar"
+        destructive
+        loading={removingItemId !== null}
+        onConfirm={handleRemoveItem}
+      />
     </div>
   );
 }

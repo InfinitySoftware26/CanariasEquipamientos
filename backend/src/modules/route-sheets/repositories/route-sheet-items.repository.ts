@@ -168,6 +168,21 @@ export class RouteSheetItemsRepository implements IRouteSheetItemsRepository {
     );
   }
 
+  findLatestFailedDeliveryBySale(saleId: string): Promise<RouteSheetItem | null> {
+    return this.repo
+      .createQueryBuilder("item")
+      .where("item.sale_id = :saleId", { saleId })
+      .andWhere("item.item_type = :itemType", {
+        itemType: RouteSheetItemType.DELIVERY,
+      })
+      .andWhere("item.result = :result", {
+        result: RouteSheetItemResult.FAILED,
+      })
+      .orderBy("item.visited_at", "DESC", "NULLS LAST")
+      .addOrderBy("item.created_at", "DESC")
+      .getOne();
+  }
+
   // ============================================================
   // ACTUALIZAR RESULTADO
   // ============================================================

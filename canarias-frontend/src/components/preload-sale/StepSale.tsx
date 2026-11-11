@@ -78,17 +78,20 @@ export function StepSale({
       promotions.length > 0
     ) {
       const firstPromo = promotions[0];
+      const basePlan =
+        firstPromo.plan ??
+        plans.find((p) => p.financingPlanId === firstPromo.financingPlanId);
       setForm((prev) => ({
         ...prev,
         promotionId: firstPromo.promotionId,
         financingPlanId: firstPromo.financingPlanId ?? "",
         installmentsCount:
+          basePlan?.installmentsCount ??
           firstPromo.installmentsCount ??
-          firstPromo.plan?.installmentsCount ??
           prev.installmentsCount,
         paymentFrequency:
+          basePlan?.paymentFrequency ??
           firstPromo.paymentFrequency ??
-          firstPromo.plan?.paymentFrequency ??
           prev.paymentFrequency,
       }));
     }
@@ -188,9 +191,9 @@ export function StepSale({
           baseRate = Number(basePlan.financingConfiguration.financingRate);
         }
         const discount = Number(selectedPromo.discountPercentage ?? 0);
-        return Math.max(0, baseRate + discount);
+        return Math.max(-0.99, baseRate + discount);
       }
-      return Math.max(0, Number(selectedPromo.discountPercentage ?? 0));
+      return Math.max(-0.99, Number(selectedPromo.discountPercentage ?? 0));
     }
 
     // Modo personalizado
@@ -403,18 +406,23 @@ export function StepSale({
               type="button"
               onClick={() => {
                 const firstPromo = promotions[0];
+                const basePlan =
+                  firstPromo?.plan ??
+                  plans.find(
+                    (p) => p.financingPlanId === firstPromo?.financingPlanId,
+                  );
                 setForm((prev) => ({
                   ...prev,
                   saleMode: "promotion",
                   promotionId: firstPromo?.promotionId ?? "",
                   financingPlanId: firstPromo?.financingPlanId ?? "",
                   installmentsCount:
+                    basePlan?.installmentsCount ??
                     firstPromo?.installmentsCount ??
-                    firstPromo?.plan?.installmentsCount ??
                     prev.installmentsCount,
                   paymentFrequency:
+                    basePlan?.paymentFrequency ??
                     firstPromo?.paymentFrequency ??
-                    firstPromo?.plan?.paymentFrequency ??
                     prev.paymentFrequency,
                 }));
               }}
@@ -555,12 +563,12 @@ export function StepSale({
                           promotionId: p.promotionId,
                           financingPlanId: p.financingPlanId ?? "",
                           installmentsCount:
-                            p.installmentsCount ??
                             basePlan?.installmentsCount ??
+                            p.installmentsCount ??
                             prev.installmentsCount,
                           paymentFrequency:
-                            p.paymentFrequency ??
                             basePlan?.paymentFrequency ??
+                            p.paymentFrequency ??
                             prev.paymentFrequency,
                         }));
                         setOpenPromo(false);

@@ -150,6 +150,26 @@ export class RouteSheetsRepository implements IRouteSheetsRepository {
       .getOne();
   }
 
+  findNextActiveForStaffZone(
+    societyId: string,
+    staffId: string,
+    zoneId: string,
+    afterDate: string,
+  ): Promise<RouteSheet | null> {
+    return this.repo
+      .createQueryBuilder("routeSheet")
+      .where("routeSheet.society_id = :societyId", { societyId })
+      .andWhere("routeSheet.staff_id = :staffId", { staffId })
+      .andWhere("routeSheet.zone_id = :zoneId", { zoneId })
+      .andWhere("routeSheet.route_date > :afterDate", { afterDate })
+      .andWhere("routeSheet.status IN (:...statuses)", {
+        statuses: [RouteSheetStatus.PENDING, RouteSheetStatus.IN_PROGRESS],
+      })
+      .orderBy("routeSheet.route_date", "ASC")
+      .addOrderBy("routeSheet.created_at", "ASC")
+      .getOne();
+  }
+
   // ============================================================
   // CREAR HOJA DE RUTA
   // ============================================================

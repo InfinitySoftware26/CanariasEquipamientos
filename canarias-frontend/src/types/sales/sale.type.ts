@@ -8,6 +8,7 @@ export interface SaleClient {
   address?: string;
   phone?: string;
   email?: string | null;
+  zoneId?: string | null;
 
   societyId?: string;
 
@@ -124,13 +125,6 @@ export interface Sale {
 
   // COBRADOR
   assignedCollectorId?: string | null;
-
-  // DOCUMENTACIÓN DEL COBRADOR
-  collectorDocumentsDelivered?: boolean;
-
-  collectorDocumentsDeliveredAt?: string | null;
-
-  collectorDocumentsDeliveredBy?: string | null;
 
   // CONFIGURACIÓN DE COBRANZA
   collectionScheduleType?: "fixed_weekday" | "monthly_range" | null;

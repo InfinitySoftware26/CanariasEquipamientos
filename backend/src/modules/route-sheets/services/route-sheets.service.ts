@@ -153,7 +153,7 @@ export class RouteSheetsService {
 
     @InjectRepository(Sale)
     private readonly saleRepo: Repository<Sale>,
-  ) {}
+  ) { }
 
   // ============================================================
   // LISTADOS
@@ -241,10 +241,7 @@ export class RouteSheetsService {
           });
 
           if (installment) {
-            await this.refreshLateInterest(
-              installment,
-              this.formatDate(routeSheet.routeDate),
-            );
+            await this.refreshLateInterest(installment);
           }
         }
 
@@ -252,26 +249,30 @@ export class RouteSheetsService {
 
         const lateInterestAmount = Number(installment?.lateInterestAmount ?? 0);
 
-        /**
-         * Para DELIVERY la cuota 1 vence
-         * el mismo día de entrega, por lo que
-         * normalmente daysLate será 0.
-         */
         const daysLate = installment
-          ? this.calculateDaysLate(installment.dueDate, routeSheet.routeDate)
+          ? this.getInstallmentDaysLate(installment)
           : 0;
 
         const clientPhone =
           (
             client as
-              | (Client & {
-                  phone?: string | null;
-                })
-              | null
+            | (Client & {
+              phone?: string | null;
+            })
+            | null
           )?.phone ?? null;
+
+        const previousFailedDelivery =
+          item.itemType === RouteSheetItemType.DELIVERY &&
+          item.result === RouteSheetItemResult.PENDING &&
+          item.saleId
+            ? await this.itemsRepo.findLatestFailedDeliveryBySale(item.saleId)
+            : null;
 
         return {
           ...item,
+
+          hadFailedDelivery: Boolean(previousFailedDelivery),
 
           clientName: client?.name ?? null,
 
@@ -300,7 +301,7 @@ export class RouteSheetsService {
             : null,
 
           collectionState: installment
-            ? this.getCollectionState(installment, routeSheet.routeDate)
+            ? this.getCollectionState(installment)
             : null,
         };
       }),
@@ -309,10 +310,10 @@ export class RouteSheetsService {
     const staffName =
       (
         staff as
-          | (Staff & {
-              name?: string;
-            })
-          | null
+        | (Staff & {
+          name?: string;
+        })
+        | null
       )?.name ?? null;
 
     return {
@@ -374,6 +375,13 @@ export class RouteSheetsService {
       notes: dto.notes?.trim() || "Hoja extraordinaria",
     });
 
+    const retryCandidates = await this.getDeliveryCandidates(
+      user.societyId,
+      dto.routeDate,
+      { zoneId: dto.zoneId, staffId: dto.staffId, retriesOnly: true },
+    );
+    await this.generateDeliveryItems(routeSheet, retryCandidates);
+
     return this.findByIdWithItems(routeSheet.routeSheetId, user);
   }
 
@@ -409,7 +417,6 @@ export class RouteSheetsService {
   ) {
     const [collectionCandidates, deliveryCandidates] = await Promise.all([
       this.getRouteCandidates(societyId, routeDate),
-
       this.getDeliveryCandidates(societyId, routeDate),
     ]);
 
@@ -538,6 +545,14 @@ export class RouteSheetsService {
          *   una entrega para esa misma fecha.
          */
         if (existing) {
+          if (existing.status === RouteSheetStatus.COMPLETED) {
+            skippedGroups.push({
+              zoneId: group.zoneId,
+              staffId: group.staffId,
+              reason: "La hoja existente ya está completada",
+            });
+            continue;
+          }
           await this.generateInstallmentItems(
             existing,
             group.collectionCandidates,
@@ -637,6 +652,7 @@ export class RouteSheetsService {
   private async getDeliveryCandidates(
     societyId: string,
     routeDate: string,
+    filter?: { zoneId: string; staffId: string; retriesOnly: boolean },
   ): Promise<DeliveryCandidate[]> {
     const sales = await this.saleRepo
       .createQueryBuilder("sale")
@@ -661,7 +677,7 @@ export class RouteSheetsService {
        * Por eso usamos deliverydate y NO
        * delivery_date.
        */
-      .andWhere("sale.deliverydate = :routeDate", {
+      .andWhere("sale.deliverydate <= :routeDate", {
         routeDate,
       })
 
@@ -692,6 +708,39 @@ export class RouteSheetsService {
         continue;
       }
 
+      if (
+        filter &&
+        (client.zoneId !== filter.zoneId ||
+          sale.assignedCollectorId !== filter.staffId)
+      ) {
+        continue;
+      }
+
+      const failedItem = await this.itemsRepo.findLatestFailedDeliveryBySale(
+        sale.saleId,
+      );
+      if (failedItem) {
+        const failedSheet = await this.routeSheetsRepo.findById(
+          failedItem.routeSheetId,
+        );
+        if (
+          !failedSheet ||
+          !failedItem.visitedAt ||
+          failedSheet.zoneId !== client.zoneId ||
+          failedSheet.staffId !== sale.assignedCollectorId ||
+          routeDate < this.getToday() ||
+          this.getArgentinaDate(failedItem.visitedAt) >= routeDate
+        ) {
+          continue;
+        }
+      } else if (
+        filter?.retriesOnly ||
+        !sale.deliveryDate ||
+        this.formatDate(sale.deliveryDate) !== routeDate
+      ) {
+        continue;
+      }
+
       /**
        * Evita que una misma venta tenga
        * dos entregas activas.
@@ -701,7 +750,31 @@ export class RouteSheetsService {
       );
 
       if (existing) {
-        continue;
+        const existingSheet = await this.routeSheetsRepo.findById(
+          existing.routeSheetId,
+        );
+
+        if (failedItem && (
+          !failedItem.visitedAt ||
+          !sale.deliveryDate ||
+          this.formatDate(sale.deliveryDate) !== routeDate ||
+          this.formatDate(sale.deliveryDate) <= this.getArgentinaDate(failedItem.visitedAt)
+        )) {
+          continue;
+        }
+
+        if (
+          existingSheet &&
+          this.formatDate(existingSheet.routeDate) === routeDate
+        ) {
+          continue;
+        }
+
+        /**
+         * Recoordinación: la entrega pendiente quedó en una hoja de
+         * otra fecha. Se quita de ahí para pasarla a la nueva.
+         */
+        await this.itemsRepo.deleteById(existing.itemId);
       }
 
       let firstInstallment: Installment | null = null;
@@ -749,6 +822,69 @@ export class RouteSheetsService {
     }
 
     return candidates;
+  }
+
+  async addFailedDeliveryToNextSheet(
+    item: RouteSheetItem,
+    failedSheet: RouteSheet,
+  ): Promise<void> {
+    if (!item.saleId) {
+      throw new BadRequestException("La entrega fallida no tiene una venta asociada");
+    }
+    if (!item.visitedAt) {
+      throw new BadRequestException("La entrega fallida no tiene fecha de visita");
+    }
+
+    const sale = await this.saleRepo.findOne({ where: { saleId: item.saleId } });
+    const client = await this.clientRepo.findOne({
+      where: { clientId: item.clientId },
+    });
+    if (
+      !sale ||
+      sale.status !== SaleStatus.PENDING_DELIVERY ||
+      sale.assignedCollectorId !== failedSheet.staffId ||
+      client?.zoneId !== failedSheet.zoneId
+    ) {
+      throw new BadRequestException(
+        "No se puede reincorporar la entrega: la venta, el cobrador o la zona cambiaron",
+      );
+    }
+
+    if (await this.itemsRepo.findActiveDeliveryBySale(item.saleId)) {
+      return;
+    }
+
+    let installmentId: string | null = null;
+    if (sale.firstInstallmentOnDelivery) {
+      const firstInstallment = await this.installmentRepo.findOne({
+        where: { saleId: sale.saleId, installmentNumber: 1 },
+      });
+      if (!firstInstallment || firstInstallment.isRefinanced) {
+        throw new BadRequestException(
+          "No se puede reincorporar la entrega: la primera cuota no está disponible",
+        );
+      }
+      installmentId = firstInstallment.installmentId;
+    }
+
+    const nextSheet = await this.routeSheetsRepo.findNextActiveForStaffZone(
+      failedSheet.societyId,
+      failedSheet.staffId,
+      failedSheet.zoneId,
+      this.getArgentinaDate(item.visitedAt),
+    );
+    if (!nextSheet) {
+      return;
+    }
+
+    await this.itemsRepo.createMany([{
+      routeSheetId: nextSheet.routeSheetId,
+      clientId: item.clientId,
+      saleId: item.saleId,
+      installmentId,
+      itemType: RouteSheetItemType.DELIVERY,
+      result: RouteSheetItemResult.PENDING,
+    }]);
   }
 
   // ============================================================
@@ -932,7 +1068,7 @@ export class RouteSheetsService {
       // MORA
       // ======================================================
 
-      const lateInfo = await this.refreshLateInterest(installment, routeDate);
+      const lateInfo = await this.refreshLateInterest(installment);
 
       selectedSales.add(sale.saleId);
 
@@ -1211,7 +1347,6 @@ export class RouteSheetsService {
       clients.map((client) => [client.clientId, client]),
     );
 
-    const routeDate = this.formatDate(routeSheet.routeDate);
     const available = [];
 
     for (const installment of installments) {
@@ -1257,7 +1392,7 @@ export class RouteSheetsService {
         continue;
       }
 
-      await this.refreshLateInterest(installment, routeDate);
+      await this.refreshLateInterest(installment);
 
       const remainingAmount = Number(installment.remainingAmount ?? 0);
       const lateInterestAmount = Number(installment.lateInterestAmount ?? 0);
@@ -1270,10 +1405,7 @@ export class RouteSheetsService {
         dueDate: installment.dueDate,
         installmentStatus: installment.status,
         lateInterestAmount,
-        daysLate: this.calculateDaysLate(
-          installment.dueDate,
-          routeSheet.routeDate,
-        ),
+        daysLate: this.getInstallmentDaysLate(installment),
         totalToCollect: this.roundMoney(remainingAmount + lateInterestAmount),
         clientId: client.clientId,
         clientName: client.name ?? null,
@@ -1420,10 +1552,7 @@ export class RouteSheetsService {
     // ACTUALIZAR MORA
     // ======================================================
 
-    await this.refreshLateInterest(
-      installment,
-      this.formatDate(routeSheet.routeDate),
-    );
+    await this.refreshLateInterest(installment);
 
     const created = await this.itemsRepo.createMany([
       {
@@ -1603,17 +1732,16 @@ export class RouteSheetsService {
   // CALCULAR / ACTUALIZAR MORA
   // ============================================================
 
-  private async refreshLateInterest(
-    installment: Installment,
-    routeDate: string,
-  ) {
+  private async refreshLateInterest(installment: Installment) {
     /**
      * La mora tiene una única fuente de verdad: InstallmentsService.
      *
      * RouteSheetsService no recalcula desde cero para no restaurar
      * mora ya pagada ni pisar ajustes manuales.
+     *
+     * La situación actual no depende de la fecha de la hoja.
      */
-    const referenceDate = this.parseDate(routeDate);
+    const referenceDate = this.parseDate(this.getToday());
 
     await this.installmentsService.calculateLateInterest(
       installment.installmentId,
@@ -1628,7 +1756,7 @@ export class RouteSheetsService {
 
     const lateInterestAmount = Number(refreshed.lateInterestAmount ?? 0);
 
-    const daysLate = this.calculateDaysLate(refreshed.dueDate, routeDate);
+    const daysLate = this.getInstallmentDaysLate(refreshed);
 
     installment.status = refreshed.status;
     installment.remainingAmount = refreshed.remainingAmount;
@@ -1650,17 +1778,20 @@ export class RouteSheetsService {
 
   private getCollectionState(
     installment: Installment,
-    routeDate: string | Date,
-  ): "overdue" | "due_today" | "partial" | "pending" {
+  ): "overdue" | "due_today" | "partial" | "pending" | null {
+    if (installment.status === InstallmentStatus.PAID || installment.isRefinanced) {
+      return null;
+    }
+
     if (installment.status === InstallmentStatus.PARTIAL) {
       return "partial";
     }
 
     const dueDate = this.formatDate(installment.dueDate);
 
-    const currentDate = this.formatDate(routeDate);
+    const currentDate = this.getToday();
 
-    if (dueDate < currentDate) {
+    if (dueDate < currentDate && installment.installmentNumber !== 1) {
       return "overdue";
     }
 
@@ -1674,6 +1805,14 @@ export class RouteSheetsService {
   // ============================================================
   // DÍAS DE ATRASO
   // ============================================================
+
+  private getInstallmentDaysLate(installment: Installment): number {
+    return installment.installmentNumber === 1 ||
+      installment.status === InstallmentStatus.PAID ||
+      installment.isRefinanced
+      ? 0
+      : this.calculateDaysLate(installment.dueDate, this.getToday());
+  }
 
   private calculateDaysLate(
     dueDate: string | Date,
@@ -1695,6 +1834,19 @@ export class RouteSheetsService {
   // ============================================================
   // HELPERS DE FECHA
   // ============================================================
+
+  private getToday(): string {
+    return this.getArgentinaDate(new Date());
+  }
+
+  private getArgentinaDate(date: Date): string {
+    return new Intl.DateTimeFormat("en-CA", {
+      timeZone: "America/Argentina/Buenos_Aires",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(date);
+  }
 
   private parseDate(value: string | Date): Date {
     if (value instanceof Date) {

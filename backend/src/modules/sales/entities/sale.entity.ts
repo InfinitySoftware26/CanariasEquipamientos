@@ -309,54 +309,6 @@ export class Sale {
   observation!: string | null;
 
   // ─────────────────────────────────────────
-  // DOCUMENTACIÓN PARA EL COBRADOR
-  // ─────────────────────────────────────────
-
-  /**
-   * Se marca durante la etapa de visita ambiental.
-   *
-   * Indica que Administración confirmó que
-   * la documentación necesaria fue entregada
-   * al cobrador.
-   */
-  @Column({
-    name: "collector_documents_delivered",
-    type: "boolean",
-    default: false,
-  })
-  collectorDocumentsDelivered!: boolean;
-
-  /**
-   * Fecha y hora exacta en la que se confirmó
-   * la entrega de documentación.
-   */
-  @Column({
-    name: "collector_documents_delivered_at",
-    type: "timestamptz",
-    nullable: true,
-  })
-  collectorDocumentsDeliveredAt!: Date | null;
-
-  /**
-   * Usuario de Administración / Manager que
-   * confirmó la entrega de documentación.
-   */
-  @Column({
-    name: "collector_documents_delivered_by",
-    type: "uuid",
-    nullable: true,
-  })
-  collectorDocumentsDeliveredBy!: string | null;
-
-  @ManyToOne(() => Staff, {
-    nullable: true,
-  })
-  @JoinColumn({
-    name: "collector_documents_delivered_by",
-  })
-  collectorDocumentsDeliveredByStaff!: Staff | null;
-
-  // ─────────────────────────────────────────
   // ENTREGA DEL PRODUCTO
   // ─────────────────────────────────────────
 

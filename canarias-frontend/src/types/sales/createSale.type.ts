@@ -4,7 +4,6 @@ export interface CreateSalePayload {
   clientId: string;
   financingPlanId?: string;
   promotionId?: string;
-  financingConfigId?: string;
   financingRate?: number;
   installmentsCount: number;
   paymentFrequency: PaymentFrequency;

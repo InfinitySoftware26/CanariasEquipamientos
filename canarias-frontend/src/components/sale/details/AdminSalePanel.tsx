@@ -10,6 +10,7 @@ import {
   assignCollector,
   closeSale,
   scheduleDeliveryDate,
+  getSaleValidations,
   updateSaleObservation,
 } from "@/services/sales.service";
 
@@ -27,7 +28,6 @@ import { DangerButton } from "@/components/button/DangerButton";
 
 import { SaveButton } from "@/components/button/SaveButton";
 
-import { EditButton } from "@/components/button/EditButton";
 
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
@@ -87,11 +87,13 @@ export function AdminSalePanel({ sale, onRefresh }: Props) {
 
   const [closeDialogOpen, setCloseDialogOpen] = useState(false);
 
-  const [environmentalConfirmOpen, setEnvironmentalConfirmOpen] =
-    useState(false);
-
   const [deliveryConfirmOpen, setDeliveryConfirmOpen] = useState(false);
 
+  const [deliveryScheduledOpen, setDeliveryScheduledOpen] = useState(false);
+
+  const [visitRejectionReason, setVisitRejectionReason] = useState<
+    string | null
+  >(null);
   const [selectedCollector, setSelectedCollector] = useState(
     sale.assignedCollectorId ?? "",
   );
@@ -107,6 +109,10 @@ export function AdminSalePanel({ sale, onRefresh }: Props) {
   const canAssign =
     sale.status === "pending_environmental_visit" ||
     sale.status === "pending_delivery";
+
+  const assignLabel = sale.assignedCollectorId
+    ? "Reasignar cobrador"
+    : "Asignar cobrador";
 
   const canScheduleDelivery = sale.status === "pending_delivery";
 
@@ -136,6 +142,34 @@ export function AdminSalePanel({ sale, onRefresh }: Props) {
     void loadCollectors();
   }, []);
 
+  useEffect(() => {
+    if (sale.status !== "environmental_rejected") {
+      setVisitRejectionReason(null);
+
+      return;
+    }
+
+    async function loadVisitRejection() {
+      try {
+        const validations = await getSaleValidations(sale.saleId);
+
+        const rejection = validations
+          .filter(
+            (validation) =>
+              validation.step === "environmental_visit" &&
+              validation.status === "rejected",
+          )
+          .pop();
+
+        setVisitRejectionReason(rejection?.observations ?? null);
+      } catch (error) {
+        console.error(error);
+      }
+    }
+
+    void loadVisitRejection();
+  }, [sale.saleId, sale.status]);
+
   async function saveObservation() {
     try {
       setLoading(true);
@@ -163,12 +197,6 @@ export function AdminSalePanel({ sale, onRefresh }: Props) {
       return;
     }
 
-    if (result === "approved") {
-      setEnvironmentalConfirmOpen(true);
-
-      return;
-    }
-
     try {
       setLoading(true);
 
@@ -180,26 +208,6 @@ export function AdminSalePanel({ sale, onRefresh }: Props) {
 
       alert(
         error instanceof Error ? error.message : "No se pudo validar la venta.",
-      );
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function confirmEnvironmentalApproval() {
-    try {
-      setLoading(true);
-
-      await adminValidateSale(sale.saleId, "approved", observation);
-
-      setEnvironmentalConfirmOpen(false);
-
-      await onRefresh();
-    } catch (error) {
-      console.error(error);
-
-      alert(
-        error instanceof Error ? error.message : "No se pudo aprobar la venta.",
       );
     } finally {
       setLoading(false);
@@ -252,6 +260,9 @@ export function AdminSalePanel({ sale, onRefresh }: Props) {
     try {
       setLoading(true);
 
+      // Recoordinar con la misma fecha: la entrega ya está en su hoja.
+      const sameDate = sale.deliveryDate?.split("T")[0] === deliveryDate;
+
       // 1. Guardamos la fecha de entrega y generamos las cuotas.
       await scheduleDeliveryDate(sale.saleId, deliveryDate);
 
@@ -265,7 +276,7 @@ export function AdminSalePanel({ sale, onRefresh }: Props) {
 
       // Si no se encontró ninguna entrega, la fecha quedó guardada pero
       // el flujo operativo está incompleto. Lo mostramos de forma explícita.
-      if (deliveriesFound === 0) {
+      if (deliveriesFound === 0 && !sameDate) {
         throw new Error(
           "La fecha se guardó, pero no se encontró una entrega para generar la hoja de ruta. Verificá que la venta tenga cobrador asignado y que el cliente tenga una zona configurada.",
         );
@@ -293,6 +304,8 @@ export function AdminSalePanel({ sale, onRefresh }: Props) {
       }
 
       setDeliveryConfirmOpen(false);
+
+      setDeliveryScheduledOpen(true);
 
       await onRefresh();
     } catch (error) {
@@ -358,7 +371,7 @@ export function AdminSalePanel({ sale, onRefresh }: Props) {
           {sale.status === "pending_environmental_visit" && (
             <p className="mt-2 text-white/80">
               La venta fue aprobada. Asigná cobrador, realizá la visita
-              ambiental y registrá la entrega de documentación.
+              ambiental.
             </p>
           )}
 
@@ -425,7 +438,9 @@ export function AdminSalePanel({ sale, onRefresh }: Props) {
                 </div>
 
                 <div className="rounded-xl bg-white/5 p-4">
-                  <p className="text-xs text-white/40">Primera cuota</p>
+                  <p className="text-xs text-white/40">
+                    Entrega + Primera Cuota
+                  </p>
 
                   <p className="mt-1 font-semibold text-white">
                     {sale.status === "delivered" || sale.status === "closed"
@@ -444,6 +459,18 @@ export function AdminSalePanel({ sale, onRefresh }: Props) {
               </div>
             </div>
           )}
+
+        {visitRejectionReason && (
+          <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-5">
+            <p className="text-sm font-semibold text-red-300">
+              Motivo del rechazo de la visita ambiental (cobrador)
+            </p>
+
+            <p className="mt-2 whitespace-pre-wrap text-white/80">
+              {visitRejectionReason}
+            </p>
+          </div>
+        )}
 
         <div>
           <label className="mb-2 block text-sm text-white/60">
@@ -490,7 +517,7 @@ export function AdminSalePanel({ sale, onRefresh }: Props) {
 
         {canAssign && (
           <div className="space-y-4 rounded-2xl border border-white/10 p-5">
-            <h3 className="font-semibold text-white">Asignar cobrador</h3>
+            <h3 className="font-semibold text-white">{assignLabel}</h3>
 
             <Select
               value={selectedCollector}
@@ -514,14 +541,16 @@ export function AdminSalePanel({ sale, onRefresh }: Props) {
               onClick={handleAssign}
               className="w-full"
             >
-              Asignar cobrador
+              {assignLabel}
             </AddButton>
           </div>
         )}
 
         {canScheduleDelivery && (
           <div className="space-y-4 rounded-2xl border border-blue-500/20 bg-blue-500/10 p-5">
-            <h3 className="font-semibold text-blue-300">Coordinar entrega</h3>
+            <h3 className="font-semibold text-blue-300">
+              {sale.deliveryDate ? "Entrega coordinada" : "Coordinar entrega"}
+            </h3>
 
             <input
               type="date"
@@ -536,7 +565,7 @@ export function AdminSalePanel({ sale, onRefresh }: Props) {
               onClick={scheduleDelivery}
               className="w-full"
             >
-              Guardar coordinación
+              {sale.deliveryDate ? "Recoordinar entrega" : "Guardar coordinación"}
             </AddButton>
           </div>
         )}
@@ -551,10 +580,6 @@ export function AdminSalePanel({ sale, onRefresh }: Props) {
               Cuando Administración reciba la rendición y el dinero del
               cobrador, cerrá la venta.
             </p>
-
-            <EditButton disabled={loading} onClick={scheduleDelivery}>
-              Actualizar fecha
-            </EditButton>
 
             <AddButton
               disabled={loading}
@@ -605,16 +630,6 @@ export function AdminSalePanel({ sale, onRefresh }: Props) {
       />
 
       <ConfirmDialog
-        open={environmentalConfirmOpen}
-        onOpenChange={setEnvironmentalConfirmOpen}
-        title="Confirmar aprobación administrativa"
-        description="La venta continuará a la etapa de visita ambiental."
-        onConfirm={confirmEnvironmentalApproval}
-        confirmText="Confirmar aprobación"
-        cancelText="Cancelar"
-      />
-
-      <ConfirmDialog
         open={deliveryConfirmOpen}
         onOpenChange={setDeliveryConfirmOpen}
         title="Confirmar fecha de entrega"
@@ -622,6 +637,16 @@ export function AdminSalePanel({ sale, onRefresh }: Props) {
         onConfirm={confirmScheduleDelivery}
         confirmText="Confirmar fecha"
         cancelText="Cancelar"
+      />
+
+      <ConfirmDialog
+        open={deliveryScheduledOpen}
+        onOpenChange={setDeliveryScheduledOpen}
+        title="Entrega coordinada"
+        description={`La fecha de entrega ya fue coordinada para el ${formatCalendarDate(deliveryDate)}. Si el cliente no está o surgió un imprevisto, podés cambiarla y recoordinar la entrega.`}
+        onConfirm={() => setDeliveryScheduledOpen(false)}
+        confirmText="Entendido"
+        cancelText="Cambiar fecha"
       />
     </section>
   );

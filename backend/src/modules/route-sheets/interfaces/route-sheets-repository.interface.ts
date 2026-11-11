@@ -29,6 +29,13 @@ export interface IRouteSheetsRepository {
     routeDate: string,
   ): Promise<RouteSheet | null>;
 
+  findNextActiveForStaffZone(
+    societyId: string,
+    staffId: string,
+    zoneId: string,
+    afterDate: string,
+  ): Promise<RouteSheet | null>;
+
   create(data: Partial<RouteSheet>): Promise<RouteSheet>;
 
   updateStatus(id: string, status: RouteSheetStatus): Promise<void>;

@@ -103,6 +103,8 @@ Toda venta aprobada administrativamente requiere una evaluación ambiental.
 
 El resultado de la visita ambiental a cargo del cobrador de la zona asignado determinará si la operación continúa o finaliza.
 
+Al aprobar la visita, el sistema informa al cobrador que Administración coordinará la entrega y el cobro de la primera cuota, y que la misma aparecerá en la hoja de ruta correspondiente.
+
 ---
 
 # Entrega
@@ -137,17 +139,42 @@ Durante la entrega deberá:
 - cobrar la primera cuota;
 - registrar el resultado de la entrega.
 
+El checklist de documentación se completa en la entrega, desde la hoja de ruta, y se registra en la validación de paso `DELIVERY`:
+
+- fotocopia del DNI;
+- contrato firmado;
+- comprobante de servicio del domicilio.
+
+Los tres campos son opcionales: lo que no se tilda queda registrado como no recibido. Ya no se exige el checklist al aprobar la visita ambiental, y se eliminó el registro "entrega de documentación al cobrador" (`PATCH /sales/:id/collector-documents`) por redundante.
+
+En la hoja de ruta, cuando corresponde cobrar la primera cuota en la entrega, debe registrarse su cobro completo. Las cuotas posteriores admiten pagos parciales.
+
+Limitación pendiente: el endpoint directo `PATCH /sales/:id/deliver` no aplica todas las validaciones del flujo de entrega desde la hoja de ruta.
+
+---
+
+## BR-SALES-015
+
+Una vez coordinada la entrega, Administración podrá recoordinarla (cambiar la fecha) mientras la venta continúe pendiente de entrega.
+
+- Se reutiliza la misma operación de coordinación (`PATCH /sales/:id/schedule-delivery`); no existe una operación separada.
+- En la pantalla de la venta, el botón "Guardar coordinación" pasa a "Recoordinar entrega" una vez guardada la fecha.
+- Al guardar se muestra una única alerta "Entrega coordinada" que confirma la fecha y permite cambiarla. Volver a guardar la misma fecha no genera error ni duplica la entrega.
+- La fecha solo se modifica en el paso de coordinación; el paso de cierre administrativo ya no tiene botón "Actualizar fecha".
+- Al regenerar la hoja de la nueva fecha coordinada, el ítem de entrega pendiente de la fecha anterior se elimina y se genera uno nuevo. Si la fecha no cambió, no se duplica en el flujo secuencial.
+- La hoja de la fecha anterior puede quedar sin ítems.
+
 ---
 
 # Cierre
 
-## BR-SALES-015
+## BR-SALES-016
 
 La documentación pendiente (DNI o comprobantes de servicio) podrá completarse posteriormente cuando la operación así lo permita.
 
 ---
 
-## BR-SALES-016
+## BR-SALES-017
 
 La venta únicamente podrá pasar al estado CLOSED cuando:
 
@@ -158,13 +185,13 @@ La venta únicamente podrá pasar al estado CLOSED cuando:
 
 ---
 
-## BR-SALES-017
+## BR-SALES-018
 
 El cierre definitivo de una venta será responsabilidad exclusiva del área Administrativa.
 
 ---
 
-## BR-SALES-018
+## BR-SALES-019
 
 La comisión del vendedor será acreditada únicamente cuando la venta alcance el estado CLOSED.
 
@@ -178,6 +205,14 @@ El cliente creado quedará asociado a la venta.
 
 ---
 
+## BR-SALES-022
+
+El detalle de la venta identifica la venta con su código visible (`VTA-XXXXXXXX`, el mismo de la lista de ventas) en lugar del ID interno.
+
+- Muestra el nombre del plan o promoción aplicada (dentro de Financiación) y la zona del cliente (dentro de Cliente).
+- En "Estado operativo", el bloque de cobro inicial se rotula "Entrega + Primera Cuota".
+---
+
 # Condiciones efectivas
 
 Las condiciones finales de la venta deben determinar:
@@ -189,11 +224,9 @@ financiación utilizada;
 plan utilizado, cuando corresponda;
 promoción utilizada, cuando corresponda.
 
-Cuando una promoción está basada en un plan, puede sobrescribir las condiciones que permita la promoción.
+Cuando una promoción está basada en un plan, se usan la cantidad y frecuencia del plan y se aplica el ajuste de la promoción a su tasa. La tasa directa del plan tiene prioridad sobre la tasa de su configuración. Para una promoción independiente se utilizan sus propias condiciones cuando están definidas. La tasa resultante tiene un mínimo de -0.99.
 
-Las condiciones que no sean sobrescritas deben heredarse del plan.
-
-Esta resolución ya está contemplada en el backend
+Cuando la venta no usa plan ni promoción, el vendedor puede indicar una tasa de financiación personalizada no negativa (`financingRate`; 0.12 = 12%, 5 = 500%). Si elige una configuración de financiación existente, el sistema toma la tasa de esa configuración. Las tasas e importes siguen sujetos a la precisión de las columnas de base de datos.
 
 ---
 
@@ -207,7 +240,7 @@ Promoción.
 
 La venta no debe seleccionar simultáneamente un plan y una promoción.
 
-El backend actualmente valida esta condición al resolver las condiciones efectivas de la venta.
+Si se recibe una promoción asociada a un plan, el backend resuelve las condiciones desde el plan asociado a esa promoción.
 
 ---
 

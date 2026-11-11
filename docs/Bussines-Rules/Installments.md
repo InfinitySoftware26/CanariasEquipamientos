@@ -156,6 +156,38 @@ En caso de cancelación de la venta deberán utilizarse los procesos definidos p
 
 ---
 
+## BR-INSTALLMENT-011
+
+La cuota 1 nunca genera mora.
+
+Corresponde a la cuota que se cobra en el momento de la entrega del producto, por lo que no existe retraso posible.
+
+- No se calcula interés moratorio sobre la cuota 1, sin importar su fecha de vencimiento.
+- La cuota 1 no pasa a estado vencido (OVERDUE) por fecha.
+- No se permite ajustar manualmente la mora de la cuota 1.
+- El total a cobrar de la cuota 1 es siempre igual a su saldo pendiente.
+- En la hoja de ruta, la cuota 1 debe cobrarse completa en la entrega (no se admiten pagos parciales).
+
+---
+
+## BR-INSTALLMENT-012
+
+Al regenerar el plan de cuotas (coordinación o recoordinación de entrega, validación o entrega), las cuotas existentes se actualizan en el lugar y conservan su identificador (`installmentId`) por número de cuota.
+
+- Solo se eliminan las cuotas sobrantes si la cantidad de cuotas del plan disminuyó.
+- Esto evita que los ítems de hoja de ruta queden apuntando a cuotas inexistentes (importes y total a cobrar en null).
+
+---
+
+## BR-INSTALLMENT-013
+
+La mora y el estado vencido (OVERDUE) solo se persisten con la fecha real del día.
+
+- Una hoja de ruta con fecha futura calcula y muestra con la fecha de hoy; no vence cuotas ni acumula mora anticipada.
+- Una cuota vence recién el día posterior a su fecha de vencimiento.
+
+---
+
 # Auditoría
 
 El sistema deberá registrar:

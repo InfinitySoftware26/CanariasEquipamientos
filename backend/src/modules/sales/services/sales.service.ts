@@ -7,7 +7,7 @@ import {
 } from "@nestjs/common";
 
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { MoreThan, Repository } from "typeorm";
 
 import {
   ISalesRepository,
@@ -38,6 +38,7 @@ import { ConfigureCollectionScheduleDto } from "../dto/configure-collection-sche
 
 import { Sale } from "../entities/sale.entity";
 import { SaleProduct } from "../entities/sale-product.entity";
+import { SaleValidation } from "../entities/sale-validation.entity";
 
 import { Installment } from "../../installments/entities/installment.entity";
 import { Society } from "../../societies/entities/society.entity";
@@ -54,7 +55,6 @@ import { CommissionPeriod } from "../../../common/enums/commission-period.enum";
 import { CollectionScheduleType } from "../../../common/enums/collection-schedule-type.enum";
 
 import { JwtPayload } from "../../auth/interfaces/jwt-payload.interface";
-import { MarkCollectorDocumentsDto } from "../dto/mark-collector-documents.dto";
 
 const SELLER_COMMISSION_RATE = 0.1;
 
@@ -204,7 +204,7 @@ export class SalesService {
 
     let paymentFrequency = dto.paymentFrequency;
 
-    let financingRate = 0;
+    let financingRate = dto.financingRate ?? 0;
 
     // ─────────────────────────────────────────
     // PLAN DE FINANCIACIÓN
@@ -250,7 +250,9 @@ export class SalesService {
       paymentFrequency = selectedPlan.paymentFrequency;
 
       financingRate = Number(
-        selectedPlan.financingConfiguration?.financingRate ?? 0,
+        selectedPlan.financingRate ??
+          selectedPlan.financingConfiguration?.financingRate ??
+          0,
       );
     }
 
@@ -752,32 +754,6 @@ export class SalesService {
     }
 
     // ============================================================
-    // DOCUMENTACIÓN DE LA VISITA
-    // ============================================================
-
-    /**
-     * Si la visita se aprueba,
-     * el cobrador debe indicar expresamente
-     * qué documentación recibió.
-     *
-     * No obligamos a que todos los checks sean true,
-     * porque puede faltar documentación y eso debe
-     * quedar registrado mediante observaciones.
-     */
-
-    if (dto.status === "approved") {
-      if (
-        dto.dniCopyReceived === undefined ||
-        dto.salaryReceiptReceived === undefined ||
-        dto.otherDocumentsReceived === undefined
-      ) {
-        throw new BadRequestException(
-          "Debe completar el checklist de documentación recibida antes de aprobar la visita",
-        );
-      }
-    }
-
-    // ============================================================
     // NUEVO ESTADO
     // ============================================================
 
@@ -823,12 +799,6 @@ export class SalesService {
 
       observations: dto.observations,
 
-      dniCopyReceived: dto.dniCopyReceived,
-
-      salaryReceiptReceived: dto.salaryReceiptReceived,
-
-      otherDocumentsReceived: dto.otherDocumentsReceived,
-
       validatedAt: new Date(),
     });
 
@@ -850,14 +820,6 @@ export class SalesService {
         newStatus,
 
         observations: dto.observations ?? null,
-
-        documents: {
-          dniCopyReceived: dto.dniCopyReceived ?? null,
-
-          salaryReceiptReceived: dto.salaryReceiptReceived ?? null,
-
-          otherDocumentsReceived: dto.otherDocumentsReceived ?? null,
-        },
       } as object,
 
       performedBy: staffId,
@@ -904,15 +866,16 @@ export class SalesService {
     }
 
     /*
-     * Si las cuotas todavía no tienen pagos,
-     * podemos regenerarlas porque el admin
-     * todavía está configurando fechas.
+     * Si las cuotas todavía no tienen pagos, se recalculan en el lugar.
+     * Se conserva el installmentId de cada número de cuota porque hojas
+     * de ruta y otros registros lo referencian sin FK.
      */
-    if (existingInstallments.length > 0) {
-      await this.installmentRepo.delete({
-        saleId: sale.saleId,
-      });
-    }
+    const existingByNumber = new Map(
+      existingInstallments.map((installment) => [
+        installment.installmentNumber,
+        installment,
+      ]),
+    );
 
     const firstDueDate = this.resolveFirstDueDate(sale, deliveryDate);
 
@@ -950,6 +913,8 @@ export class SalesService {
       }
 
       installments.push({
+        installmentId: existingByNumber.get(number)?.installmentId,
+
         saleId: sale.saleId,
 
         clientId: sale.clientId,
@@ -979,6 +944,14 @@ export class SalesService {
     );
 
     await this.installmentRepo.save(entities);
+
+    // Si bajó la cantidad de cuotas, se eliminan las sobrantes.
+    if (existingInstallments.length > sale.installmentsCount) {
+      await this.installmentRepo.delete({
+        saleId: sale.saleId,
+        installmentNumber: MoreThan(sale.installmentsCount),
+      });
+    }
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -1300,7 +1273,14 @@ export class SalesService {
   // ENTREGA
   // ─────────────────────────────────────────────────────────────
 
-  async deliver(saleId: string, user: JwtPayload): Promise<void> {
+  async deliver(
+    saleId: string,
+    user: JwtPayload,
+    documents?: Pick<
+      SaleValidation,
+      "dniCopyReceived" | "contractReceived" | "utilityBillReceived"
+    >,
+  ): Promise<void> {
     const { staffId, name, role } = this.extractUser(user);
 
     const sale = await this.findById(saleId);
@@ -1336,6 +1316,30 @@ export class SalesService {
     await this.generateInstallments(sale, sale.deliveryDate);
 
     await this.salesRepo.updateStatus(saleId, SaleStatus.DELIVERED);
+
+    /*
+     * La documentación se recibe al entregar el producto.
+     * Es opcional: lo que no se tilda queda registrado como false.
+     */
+    if (documents) {
+      await this.validationsRepo.create({
+        saleId,
+
+        staffId,
+
+        step: ValidationStep.DELIVERY,
+
+        status: ValidationStatus.APPROVED,
+
+        dniCopyReceived: documents.dniCopyReceived ?? false,
+
+        contractReceived: documents.contractReceived ?? false,
+
+        utilityBillReceived: documents.utilityBillReceived ?? false,
+
+        validatedAt: new Date(),
+      });
+    }
 
     await this.historyRepo.create({
       saleId,
@@ -1756,106 +1760,5 @@ export class SalesService {
       from,
       to,
     };
-  }
-  async markCollectorDocumentsDelivered(
-    saleId: string,
-    dto: MarkCollectorDocumentsDto,
-    user: JwtPayload,
-  ): Promise<Sale> {
-    const { staffId, name } = this.extractUser(user);
-
-    const sale = await this.findById(saleId);
-
-    // ============================================================
-    // SOCIEDAD
-    // ============================================================
-
-    if (sale.societyId !== user.societyId) {
-      throw new ForbiddenException("La venta no pertenece a esta sociedad");
-    }
-
-    // ============================================================
-    // ETAPA VÁLIDA
-    // ============================================================
-
-    /**
-     * La entrega de documentación al cobrador
-     * pertenece al tramo de visita ambiental.
-     *
-     * Permitimos marcarla mientras la venta está:
-     *
-     * - pendiente de visita ambiental
-     * - pendiente de entrega
-     *
-     * Esto da margen operativo si Administración
-     * confirma los papeles inmediatamente después
-     * de aprobar la visita.
-     */
-    if (
-      sale.status !== SaleStatus.PENDING_ENVIRONMENTAL_VISIT &&
-      sale.status !== SaleStatus.PENDING_DELIVERY
-    ) {
-      throw new BadRequestException(
-        "La entrega de documentación sólo puede registrarse durante la etapa ambiental o antes de la entrega",
-      );
-    }
-
-    // ============================================================
-    // COBRADOR ASIGNADO
-    // ============================================================
-
-    if (!sale.assignedCollectorId) {
-      throw new BadRequestException(
-        "La venta debe tener un cobrador asignado antes de registrar la entrega de documentación",
-      );
-    }
-
-    // ============================================================
-    // ACTUALIZACIÓN
-    // ============================================================
-
-    const delivered = dto.delivered;
-
-    const deliveredAt = delivered ? new Date() : null;
-
-    const deliveredBy = delivered ? staffId : null;
-
-    await this.salesRepo.update(saleId, {
-      collectorDocumentsDelivered: delivered,
-
-      collectorDocumentsDeliveredAt: deliveredAt,
-
-      collectorDocumentsDeliveredBy: deliveredBy,
-    });
-
-    // ============================================================
-    // HISTORIAL
-    // ============================================================
-
-    await this.historyRepo.create({
-      saleId,
-
-      action: delivered
-        ? "COLLECTOR_DOCUMENTS_DELIVERED"
-        : "COLLECTOR_DOCUMENTS_DELIVERY_REVOKED",
-
-      snapshot: {
-        collectorDocumentsDelivered: delivered,
-
-        collectorDocumentsDeliveredAt: deliveredAt,
-
-        collectorDocumentsDeliveredBy: deliveredBy,
-
-        collectorId: sale.assignedCollectorId,
-
-        notes: dto.notes ?? null,
-      } as object,
-
-      performedBy: staffId,
-
-      performedByName: name,
-    });
-
-    return this.findById(saleId);
   }
 }

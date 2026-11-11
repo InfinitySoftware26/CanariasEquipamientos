@@ -2,33 +2,35 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-import { RouteSheetItem } from "@/types/rotue-sheets/routeSheets.types";
+import {
+  RouteSheetItem,
+  UpdateRouteSheetItemPayload,
+} from "@/types/rotue-sheets/routeSheets.types";
 
 import { updateRouteSheetItem } from "@/services/route-sheets/routeSheetsItems.service";
 
 import { SaveButton } from "@/components/button/SaveButton";
 
+import {
+  formatMoneyInput,
+  parseMoneyInput,
+} from "@/utils/preload-sale/formatMoneyInput";
+
 import { DangerButton } from "@/components/button/DangerButton";
+
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export type FailedVisitReason =
   | "client_absent"
   | "refused_payment"
   | "wrong_address"
   | "other";
-
-export interface RouteSheetItemResultData {
-  result: "completed" | "failed";
-
-  collectedAmount?: number;
-
-  notes?: string;
-
-  failedVisitReason?: FailedVisitReason;
-
-  productDelivered?: boolean;
-
-  paymentReceived?: boolean;
-}
 
 interface Props {
   item: RouteSheetItem;
@@ -67,6 +69,32 @@ export function RouteSheetItemResult({
 
   const [paymentReceived, setPaymentReceived] = useState(false);
 
+  const [dniCopyReceived, setDniCopyReceived] = useState(false);
+
+  const [contractReceived, setContractReceived] = useState(false);
+
+  const [utilityBillReceived, setUtilityBillReceived] = useState(false);
+
+  const deliveryDocuments = [
+    {
+      key: "dni",
+      label: "Fotocopia de DNI",
+      checked: dniCopyReceived,
+      onChange: setDniCopyReceived,
+    },
+    {
+      key: "contract",
+      label: "Contrato",
+      checked: contractReceived,
+      onChange: setContractReceived,
+    },
+    {
+      key: "utilityBill",
+      label: "Servicio del domicilio",
+      checked: utilityBillReceived,
+      onChange: setUtilityBillReceived,
+    },
+  ];
   const isInstallment = item.itemType === "installment";
 
   const isDelivery = item.itemType === "delivery";
@@ -87,9 +115,16 @@ export function RouteSheetItemResult({
 
   const numericCollectedAmount = Number(collectedAmount || 0);
 
+  // La cuota 1 se cobra completa en la entrega: el monto queda fijo.
+  const isFirstInstallmentDelivery = isDelivery && hasInstallment;
+
   const amountIsValid =
     !requiresPayment ||
-    (numericCollectedAmount > 0 && numericCollectedAmount <= totalToCollect);
+    (numericCollectedAmount > 0 &&
+      numericCollectedAmount <= totalToCollect &&
+      (!isFirstInstallmentDelivery ||
+        Math.round(numericCollectedAmount * 100) ===
+          Math.round(totalToCollect * 100)));
 
   const canComplete = useMemo(() => {
     if (isInstallment) {
@@ -132,6 +167,12 @@ export function RouteSheetItemResult({
     setProductDelivered(false);
 
     setPaymentReceived(false);
+
+    setDniCopyReceived(false);
+
+    setContractReceived(false);
+
+    setUtilityBillReceived(false);
   }, [open, requiresPayment, totalToCollect]);
 
   async function handleComplete() {
@@ -142,7 +183,7 @@ export function RouteSheetItemResult({
     try {
       setLoading(true);
 
-      const payload: RouteSheetItemResultData = {
+      const payload: UpdateRouteSheetItemPayload = {
         result: "completed",
 
         collectedAmount: requiresPayment ? numericCollectedAmount : undefined,
@@ -153,6 +194,12 @@ export function RouteSheetItemResult({
 
         paymentReceived:
           isDelivery && hasInstallment ? paymentReceived : undefined,
+
+        dniCopyReceived: isDelivery ? dniCopyReceived : undefined,
+
+        contractReceived: isDelivery ? contractReceived : undefined,
+
+        utilityBillReceived: isDelivery ? utilityBillReceived : undefined,
       };
 
       await updateRouteSheetItem(item.itemId, payload);
@@ -183,7 +230,7 @@ export function RouteSheetItemResult({
     try {
       setLoading(true);
 
-      const payload: RouteSheetItemResultData = {
+      const payload: UpdateRouteSheetItemPayload = {
         result: "failed",
 
         failedVisitReason,
@@ -331,10 +378,34 @@ export function RouteSheetItemResult({
                   </div>
                 </label>
               )}
+
+              <div className="space-y-3 rounded-xl border border-white/10 bg-black/10 p-4">
+                <p className="font-medium text-white">
+                  Documentación recibida
+                  <span className="ml-2 text-xs font-normal text-white/40">
+                    (opcional)
+                  </span>
+                </p>
+
+                {deliveryDocuments.map((doc) => (
+                  <label
+                    key={doc.key}
+                    className="flex cursor-pointer items-center gap-3 text-white"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={doc.checked}
+                      disabled={loading}
+                      onChange={(event) => doc.onChange(event.target.checked)}
+                      className="h-5 w-5"
+                    />
+
+                    <span className="text-sm">{doc.label}</span>
+                  </label>
+                ))}
+              </div>
             </section>
           )}
-
-          {/* MONTO */}
 
           {requiresPayment && (
             <div>
@@ -343,19 +414,34 @@ export function RouteSheetItemResult({
               </label>
 
               <input
-                type="number"
-                min="0"
-                step="0.01"
-                max={totalToCollect}
-                value={collectedAmount}
-                disabled={loading}
-                onChange={(event) => setCollectedAmount(event.target.value)}
-                className="w-full rounded-2xl border border-white/10 bg-[#0B1220] px-4 py-3 text-white outline-none focus:border-cyan-500/50"
+                type="text"
+                inputMode="decimal"
+                value={
+                  formatMoneyInput(collectedAmount.split(".")[0]) +
+                  (collectedAmount.includes(".")
+                    ? `,${collectedAmount.split(".")[1]}`
+                    : "")
+                }
+                disabled={loading || isFirstInstallmentDelivery}
+                onChange={(event) => {
+                  const raw = event.target.value.replace(/[^\d,]/g, "");
+
+                  const [integer, decimals = ""] = raw.split(",");
+
+                  setCollectedAmount(
+                    raw.includes(",")
+                      ? `${parseMoneyInput(integer) || "0"}.${decimals.slice(0, 2)}`
+                      : parseMoneyInput(raw),
+                  );
+                }}
+                className="w-full rounded-2xl border border-white/10 bg-[#0B1220] px-4 py-3 text-white outline-none focus:border-cyan-500/50 disabled:opacity-70"
               />
 
               <div className="mt-2 flex justify-between gap-4 text-xs">
                 <span className="text-white/40">
-                  Máximo: {formatCurrency(totalToCollect)}
+                  {isFirstInstallmentDelivery
+                    ? "La primera cuota debe cobrarse completa en la entrega."
+                    : `Máximo: ${formatCurrency(totalToCollect)}`}
                 </span>
 
                 {numericCollectedAmount > totalToCollect && (
@@ -414,26 +500,31 @@ export function RouteSheetItemResult({
             <div className="mt-4">
               <label className="mb-2 block text-sm text-white/70">Motivo</label>
 
-              <select
+              <Select
                 value={failedVisitReason}
                 disabled={loading}
-                onChange={(event) =>
-                  setFailedVisitReason(
-                    event.target.value as FailedVisitReason | "",
-                  )
+                onValueChange={(value) =>
+                  setFailedVisitReason(value as FailedVisitReason)
                 }
-                className="w-full rounded-2xl border border-white/10 bg-[#0B1220] px-4 py-3 text-white outline-none focus:border-red-500/50"
               >
-                <option value="">Seleccionar motivo</option>
+                <SelectTrigger className="h-12 w-full rounded-2xl bg-[#0B1220]">
+                  <SelectValue placeholder="Seleccionar motivo" />
+                </SelectTrigger>
 
-                <option value="client_absent">Cliente ausente</option>
+                <SelectContent>
+                  <SelectItem value="client_absent">Cliente ausente</SelectItem>
 
-                <option value="refused_payment">Rechazó el pago</option>
+                  <SelectItem value="refused_payment">
+                    Rechazó el pago
+                  </SelectItem>
 
-                <option value="wrong_address">Domicilio incorrecto</option>
+                  <SelectItem value="wrong_address">
+                    Domicilio incorrecto
+                  </SelectItem>
 
-                <option value="other">Otro</option>
-              </select>
+                  <SelectItem value="other">Otro</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <DangerButton

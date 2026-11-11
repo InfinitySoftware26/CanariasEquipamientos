@@ -69,4 +69,14 @@ export class CreateSaleDto {
   @IsOptional()
   @IsUUID()
   promotionId?: string;
+
+  @ApiPropertyOptional({
+    example: 0.12,
+    description:
+      "Tasa de financiación personalizada (0.12 = 12%). Solo aplica cuando no se selecciona plan ni promoción.",
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  financingRate?: number;
 }

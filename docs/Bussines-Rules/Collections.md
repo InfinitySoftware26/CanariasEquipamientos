@@ -180,6 +180,12 @@ El sistema deberá:
 * calcular deuda acumulada
 * generar alertas operativas
 
+Reglas:
+
+* La cuota 1 no genera mora (BR-INSTALLMENT-011).
+* La mora se persiste solo con la fecha real del día (BR-INSTALLMENT-013).
+* El pago se aplica primero a la mora y luego al capital.
+
 ---
 
 # Visitas Frustradas

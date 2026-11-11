@@ -47,7 +47,7 @@ export class SaleValidation {
   observations!: string | null;
 
   // ============================================================
-  // DOCUMENTACIÓN RECIBIDA DURANTE LA VISITA AMBIENTAL
+  // DOCUMENTACIÓN RECIBIDA EN LA ENTREGA (paso DELIVERY)
   // ============================================================
 
   @Column({
@@ -58,18 +58,18 @@ export class SaleValidation {
   dniCopyReceived!: boolean | null;
 
   @Column({
-    name: "salary_receipt_received",
+    name: "contract_received",
     type: "boolean",
     nullable: true,
   })
-  salaryReceiptReceived!: boolean | null;
+  contractReceived!: boolean | null;
 
   @Column({
-    name: "other_documents_received",
+    name: "utility_bill_received",
     type: "boolean",
     nullable: true,
   })
-  otherDocumentsReceived!: boolean | null;
+  utilityBillReceived!: boolean | null;
 
   @Column({
     name: "validated_at",

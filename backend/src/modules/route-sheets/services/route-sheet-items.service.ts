@@ -34,7 +34,11 @@ import { SalesService } from "../../sales/services/sales.service";
 
 import { PaymentsService } from "../../payments/services/payments.service";
 
+import { InstallmentsService } from "../../installments/services/installments.service";
+
 import { FailedVisitsService } from "../../failed-visits/services/failed-visits.service";
+
+import { RouteSheetsService } from "./route-sheets.service";
 
 import { JwtPayload } from "../../auth/interfaces/jwt-payload.interface";
 
@@ -51,7 +55,11 @@ export class RouteSheetItemsService {
 
     private readonly paymentsService: PaymentsService,
 
+    private readonly installmentsService: InstallmentsService,
+
     private readonly failedVisitsService: FailedVisitsService,
+
+    private readonly routeSheetsService: RouteSheetsService,
   ) {}
 
   // ============================================================
@@ -262,6 +270,17 @@ export class RouteSheetItemsService {
       dto.productDelivered,
       dto.paymentReceived,
     );
+
+    if (
+      item.itemType === RouteSheetItemType.DELIVERY &&
+      dto.result === RouteSheetItemResult.FAILED
+    ) {
+      const failedItem = await this.findById(id);
+      await this.routeSheetsService.addFailedDeliveryToNextSheet(
+        failedItem,
+        routeSheet,
+      );
+    }
   }
 
   // ============================================================
@@ -365,16 +384,6 @@ export class RouteSheetItemsService {
       );
     }
 
-    /*
-     * NO validamos collectorDocumentsDelivered.
-     *
-     * La documentación es recibida
-     * durante la visita ambiental.
-     *
-     * Para llegar a PENDING_DELIVERY,
-     * la visita ya tuvo que ser aprobada.
-     */
-
     // ==========================================================
     // COBRADOR
     // ==========================================================
@@ -416,6 +425,20 @@ export class RouteSheetItemsService {
         );
       }
 
+      /*
+       * La cuota 1 se cobra completa en la entrega: un pago parcial
+       * dejaría la venta sin poder cerrarse.
+       */
+      const { totalToCollect } = await this.installmentsService.getTotalToCollect(
+        item.installmentId,
+      );
+
+      if (Math.round(dto.collectedAmount * 100) < Math.round(totalToCollect * 100)) {
+        throw new BadRequestException(
+          `La primera cuota debe cobrarse completa en la entrega. Total a cobrar: ${totalToCollect}`,
+        );
+      }
+
       await this.paymentsService.registerFromCollection({
         societyId,
 
@@ -435,7 +458,13 @@ export class RouteSheetItemsService {
     // CONFIRMAR ENTREGA
     // ==========================================================
 
-    await this.salesService.deliver(item.saleId, user);
+    await this.salesService.deliver(item.saleId, user, {
+      dniCopyReceived: dto.dniCopyReceived ?? false,
+
+      contractReceived: dto.contractReceived ?? false,
+
+      utilityBillReceived: dto.utilityBillReceived ?? false,
+    });
   }
 
   // ============================================================
@@ -453,10 +482,16 @@ export class RouteSheetItemsService {
       );
     }
 
+    if (!dto.failedVisitReason) {
+      throw new BadRequestException(
+        "failedVisitReason es requerido para registrar una entrega fallida",
+      );
+    }
+
     await this.salesService.failDelivery(
       item.saleId,
       {
-        reason: dto.notes ?? "Entrega frustrada",
+        reason: dto.failedVisitReason,
       },
       user,
     );

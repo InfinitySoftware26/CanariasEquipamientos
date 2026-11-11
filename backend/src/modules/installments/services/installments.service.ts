@@ -204,6 +204,10 @@ export class InstallmentsService {
         continue;
       }
 
+      if (installment.installmentNumber === 1) {
+        continue;
+      }
+
       const dueDate = this.parseDate(installment.dueDate);
 
       if (dueDate.getTime() < today.getTime()) {
@@ -396,7 +400,10 @@ export class InstallmentsService {
 
     let status = installment.status;
 
-    if (parsedDate.getTime() < today.getTime()) {
+    if (
+      parsedDate.getTime() < today.getTime() &&
+      installment.installmentNumber !== 1
+    ) {
       status = InstallmentStatus.OVERDUE;
     } else if (Number(installment.paidAmount) > 0) {
       status = InstallmentStatus.PARTIAL;
@@ -443,6 +450,10 @@ export class InstallmentsService {
       throw new BadRequestException(
         "No se puede modificar la mora de una cuota pagada",
       );
+    }
+
+    if (installment.installmentNumber === 1) {
+      throw new BadRequestException("La cuota 1 no genera mora");
     }
 
     if (
@@ -517,6 +528,28 @@ export class InstallmentsService {
       installment.status === InstallmentStatus.PAID ||
       installment.isRefinanced
     ) {
+      return 0;
+    }
+
+    /*
+     * BR-INSTALLMENT-011: la cuota 1 nunca genera mora.
+     * Si por datos previos tuviera mora o estado vencido, se normaliza.
+     */
+    if (installment.installmentNumber === 1) {
+      if (
+        Number(installment.lateInterestAmount ?? 0) > 0 ||
+        installment.status === InstallmentStatus.OVERDUE
+      ) {
+        await this.installmentsRepo.update(id, {
+          lateInterestAmount: 0,
+          lateInterestCalculatedAt: null,
+          status:
+            Number(installment.paidAmount ?? 0) > 0
+              ? InstallmentStatus.PARTIAL
+              : InstallmentStatus.PENDING,
+        });
+      }
+
       return 0;
     }
 

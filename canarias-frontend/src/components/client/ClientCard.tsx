@@ -1,6 +1,7 @@
 "use client";
 
 import { Client } from "@/types/cretateClient.type";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -28,6 +29,7 @@ function getStatus(client: Client) {
 export function ClientCard({ client }: { client: Client }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [disableOpen, setDisableOpen] = useState(false);
 
   const status = getStatus(client);
 
@@ -38,12 +40,12 @@ export function ClientCard({ client }: { client: Client }) {
     router.push(`/client/${client.clientId}/edit`);
   };
 
-  const handleDisable = async (e: React.MouseEvent) => {
+  const handleDisable = (e: React.MouseEvent) => {
     e.stopPropagation();
+    setDisableOpen(true);
+  };
 
-    const ok = confirm("¿Querés desactivar este cliente?");
-    if (!ok) return;
-
+  const confirmDisable = async () => {
     setLoading(true);
 
     try {
@@ -51,10 +53,12 @@ export function ClientCard({ client }: { client: Client }) {
       console.log("disable client", client.clientId);
     } finally {
       setLoading(false);
+      setDisableOpen(false);
     }
   };
 
   return (
+    <>
     <article
       onClick={() => router.push(`/client/${client.clientId}`)}
       className="
@@ -136,5 +140,18 @@ export function ClientCard({ client }: { client: Client }) {
         </div>
       </div>
     </article>
+
+    <ConfirmDialog
+      open={disableOpen}
+      onOpenChange={setDisableOpen}
+      title="Desactivar cliente"
+      description="¿Querés desactivar este cliente?"
+      confirmText="Desactivar"
+      cancelText="Cancelar"
+      destructive
+      loading={loading}
+      onConfirm={confirmDisable}
+    />
+    </>
   );
 }

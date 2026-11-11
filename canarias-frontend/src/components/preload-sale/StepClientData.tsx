@@ -3,6 +3,10 @@ import { StepTitle } from "./StepTitle";
 import { StepClientDataProps } from "@/types/preload-sale/preload.type";
 import { Input } from "@/components/ui/input";
 import {
+  formatMoneyInput,
+  parseMoneyInput,
+} from "@/utils/preload-sale/formatMoneyInput";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -147,9 +151,13 @@ export function StepClientData({ form, setForm, zones }: StepClientDataProps) {
               />
               <Input
                 placeholder="Ingreso mensual"
-                value={form.monthlyIncome}
+                inputMode="numeric"
+                value={formatMoneyInput(form.monthlyIncome ?? "")}
                 onChange={(e) =>
-                  setForm({ ...form, monthlyIncome: e.target.value })
+                  setForm({
+                    ...form,
+                    monthlyIncome: parseMoneyInput(e.target.value),
+                  })
                 }
                 className="h-11 border-white/10 bg-white/5 text-white"
               />

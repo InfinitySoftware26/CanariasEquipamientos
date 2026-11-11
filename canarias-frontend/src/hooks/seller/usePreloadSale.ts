@@ -123,6 +123,7 @@ export function usePreloadSale() {
 
   const loadedRef = useRef(false);
   const submittingRef = useRef(false);
+  const clientConfirmedRef = useRef(false);
 
   // ---------------- PRODUCTS & FINANCING DATA ----------------
 
@@ -180,6 +181,7 @@ export function usePreloadSale() {
     try {
       setLoading(true);
       setError(null);
+      clientConfirmedRef.current = false;
 
       const client = await searchClientByDocument(form.documentNumber);
 
@@ -220,7 +222,25 @@ export function usePreloadSale() {
 
   // ---------------- CLIENT CONFIRMATION ----------------
 
+  // El botón "Continuar" también dispara onOpenChange(false), por eso
+  // se usa un ref para distinguir una confirmación de una cancelación.
+  function handleClientConfirmOpenChange(open: boolean) {
+    if (open || clientConfirmedRef.current) {
+      setClientConfirmOpen(open);
+      return;
+    }
+
+    setForm(initialForm);
+    setExistingClient(null);
+    setClientFound(false);
+    setSearched(false);
+    setClientConfirmOpen(false);
+    setClientConfirmType(null);
+  }
+
   function confirmClientSelection() {
+    clientConfirmedRef.current = true;
+
     if (clientConfirmType === "new") {
       setStep(2);
     }
@@ -356,13 +376,20 @@ export function usePreloadSale() {
       const isPromoMode = form.saleMode === "promotion";
       const isCustomMode = form.saleMode === "custom";
 
-      let customConfigId: string | undefined;
       let customRateValue: number | undefined;
 
       if (isCustomMode) {
-        if (form.customRateType === "config" && form.financingConfigId) {
-          customConfigId = form.financingConfigId;
-        } else if (form.customRateType === "custom" && form.customRate !== "") {
+        if (form.customRateType === "config") {
+          const selectedConfig = configs.find(
+            (config) => config.financingConfigId === form.financingConfigId,
+          );
+
+          if (!selectedConfig) {
+            throw new Error("Seleccioná una configuración de financiación");
+          }
+
+          customRateValue = Number(selectedConfig.financingRate);
+        } else if (form.customRate !== "") {
           customRateValue = Number(form.customRate) / 100;
         }
       }
@@ -371,7 +398,6 @@ export function usePreloadSale() {
         clientId: finalClientId,
         financingPlanId: isPlanMode ? (form.financingPlanId || undefined) : undefined,
         promotionId: isPromoMode ? (form.promotionId || undefined) : undefined,
-        financingConfigId: customConfigId,
         financingRate: customRateValue,
         installmentsCount: form.installmentsCount,
         paymentFrequency: form.paymentFrequency,
@@ -433,7 +459,7 @@ export function usePreloadSale() {
     // ---------------- CLIENT CONFIRM DIALOG ----------------
 
     clientConfirmOpen,
-    setClientConfirmOpen,
+    setClientConfirmOpen: handleClientConfirmOpenChange,
     clientConfirmType,
     confirmClientSelection,
 

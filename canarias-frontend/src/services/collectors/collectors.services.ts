@@ -84,12 +84,6 @@ export interface EnvironmentalVisitPayload {
   status: "approved" | "rejected";
 
   observations?: string;
-
-  dniCopyReceived?: boolean;
-
-  salaryReceiptReceived?: boolean;
-
-  otherDocumentsReceived?: boolean;
 }
 
 export async function envValidateSale(

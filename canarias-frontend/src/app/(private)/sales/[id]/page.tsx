@@ -4,6 +4,8 @@ import { useParams } from "next/navigation";
 
 import { useAuthStore } from "@/store/auth.store";
 import { useSaleDetail } from "@/hooks/sales/useSaleDetails";
+import { useZones } from "@/hooks/zones/useZones";
+import { getDisplayCode } from "@/lib/sales/displayCode";
 
 import { getSaleStatusLabel } from "@/lib/sales/getSalesStatusLabel";
 import { getSalePermissions } from "@/lib/sales/getSalePermissions";
@@ -21,6 +23,14 @@ export default function SaleDetailPage() {
   const { sale, loading, error, refresh } = useSaleDetail(saleId);
 
   const permissions = getSalePermissions(user?.role);
+
+  const { zones } = useZones();
+
+  const clientZoneName = zones.find(
+    (zone) => zone.zoneId === sale?.client?.zoneId,
+  )?.name;
+
+  const planName = sale?.financingPlan?.name ?? sale?.promotion?.name;
 
   if (loading) {
     return <div className="text-white">Cargando venta...</div>;
@@ -63,7 +73,7 @@ export default function SaleDetailPage() {
               text-white/50
               "
             >
-              Venta #{sale.saleId}
+              Venta {getDisplayCode("VTA", sale.saleId)}
             </p>
             <p
               className="
@@ -111,6 +121,9 @@ export default function SaleDetailPage() {
 
           <p className="text-white/50">Tel: {sale.client?.phone}</p>
 
+          {clientZoneName && (
+            <p className="text-white/50">Zona: {clientZoneName}</p>
+          )}
           {/* <p className="text-white/50">1er Referencia: {sale.client?.reference1}</p> */}
 
           {/* <p className="text-white/50">2da Referencia: {sale.client?.reference2}</p> */}
@@ -202,6 +215,13 @@ export default function SaleDetailPage() {
             md:grid-cols-3
             "
           >
+            {planName && (
+              <Info
+                label={sale.promotion?.name ? "Promoción" : "Plan"}
+                value={planName}
+              />
+            )}
+
             <Info
               label="Total venta"
               value={`$${Number(sale.totalAmount).toLocaleString("es-AR")}`}
