@@ -3,6 +3,11 @@ import { TypeOrmModule } from "@nestjs/typeorm";
 
 import { SalesController } from "./controllers/sales.controller";
 import { SalesService } from "./services/sales.service";
+import { SalesQueryService } from "./services/sales-query.service";
+import { SellerCommissionService } from "./services/seller-commission.service";
+import { SaleInstallmentScheduleService } from "./services/sale-installment-schedule.service";
+import { SaleDeliveryService } from "./services/sale-delivery.service";
+import { SaleWorkflowService } from "./services/sale-workflow.service";
 
 import { SalesRepository } from "./repositories/sales.repository";
 import { SaleValidationsRepository } from "./repositories/sale-validations.repository";
@@ -51,7 +56,11 @@ import { SALE_HISTORY_REPOSITORY } from "./interfaces/sale-history-repository.in
 
   providers: [
     SalesService,
-
+    SalesQueryService,
+    SellerCommissionService,
+    SaleInstallmentScheduleService,
+    SaleDeliveryService,
+    SaleWorkflowService,
     {
       provide: SALES_REPOSITORY,
       useClass: SalesRepository,
