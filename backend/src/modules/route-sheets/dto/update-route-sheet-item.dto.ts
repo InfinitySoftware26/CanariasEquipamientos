@@ -65,6 +65,37 @@ export class UpdateRouteSheetItemDto {
   paymentReceived?: boolean;
 
   // ============================================================
+  // DOCUMENTACIÓN RECIBIDA EN LA ENTREGA (opcional)
+  // ============================================================
+
+  @ApiPropertyOptional({
+    example: true,
+    description:
+      "Indica si se recibió la fotocopia del DNI. Se utiliza en items DELIVERY.",
+  })
+  @IsOptional()
+  @IsBoolean()
+  dniCopyReceived?: boolean;
+
+  @ApiPropertyOptional({
+    example: true,
+    description:
+      "Indica si se recibió el contrato firmado. Se utiliza en items DELIVERY.",
+  })
+  @IsOptional()
+  @IsBoolean()
+  contractReceived?: boolean;
+
+  @ApiPropertyOptional({
+    example: true,
+    description:
+      "Indica si se recibió el comprobante de servicio del domicilio. Se utiliza en items DELIVERY.",
+  })
+  @IsOptional()
+  @IsBoolean()
+  utilityBillReceived?: boolean;
+
+  // ============================================================
   // OBSERVACIONES
   // ============================================================
 

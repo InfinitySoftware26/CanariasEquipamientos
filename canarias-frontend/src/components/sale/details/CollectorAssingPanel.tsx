@@ -29,16 +29,6 @@ export function CollectorSalePanel({ sale, onRefresh }: Props) {
 
   const [rejectVisitDialogOpen, setRejectVisitDialogOpen] = useState(false);
 
-  // ============================================================
-  // DOCUMENTACIÓN DE VISITA AMBIENTAL
-  // ============================================================
-
-  const [dniCopyReceived, setDniCopyReceived] = useState(false);
-
-  const [salaryReceiptReceived, setSalaryReceiptReceived] = useState(false);
-
-  const [otherDocumentsReceived, setOtherDocumentsReceived] = useState(false);
-
   const [visitObservation, setVisitObservation] = useState("");
 
   const badge = getSaleStatusLabel(sale.status);
@@ -57,12 +47,6 @@ export function CollectorSalePanel({ sale, onRefresh }: Props) {
         status: "approved",
 
         observations: visitObservation.trim() || undefined,
-
-        dniCopyReceived,
-
-        salaryReceiptReceived,
-
-        otherDocumentsReceived,
       });
 
       setVisitDialogOpen(false);
@@ -99,12 +83,6 @@ export function CollectorSalePanel({ sale, onRefresh }: Props) {
         status: "rejected",
 
         observations: visitObservation.trim(),
-
-        dniCopyReceived,
-
-        salaryReceiptReceived,
-
-        otherDocumentsReceived,
       });
 
       setRejectVisitDialogOpen(false);
@@ -152,87 +130,8 @@ export function CollectorSalePanel({ sale, onRefresh }: Props) {
               </h3>
 
               <p className="mt-2 text-sm text-white/60">
-                Realizá la visita al domicilio y registrá la documentación que
-                el cliente entrega.
+                Realizá la visita al domicilio y registrá el resultado.
               </p>
-            </div>
-
-            {/* DOCUMENTACIÓN */}
-
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
-              <p className="font-semibold text-white">Documentación recibida</p>
-
-              <p className="mt-1 text-sm text-white/50">
-                Marcá los documentos que recibiste durante la visita.
-              </p>
-
-              <div className="mt-5 space-y-4">
-                {/* DNI */}
-
-                <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-white/10 bg-black/10 p-4 text-white">
-                  <input
-                    type="checkbox"
-                    checked={dniCopyReceived}
-                    disabled={loading}
-                    onChange={(event) =>
-                      setDniCopyReceived(event.target.checked)
-                    }
-                    className="h-5 w-5"
-                  />
-
-                  <div>
-                    <p className="font-medium">Fotocopia de DNI</p>
-
-                    <p className="text-xs text-white/40">
-                      Documentación de identidad del cliente.
-                    </p>
-                  </div>
-                </label>
-
-                {/* RECIBO SUELDO */}
-
-                <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-white/10 bg-black/10 p-4 text-white">
-                  <input
-                    type="checkbox"
-                    checked={salaryReceiptReceived}
-                    disabled={loading}
-                    onChange={(event) =>
-                      setSalaryReceiptReceived(event.target.checked)
-                    }
-                    className="h-5 w-5"
-                  />
-
-                  <div>
-                    <p className="font-medium">Recibo/s de sueldo</p>
-
-                    <p className="text-xs text-white/40">
-                      Comprobante de ingresos entregado por el cliente.
-                    </p>
-                  </div>
-                </label>
-
-                {/* OTROS */}
-
-                <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-white/10 bg-black/10 p-4 text-white">
-                  <input
-                    type="checkbox"
-                    checked={otherDocumentsReceived}
-                    disabled={loading}
-                    onChange={(event) =>
-                      setOtherDocumentsReceived(event.target.checked)
-                    }
-                    className="h-5 w-5"
-                  />
-
-                  <div>
-                    <p className="font-medium">Otra documentación</p>
-
-                    <p className="text-xs text-white/40">
-                      Documentación adicional entregada durante la visita.
-                    </p>
-                  </div>
-                </label>
-              </div>
             </div>
 
             {/* OBSERVACIÓN */}
@@ -247,7 +146,7 @@ export function CollectorSalePanel({ sale, onRefresh }: Props) {
                 disabled={loading}
                 onChange={(event) => setVisitObservation(event.target.value)}
                 rows={4}
-                placeholder="Ej.: falta último recibo de sueldo, documentación ilegible, observaciones del domicilio..."
+                placeholder="Ej.: cliente ausente, domicilio no coincide, observaciones del domicilio..."
                 className="w-full rounded-2xl border border-white/10 bg-[#0B1220] p-4 text-white outline-none focus:border-cyan-500/50"
               />
 
@@ -295,7 +194,7 @@ export function CollectorSalePanel({ sale, onRefresh }: Props) {
         open={visitDialogOpen}
         onOpenChange={setVisitDialogOpen}
         title="¿Confirmar visita ambiental?"
-        description="La venta avanzará a pendiente de entrega. Administración podrá coordinar con el cliente la fecha de entrega del producto."
+        description="Luego de aprobar la visita ambiental, Administración coordinará la entrega y el cobro de la primera cuota. La misma le aparecerá en la hoja de ruta correspondiente."
         confirmText="Aprobar visita"
         cancelText="Cancelar"
         loading={loading}

@@ -1,5 +1,4 @@
 import {
-  IsBoolean,
   IsIn,
   IsOptional,
   IsString,
@@ -24,30 +23,4 @@ export class ValidateSaleDto {
   @IsString()
   @MaxLength(1000)
   observations?: string;
-
-  @ApiPropertyOptional({
-    example: true,
-    description:
-      "Indica si el cobrador recibió la fotocopia del DNI durante la visita ambiental.",
-  })
-  @IsOptional()
-  @IsBoolean()
-  dniCopyReceived?: boolean;
-
-  @ApiPropertyOptional({
-    example: true,
-    description:
-      "Indica si el cobrador recibió el/los recibos de sueldo durante la visita ambiental.",
-  })
-  @IsOptional()
-  @IsBoolean()
-  salaryReceiptReceived?: boolean;
-
-  @ApiPropertyOptional({
-    example: false,
-    description: "Indica si el cobrador recibió otra documentación adicional.",
-  })
-  @IsOptional()
-  @IsBoolean()
-  otherDocumentsReceived?: boolean;
 }

@@ -1,7 +1,7 @@
 import { Injectable, Inject, BadRequestException } from "@nestjs/common";
 
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { MoreThan, Repository } from "typeorm";
 
 import {
   ISalesRepository,
@@ -22,6 +22,7 @@ import { ConfigureCollectionScheduleDto } from "../dto/configure-collection-sche
 
 import { Sale } from "../entities/sale.entity";
 import { SaleProduct } from "../entities/sale-product.entity";
+import { SaleValidation } from "../entities/sale-validation.entity";
 
 import { Society } from "../../societies/entities/society.entity";
 
@@ -33,7 +34,6 @@ import { CommissionPeriod } from "../../../common/enums/commission-period.enum";
 import { CollectionScheduleType } from "../../../common/enums/collection-schedule-type.enum";
 
 import { JwtPayload } from "../../auth/interfaces/jwt-payload.interface";
-import { MarkCollectorDocumentsDto } from "../dto/mark-collector-documents.dto";
 
 import { SalesQueryService } from "./sales-query.service";
 import { SellerCommissionService } from "./seller-commission.service";
@@ -154,7 +154,7 @@ export class SalesService {
 
     let paymentFrequency = dto.paymentFrequency;
 
-    let financingRate = 0;
+    let financingRate = dto.financingRate ?? 0;
 
     // ─────────────────────────────────────────
     // PLAN DE FINANCIACIÓN
@@ -200,7 +200,9 @@ export class SalesService {
       paymentFrequency = selectedPlan.paymentFrequency;
 
       financingRate = Number(
-        selectedPlan.financingConfiguration?.financingRate ?? 0,
+        selectedPlan.financingRate ??
+          selectedPlan.financingConfiguration?.financingRate ??
+          0,
       );
     }
 
@@ -616,32 +618,112 @@ export class SalesService {
     dto: ValidateSaleDto,
     user: JwtPayload,
   ): Promise<void> {
-    return this.workflowService.envValidate(saleId, dto, user);
-  }
+    const { staffId, name, role } = this.extractUser(user);
+
+    const sale = await this.findById(saleId);
+
+    // ============================================================
+    // ESTADO
+    // ============================================================
+
+    if (sale.status !== SaleStatus.PENDING_ENVIRONMENTAL_VISIT) {
+      throw new BadRequestException(
+        `La venta debe estar en estado ${SaleStatus.PENDING_ENVIRONMENTAL_VISIT}`,
+      );
+    }
+
+    // ============================================================
+    // COBRADOR ASIGNADO
+    // ============================================================
+
+    if (
+      role === StaffRole.COLLECTOR &&
+      sale.assignedCollectorId &&
+      sale.assignedCollectorId !== staffId
+    ) {
+      throw new ForbiddenException("No eres el cobrador asignado a esta venta");
+    }
+
+    // ============================================================
+    // VALIDACIÓN DE RECHAZO
+    // ============================================================
+
+    if (dto.status === "rejected" && !dto.observations?.trim()) {
+      throw new BadRequestException(
+        "Debe ingresar una observación indicando el motivo del rechazo",
+      );
+    }
+
+    // ============================================================
+    // NUEVO ESTADO
+    // ============================================================
+
+    const newStatus =
+      dto.status === "approved"
+        ? SaleStatus.PENDING_DELIVERY
+        : SaleStatus.ENVIRONMENTAL_REJECTED;
+
+    await this.salesRepo.updateStatus(saleId, newStatus);
+
+    // ============================================================
+    // CUOTAS
+    // ============================================================
+
+    /**
+     * Normalmente deliveryDate todavía no existe,
+     * porque Administración la coordina después
+     * de que la visita ambiental fue aprobada.
+     *
+     * Dejamos este comportamiento por compatibilidad
+     * con ventas anteriores.
+     */
+
+    if (dto.status === "approved" && sale.deliveryDate) {
+      await this.generateInstallments(sale, sale.deliveryDate);
+    }
+
+    // ============================================================
+    // VALIDACIÓN AUDITABLE
+    // ============================================================
+
+    await this.validationsRepo.create({
+      saleId,
+
+      staffId,
+
+      step: ValidationStep.ENVIRONMENTAL_VISIT,
+
+      status:
+        dto.status === "approved"
+          ? ValidationStatus.APPROVED
+          : ValidationStatus.REJECTED,
+
+      observations: dto.observations,
+
+      validatedAt: new Date(),
+    });
+
+    // ============================================================
+    // HISTORIAL
+    // ============================================================
+
+    await this.historyRepo.create({
+      saleId,
+
+      action:
+        dto.status === "approved"
+          ? "ENVIRONMENTAL_APPROVED"
+          : "ENVIRONMENTAL_REJECTED",
+
+      snapshot: {
+        previousStatus: sale.status,
 
   // ─────────────────────────────────────────────────────────────
   // ENTREGA
   // ─────────────────────────────────────────────────────────────
 
-  deliver(saleId: string, user: JwtPayload): Promise<void> {
-    return this.deliveryService.deliver(saleId, user);
-  }
-
-  failDelivery(
-    saleId: string,
-    dto: FailDeliveryDto,
-    user: JwtPayload,
-  ): Promise<void> {
-    return this.deliveryService.failDelivery(saleId, dto, user);
-  }
-
-  // ─────────────────────────────────────────────────────────────
-  // CERRAR VENTA
-  // ─────────────────────────────────────────────────────────────
-
-  close(saleId: string, dto: CloseSaleDto, user: JwtPayload): Promise<void> {
-    return this.workflowService.close(saleId, dto, user);
-  }
+        observations: dto.observations ?? null,
+      } as object,
 
   // ─────────────────────────────────────────────────────────────
   // COORDINAR ENTREGA
@@ -670,16 +752,109 @@ export class SalesService {
     });
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // ASIGNAR / REASIGNAR COBRADOR
-  // ─────────────────────────────────────────────────────────────
+    /*
+     * Una vez que existe un pago,
+     * el calendario no se regenera.
+     *
+     * Esto protege la historia contable.
+     */
+    const hasPayment = existingInstallments.some(
+      (installment) =>
+        Number(installment.paidAmount) > 0 ||
+        installment.status === InstallmentStatus.PAID,
+    );
 
-  assignCollector(
-    saleId: string,
-    collectorId: string,
-    user: JwtPayload,
-  ): Promise<void> {
-    return this.workflowService.assignCollector(saleId, collectorId, user);
+    if (hasPayment) {
+      return;
+    }
+
+    /*
+     * Si las cuotas todavía no tienen pagos, se recalculan en el lugar.
+     * Se conserva el installmentId de cada número de cuota porque hojas
+     * de ruta y otros registros lo referencian sin FK.
+     */
+    const existingByNumber = new Map(
+      existingInstallments.map((installment) => [
+        installment.installmentNumber,
+        installment,
+      ]),
+    );
+
+    const firstDueDate = this.resolveFirstDueDate(sale, deliveryDate);
+
+    const secondDueDate = this.resolveSecondDueDate(sale, firstDueDate);
+
+    const installments: Partial<Installment>[] = [];
+
+    for (let number = 1; number <= sale.installmentsCount; number++) {
+      let dueDate: Date;
+
+      // CUOTA 1
+      if (number === 1) {
+        dueDate = new Date(firstDueDate);
+      }
+
+      // CUOTA 2
+      else if (number === 2) {
+        dueDate = new Date(secondDueDate);
+      }
+
+      // CUOTA 3 EN ADELANTE
+      else {
+        const previousDueDate = installments[installments.length - 1].dueDate;
+
+        if (!previousDueDate) {
+          throw new BadRequestException(
+            "No se pudo determinar la fecha de la cuota anterior",
+          );
+        }
+
+        dueDate = this.getNextInstallmentDate(
+          new Date(previousDueDate),
+          sale.paymentFrequency,
+        );
+      }
+
+      installments.push({
+        installmentId: existingByNumber.get(number)?.installmentId,
+
+        saleId: sale.saleId,
+
+        clientId: sale.clientId,
+
+        societyId: sale.societyId,
+
+        installmentNumber: number,
+
+        amount: sale.installmentAmount,
+
+        paidAmount: 0,
+
+        remainingAmount: sale.installmentAmount,
+
+        dueDate: new Date(dueDate),
+
+        paymentFrequency: sale.paymentFrequency,
+
+        dailyLateInterestRate: Number(sale.dailyLateInterestRate ?? 0),
+
+        status: InstallmentStatus.PENDING,
+      });
+    }
+
+    const entities = installments.map((installment) =>
+      this.installmentRepo.create(installment),
+    );
+
+    await this.installmentRepo.save(entities);
+
+    // Si bajó la cantidad de cuotas, se eliminan las sobrantes.
+    if (existingInstallments.length > sale.installmentsCount) {
+      await this.installmentRepo.delete({
+        saleId: sale.saleId,
+        installmentNumber: MoreThan(sale.installmentsCount),
+      });
+    }
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -712,5 +887,768 @@ export class SalesService {
       dto,
       user,
     );
+
+    if (hasFuturePayments) {
+      throw new BadRequestException(
+        "No se puede cambiar la programación porque existen cuotas futuras con pagos registrados",
+      );
+    }
+
+    let secondDueDate: Date;
+
+    /*
+     * Prioridad 1:
+     * fecha explícita para cuota 2.
+     */
+    if (sale.secondDueDate) {
+      secondDueDate = this.parseDate(sale.secondDueDate);
+    } else if (
+      /*
+       * Prioridad 2:
+       * rango mensual + fecha concreta coordinada.
+       */
+      sale.collectionScheduleType === CollectionScheduleType.MONTHLY_RANGE &&
+      sale.manualCollectionDate
+    ) {
+      secondDueDate = this.parseDate(sale.manualCollectionDate);
+    } else if (
+      /*
+       * Prioridad 3:
+       * próximo día fijo acordado.
+       */
+      sale.collectionScheduleType === CollectionScheduleType.FIXED_WEEKDAY &&
+      sale.collectionWeekday !== null &&
+      sale.collectionWeekday !== undefined
+    ) {
+      const firstDueDate = this.parseDate(firstInstallment.dueDate);
+
+      const today = this.normalizeDate(new Date());
+
+      const baseDate =
+        today.getTime() > firstDueDate.getTime() ? today : firstDueDate;
+
+      secondDueDate = this.getNextWeekday(baseDate, sale.collectionWeekday);
+    } else {
+      /*
+       * Fallback:
+       * frecuencia normal del plan.
+       */
+      secondDueDate = this.getNextInstallmentDate(
+        this.parseDate(firstInstallment.dueDate),
+        sale.paymentFrequency,
+      );
+    }
+
+    let currentDueDate = new Date(secondDueDate);
+
+    for (const installment of futureInstallments) {
+      const installmentNumber = Number(installment.installmentNumber);
+
+      if (installmentNumber === 2) {
+        currentDueDate = new Date(secondDueDate);
+      } else {
+        currentDueDate = this.getNextInstallmentDate(
+          currentDueDate,
+          sale.paymentFrequency,
+        );
+      }
+
+      await this.installmentRepo.update(
+        {
+          installmentId: installment.installmentId,
+        },
+        {
+          dueDate: new Date(currentDueDate),
+
+          dailyLateInterestRate: Number(sale.dailyLateInterestRate ?? 0),
+
+          lateInterestAmount: 0,
+
+          lateInterestCalculatedAt: null,
+
+          status: InstallmentStatus.PENDING,
+        },
+      );
+    }
+
+    await this.salesRepo.update(sale.saleId, {
+      secondDueDate: new Date(secondDueDate),
+    });
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // FECHA PRIMERA CUOTA
+  // ─────────────────────────────────────────────────────────────
+
+  private resolveFirstDueDate(sale: Sale, deliveryDate: string): Date {
+    /*
+     * Caso:
+     * entregar producto + cobrar primera cuota.
+     */
+    if (sale.firstInstallmentOnDelivery !== false) {
+      return this.parseDate(deliveryDate);
+    }
+
+    /*
+     * Primera cuota configurada
+     * manualmente.
+     */
+    if (sale.firstDueDate) {
+      return this.parseDate(sale.firstDueDate);
+    }
+
+    /*
+     * Si por datos viejos no existe firstDueDate
+     * pero sí secondDueDate, evitamos romper el
+     * flujo.
+     */
+    if (sale.secondDueDate) {
+      return this.parseDate(sale.secondDueDate);
+    }
+
+    return this.parseDate(deliveryDate);
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // FECHA SEGUNDA CUOTA
+  // ─────────────────────────────────────────────────────────────
+
+  private resolveSecondDueDate(sale: Sale, firstDueDate: Date): Date {
+    /*
+     * Prioridad 1:
+     * fecha de segunda cuota cargada manualmente.
+     */
+    if (sale.secondDueDate) {
+      const second = this.parseDate(sale.secondDueDate);
+
+      if (second.getTime() < firstDueDate.getTime()) {
+        throw new BadRequestException(
+          "La segunda cuota no puede vencer antes que la primera",
+        );
+      }
+
+      return second;
+    }
+
+    /*
+     * Prioridad 2:
+     * fecha puntual acordada dentro
+     * de un rango mensual.
+     */
+    if (
+      sale.collectionScheduleType === CollectionScheduleType.MONTHLY_RANGE &&
+      sale.manualCollectionDate
+    ) {
+      const manualDate = this.parseDate(sale.manualCollectionDate);
+
+      if (manualDate.getTime() > firstDueDate.getTime()) {
+        return manualDate;
+      }
+    }
+
+    /*
+     * Prioridad 3:
+     * día fijo de cobranza.
+     *
+     * Buscamos el próximo día acordado.
+     */
+    if (
+      sale.collectionScheduleType === CollectionScheduleType.FIXED_WEEKDAY &&
+      sale.collectionWeekday !== null &&
+      sale.collectionWeekday !== undefined
+    ) {
+      return this.getNextWeekday(firstDueDate, sale.collectionWeekday);
+    }
+
+    /*
+     * Sin configuración especial:
+     * usamos la frecuencia normal.
+     */
+    return this.getNextInstallmentDate(firstDueDate, sale.paymentFrequency);
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // SIGUIENTE DÍA DE SEMANA
+  // ─────────────────────────────────────────────────────────────
+
+  private getNextWeekday(fromDate: Date, weekday: number): Date {
+    const date = new Date(fromDate);
+
+    let daysToAdd = (weekday - date.getDay() + 7) % 7;
+
+    /*
+     * Si coincide con el mismo día,
+     * buscamos la semana siguiente.
+     */
+    if (daysToAdd === 0) {
+      daysToAdd = 7;
+    }
+
+    date.setDate(date.getDate() + daysToAdd);
+
+    return date;
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // CALCULAR SIGUIENTE VENCIMIENTO
+  // ─────────────────────────────────────────────────────────────
+
+  private getNextInstallmentDate(
+    currentDate: Date,
+    frequency: PaymentFrequency,
+  ): Date {
+    const nextDate = new Date(currentDate);
+
+    switch (frequency) {
+      case PaymentFrequency.DAILY: {
+        do {
+          nextDate.setDate(nextDate.getDate() + 1);
+        } while (nextDate.getDay() === 0);
+
+        return nextDate;
+      }
+
+      case PaymentFrequency.BIWEEKLY: {
+        nextDate.setDate(nextDate.getDate() + 14);
+
+        return nextDate;
+      }
+
+      case PaymentFrequency.WEEKLY: {
+        nextDate.setDate(nextDate.getDate() + 7);
+
+        return nextDate;
+      }
+
+      case PaymentFrequency.MONTHLY: {
+        return this.addOneMonth(nextDate);
+      }
+
+      default:
+        return nextDate;
+    }
+  }
+
+  /**
+   * Suma un mes calendario sin usar "+28 días".
+   *
+   * Ejemplo:
+   *
+   * 10/09 -> 10/10
+   * 10/10 -> 10/11
+   *
+   * También evita problemas con día 31.
+   */
+  private addOneMonth(date: Date): Date {
+    const originalDay = date.getDate();
+
+    const result = new Date(date);
+
+    result.setDate(1);
+
+    result.setMonth(result.getMonth() + 1);
+
+    const lastDayOfTargetMonth = new Date(
+      result.getFullYear(),
+      result.getMonth() + 1,
+      0,
+    ).getDate();
+
+    result.setDate(Math.min(originalDay, lastDayOfTargetMonth));
+
+    return result;
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // ENTREGA
+  // ─────────────────────────────────────────────────────────────
+
+  async deliver(
+    saleId: string,
+    user: JwtPayload,
+    documents?: Pick<
+      SaleValidation,
+      "dniCopyReceived" | "contractReceived" | "utilityBillReceived"
+    >,
+  ): Promise<void> {
+    const { staffId, name, role } = this.extractUser(user);
+
+    const sale = await this.findById(saleId);
+
+    if (sale.status !== SaleStatus.PENDING_DELIVERY) {
+      throw new BadRequestException(
+        `La venta debe estar en estado ${SaleStatus.PENDING_DELIVERY}`,
+      );
+    }
+
+    if (
+      role === StaffRole.COLLECTOR &&
+      sale.assignedCollectorId &&
+      sale.assignedCollectorId !== staffId
+    ) {
+      throw new ForbiddenException("No eres el cobrador asignado a esta venta");
+    }
+
+    /*
+     * La entrega debería tener una fecha
+     * coordinada antes de confirmarse.
+     */
+    if (!sale.deliveryDate) {
+      throw new BadRequestException(
+        "La venta no tiene una fecha de entrega coordinada",
+      );
+    }
+
+    /*
+     * Nos aseguramos de que exista el plan
+     * de cuotas antes de marcarla entregada.
+     */
+    await this.generateInstallments(sale, sale.deliveryDate);
+
+    await this.salesRepo.updateStatus(saleId, SaleStatus.DELIVERED);
+
+    /*
+     * La documentación se recibe al entregar el producto.
+     * Es opcional: lo que no se tilda queda registrado como false.
+     */
+    if (documents) {
+      await this.validationsRepo.create({
+        saleId,
+
+        staffId,
+
+        step: ValidationStep.DELIVERY,
+
+        status: ValidationStatus.APPROVED,
+
+        dniCopyReceived: documents.dniCopyReceived ?? false,
+
+        contractReceived: documents.contractReceived ?? false,
+
+        utilityBillReceived: documents.utilityBillReceived ?? false,
+
+        validatedAt: new Date(),
+      });
+    }
+
+    await this.historyRepo.create({
+      saleId,
+
+      action: "DELIVERY_CONFIRMED_BY_COLLECTOR",
+
+      snapshot: {
+        confirmedAt: new Date(),
+
+        deliveryDate: sale.deliveryDate,
+      } as object,
+
+      performedBy: staffId,
+
+      performedByName: name,
+    });
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // ENTREGA FALLIDA
+  // ─────────────────────────────────────────────────────────────
+
+  async failDelivery(
+    saleId: string,
+    dto: FailDeliveryDto,
+    user: JwtPayload,
+  ): Promise<void> {
+    const { staffId, name, role } = this.extractUser(user);
+
+    const sale = await this.findById(saleId);
+
+    if (sale.status !== SaleStatus.PENDING_DELIVERY) {
+      throw new BadRequestException(
+        `La venta debe estar en estado ${SaleStatus.PENDING_DELIVERY}`,
+      );
+    }
+
+    if (
+      role === StaffRole.COLLECTOR &&
+      sale.assignedCollectorId &&
+      sale.assignedCollectorId !== staffId
+    ) {
+      throw new ForbiddenException("No eres el cobrador asignado a esta venta");
+    }
+
+    const attemptCount = await this.deliveryAttemptsRepo.countBySale(saleId);
+
+    await this.deliveryAttemptsRepo.create({
+      saleId,
+      staffId,
+
+      attemptNumber: attemptCount + 1,
+
+      reason: dto.reason,
+
+      attemptedAt: new Date(),
+    });
+
+    await this.historyRepo.create({
+      saleId,
+
+      action: "DELIVERY_FAILED",
+
+      snapshot: {
+        attemptNumber: attemptCount + 1,
+
+        reason: dto.reason,
+      } as object,
+
+      performedBy: staffId,
+
+      performedByName: name,
+    });
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // CERRAR VENTA
+  // ─────────────────────────────────────────────────────────────
+
+  async close(
+    saleId: string,
+    dto: CloseSaleDto,
+    user: JwtPayload,
+  ): Promise<void> {
+    const { staffId, name } = this.extractUser(user);
+
+    const sale = await this.findById(saleId);
+
+    if (sale.status !== SaleStatus.DELIVERED) {
+      throw new BadRequestException(
+        `La venta debe estar en estado ${SaleStatus.DELIVERED}`,
+      );
+    }
+
+    let firstInstallment: Installment | null = null;
+
+    /*
+     * Si el negocio cobra cuota 1 con la entrega,
+     * Administración sólo puede cerrar cuando ese
+     * dinero ya fue registrado en el sistema.
+     */
+    if (sale.firstInstallmentOnDelivery) {
+      firstInstallment = await this.installmentRepo.findOne({
+        where: {
+          saleId,
+
+          installmentNumber: 1,
+        },
+      });
+
+      if (!firstInstallment) {
+        throw new BadRequestException(
+          "No se encontró la primera cuota de la venta",
+        );
+      }
+
+      if (
+        firstInstallment.status !== InstallmentStatus.PAID ||
+        Number(firstInstallment.remainingAmount) > 0
+      ) {
+        throw new BadRequestException(
+          "No se puede cerrar la venta hasta que la primera cuota haya sido cobrada completamente",
+        );
+      }
+    }
+
+    const finalDeliveryDate = dto.deliveryDate ?? sale.deliveryDate;
+
+    if (!finalDeliveryDate) {
+      throw new BadRequestException(
+        "La venta no tiene una fecha de entrega registrada",
+      );
+    }
+
+    await this.salesRepo.update(saleId, {
+      status: SaleStatus.CLOSED,
+
+      deliveryDate: finalDeliveryDate,
+    });
+
+    /*
+     * IMPORTANTE:
+     *
+     * No regeneramos cuotas acá.
+     *
+     * El cierre representa que Administración
+     * recibió/confirmó el dinero de la entrega.
+     * La programación de cuota 2+ se realiza
+     * después con configureCollectionSchedule().
+     */
+
+    await this.historyRepo.create({
+      saleId,
+
+      action: "SALE_CLOSED",
+
+      snapshot: {
+        previousStatus: sale.status,
+
+        newStatus: SaleStatus.CLOSED,
+
+        deliveryDate: finalDeliveryDate,
+
+        firstInstallmentId: firstInstallment?.installmentId ?? null,
+
+        firstInstallmentStatus: firstInstallment?.status ?? null,
+
+        firstInstallmentPaidAmount: firstInstallment
+          ? Number(firstInstallment.paidAmount)
+          : null,
+
+        deliveryCollectionConfirmed: true,
+      } as object,
+
+      performedBy: staffId,
+
+      performedByName: name,
+    });
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // COORDINAR ENTREGA
+  // ─────────────────────────────────────────────────────────────
+
+  async scheduleDelivery(
+    saleId: string,
+    dto: ScheduleDeliveryDto,
+    user: JwtPayload,
+  ): Promise<void> {
+    const { staffId, name } = this.extractUser(user);
+
+    const sale = await this.findById(saleId);
+
+    if (
+      sale.status !== SaleStatus.PENDING_DELIVERY &&
+      sale.status !== SaleStatus.DELIVERED
+    ) {
+      throw new BadRequestException(
+        "La venta debe estar pendiente de entrega o entregada.",
+      );
+    }
+
+    await this.salesRepo.update(saleId, {
+      deliveryDate: dto.deliveryDate,
+    });
+
+    const updatedSale = await this.findById(saleId);
+
+    await this.generateInstallments(updatedSale, dto.deliveryDate);
+
+    await this.historyRepo.create({
+      saleId,
+
+      action: "DELIVERY_SCHEDULED",
+
+      snapshot: {
+        previousDeliveryDate: sale.deliveryDate ?? null,
+
+        deliveryDate: dto.deliveryDate,
+      } as object,
+
+      performedBy: staffId,
+
+      performedByName: name,
+    });
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // OBSERVACIÓN
+  // ─────────────────────────────────────────────────────────────
+
+  async updateObservation(
+    saleId: string,
+    observation: string | undefined,
+  ): Promise<void> {
+    await this.findById(saleId);
+
+    await this.salesRepo.update(saleId, {
+      observation: observation ?? (null as any),
+    });
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // ASIGNAR / REASIGNAR COBRADOR
+  // ─────────────────────────────────────────────────────────────
+
+  async assignCollector(
+    saleId: string,
+    collectorId: string,
+    user: JwtPayload,
+  ): Promise<void> {
+    const { staffId, name } = this.extractUser(user);
+
+    const sale = await this.findById(saleId);
+
+    const previousCollectorId = sale.assignedCollectorId;
+
+    await this.salesRepo.update(saleId, {
+      assignedCollectorId: collectorId,
+    });
+
+    await this.historyRepo.create({
+      saleId,
+
+      action: previousCollectorId
+        ? "COLLECTOR_REASSIGNED"
+        : "COLLECTOR_ASSIGNED",
+
+      snapshot: {
+        previousCollectorId: previousCollectorId ?? null,
+
+        newCollectorId: collectorId,
+      } as object,
+
+      performedBy: staffId,
+
+      performedByName: name,
+    });
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // HELPERS
+  // ─────────────────────────────────────────────────────────────
+
+  private parseDate(value: Date | string): Date {
+    if (value instanceof Date) {
+      return new Date(value.getFullYear(), value.getMonth(), value.getDate());
+    }
+
+    const datePart = String(value).slice(0, 10);
+
+    const date = new Date(`${datePart}T00:00:00`);
+
+    if (Number.isNaN(date.getTime())) {
+      throw new BadRequestException(`Fecha inválida: ${value}`);
+    }
+
+    return date;
+  }
+
+  private normalizeDate(value: Date): Date {
+    return new Date(
+      value.getFullYear(),
+      value.getMonth(),
+      value.getDate(),
+      0,
+      0,
+      0,
+      0,
+    );
+  }
+
+  private extractUser(user: JwtPayload) {
+    return {
+      staffId: user.sub,
+
+      societyId: user.societyId,
+
+      name: user.email,
+
+      role: user.role as StaffRole,
+    };
+  }
+
+  private resolveCommissionPeriodRange(
+    period: CommissionPeriod,
+    dateStr?: string,
+  ): {
+    from: Date;
+    to: Date;
+  } {
+    const anchor = dateStr ? new Date(dateStr) : new Date();
+
+    if (Number.isNaN(anchor.getTime())) {
+      throw new BadRequestException("Fecha inválida");
+    }
+
+    let from: Date;
+    let to: Date;
+
+    switch (period) {
+      case CommissionPeriod.YEAR: {
+        from = new Date(anchor.getFullYear(), 0, 1);
+
+        to = new Date(anchor.getFullYear(), 11, 31, 23, 59, 59, 999);
+
+        break;
+      }
+
+      case CommissionPeriod.MONTH: {
+        from = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
+
+        to = new Date(
+          anchor.getFullYear(),
+          anchor.getMonth() + 1,
+          0,
+          23,
+          59,
+          59,
+          999,
+        );
+
+        break;
+      }
+
+      case CommissionPeriod.WEEK: {
+        const day = anchor.getDay();
+
+        const diffToMonday = day === 0 ? -6 : 1 - day;
+
+        from = new Date(
+          anchor.getFullYear(),
+          anchor.getMonth(),
+          anchor.getDate() + diffToMonday,
+        );
+
+        to = new Date(
+          from.getFullYear(),
+          from.getMonth(),
+          from.getDate() + 6,
+          23,
+          59,
+          59,
+          999,
+        );
+
+        break;
+      }
+
+      case CommissionPeriod.DAY: {
+        from = new Date(
+          anchor.getFullYear(),
+          anchor.getMonth(),
+          anchor.getDate(),
+        );
+
+        to = new Date(
+          anchor.getFullYear(),
+          anchor.getMonth(),
+          anchor.getDate(),
+          23,
+          59,
+          59,
+          999,
+        );
+
+        break;
+      }
+
+      default: {
+        throw new BadRequestException(
+          "period debe ser day, week, month o year",
+        );
+      }
+    }
+
+    return {
+      from,
+      to,
+    };
   }
 }

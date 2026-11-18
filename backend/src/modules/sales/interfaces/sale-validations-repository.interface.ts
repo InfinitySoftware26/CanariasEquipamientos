@@ -18,9 +18,9 @@ export interface ISaleValidationsRepository {
 
     dniCopyReceived?: boolean;
 
-    salaryReceiptReceived?: boolean;
+    contractReceived?: boolean;
 
-    otherDocumentsReceived?: boolean;
+    utilityBillReceived?: boolean;
 
     validatedAt: Date;
   }): Promise<SaleValidation>;

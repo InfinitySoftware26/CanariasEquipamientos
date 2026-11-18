@@ -25,6 +25,8 @@ export interface IRouteSheetItemsRepository {
 
   findActiveDeliveryBySale(saleId: string): Promise<RouteSheetItem | null>;
 
+  findLatestFailedDeliveryBySale(saleId: string): Promise<RouteSheetItem | null>;
+
   updateResult(
     id: string,
     result: RouteSheetItemResult,

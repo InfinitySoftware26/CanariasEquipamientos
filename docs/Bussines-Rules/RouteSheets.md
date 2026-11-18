@@ -69,6 +69,48 @@ Las entregas deben visualizarse como tareas operativas.
 
 ---
 
+## BR-ROUTES-011
+
+La generación automática (`POST /route-sheets/generate` y el proceso diario) incorpora a la hoja de la fecha, por zona y cobrador:
+
+- entregas coordinadas para esa fecha;
+- reintentos de entregas fallidas desde el día siguiente a la visita, para la misma zona y el mismo cobrador;
+- la cuota abierta más antigua de cada venta CLOSED con cobrador asignado, siempre que `vencimiento <= fecha de la hoja` y la fecha coincida con la modalidad de cobranza (día fijo semanal o fecha ancla de rango mensual).
+
+Reglas asociadas:
+
+- La cuota 1 pertenece al flujo de entrega y no se incluye como cobranza.
+- No se duplica una cuota ya incluida en una hoja activa.
+- Si ya existe una hoja activa para cobrador, zona y fecha, se completa en lugar de crear otra.
+
+---
+
+## BR-ROUTES-012
+
+Una hoja creada manualmente (`POST /route-sheets`) puede incorporar automáticamente reintentos de entregas fallidas pendientes para su zona y cobrador. Las cuotas se incorporan con la generación automática o con "Agregar cuota" (`POST /route-sheets/:id/installments`).
+
+Al registrar una entrega fallida, si ya existe una hoja posterior pendiente o en curso para la misma zona y cobrador, se intenta incorporarla a la más próxima. Si no existe, el reintento puede incorporarse al generar una hoja posterior. Una entrega pendiente muestra que hubo una visita fallida anterior.
+
+El registro de la falla y la incorporación del reintento son operaciones separadas. La comprobación de entregas activas evita duplicados en el flujo secuencial, pero no garantiza exclusión ante solicitudes concurrentes.
+
+---
+
+## BR-ROUTES-013
+
+Los importes de cada ítem se resuelven desde la cuota asociada: importe original, capital pendiente (saldo de la cuota), mora y total a cobrar (capital + mora).
+
+---
+
+## BR-ROUTES-014
+
+En el registro de visita fallida, el motivo se elige con el selector estándar del sistema (cliente ausente, rechazó el pago, domicilio incorrecto, otro). El monto recibido se ingresa con formato de dinero (separador de miles).
+
+En entregas fallidas registradas desde la hoja, el código del motivo se guarda en el intento de entrega y las observaciones en el ítem de la hoja. En cobranzas, el motivo y las observaciones se guardan en la visita fallida.
+
+Las confirmaciones destructivas usan el diálogo estándar del sistema (`ConfirmDialog`) y no el `confirm()` nativo del navegador. Aplica a "Quitar de la hoja" (solo ítems pendientes) y a "Desactivar" cliente.
+
+---
+
 # Zonas
 
 ---

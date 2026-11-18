@@ -20,6 +20,7 @@ export const RouteSheetItemResult = {
   PENDING: "pending",
   COMPLETED: "completed",
   FAILED: "failed",
+  RESCHEDULED: "rescheduled",
 } as const;
 
 export type RouteSheetItemResult =
@@ -63,7 +64,7 @@ export interface RouteSheetItem {
 
   itemType: "installment" | "delivery";
 
-  result: "pending" | "completed" | "failed";
+  result: RouteSheetItemResult;
 
   clientId: string;
 
@@ -100,6 +101,8 @@ export interface RouteSheetItem {
   notes?: string | null;
 
   visitedAt?: string | null;
+
+  hadFailedDelivery?: boolean;
 
   sale?: {
     saleId?: string;
@@ -198,7 +201,7 @@ export interface AvailableRouteSheetInstallment {
 }
 
 export interface UpdateRouteSheetItemPayload {
-  result: "completed" | "failed";
+  result: RouteSheetItemResult;
 
   collectedAmount?: number;
 
@@ -213,4 +216,10 @@ export interface UpdateRouteSheetItemPayload {
   productDelivered?: boolean;
 
   paymentReceived?: boolean;
+
+  dniCopyReceived?: boolean;
+
+  contractReceived?: boolean;
+
+  utilityBillReceived?: boolean;
 }

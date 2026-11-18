@@ -35,9 +35,7 @@ export class RouteSheetsCronService {
    */
   @Cron("0 0 6 * * *", {
     name: "daily-route-sheets",
-
     timeZone: "America/Argentina/Buenos_Aires",
-
     waitForCompletion: true,
   })
   async generateDailyRouteSheets() {

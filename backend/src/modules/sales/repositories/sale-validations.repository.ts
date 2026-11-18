@@ -32,9 +32,9 @@ export class SaleValidationsRepository implements ISaleValidationsRepository {
 
     dniCopyReceived?: boolean;
 
-    salaryReceiptReceived?: boolean;
+    contractReceived?: boolean;
 
-    otherDocumentsReceived?: boolean;
+    utilityBillReceived?: boolean;
 
     validatedAt: Date;
   }): Promise<SaleValidation> {
@@ -51,9 +51,9 @@ export class SaleValidationsRepository implements ISaleValidationsRepository {
 
       dniCopyReceived: data.dniCopyReceived ?? null,
 
-      salaryReceiptReceived: data.salaryReceiptReceived ?? null,
+      contractReceived: data.contractReceived ?? null,
 
-      otherDocumentsReceived: data.otherDocumentsReceived ?? null,
+      utilityBillReceived: data.utilityBillReceived ?? null,
 
       validatedAt: data.validatedAt,
     });

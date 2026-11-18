@@ -96,6 +96,12 @@ export function RouteSheetItemCard({ item, onAction }: Props) {
         </span>
       </div>
 
+      {item.hadFailedDelivery && (
+        <p className="mt-3 rounded-lg bg-amber-500/10 px-3 py-2 text-sm text-amber-300">
+          Esta entrega tiene una visita fallida anterior.
+        </p>
+      )}
+
       {/* DATOS CLIENTE */}
 
       <div className="mt-5 grid gap-4 rounded-xl border border-white/10 bg-black/10 p-4 md:grid-cols-2">

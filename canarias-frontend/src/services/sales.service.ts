@@ -2,6 +2,7 @@ import { useAuthStore } from "@/store/auth.store";
 import { CreateSalePayload } from "@/types/sales/createSale.type";
 import { apiFetch } from "./apiFetch.service";
 import { Sale } from "@/types/sales/sale.type";
+import { SaleValidation } from "@/types/sales/saleValidation.type";
 
 export async function createSale(data: CreateSalePayload) {
   const token = useAuthStore.getState().accessToken;
@@ -216,6 +217,26 @@ export async function getSaleHistory(saleId: string) {
   return Array.isArray(json) ? json : (json.data ?? []);
 }
 
+export async function getSaleValidations(
+  saleId: string,
+): Promise<SaleValidation[]> {
+  const token = useAuthStore.getState().accessToken;
+
+  const res = await apiFetch(`/sales/${saleId}/validations`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!res.ok) {
+    throw new Error("No se pudieron obtener las validaciones");
+  }
+
+  const json = await res.json();
+
+  return Array.isArray(json) ? json : (json.data ?? []);
+}
+
 export async function validateEnvironmentalVisit(
   saleId: string,
   status: "approved" | "rejected",
@@ -286,35 +307,4 @@ export async function scheduleDeliveryDate(
   }
 
   return true;
-}
-export async function markCollectorDocuments(
-  saleId: string,
-  delivered: boolean,
-  notes?: string,
-) {
-  const token = useAuthStore.getState().accessToken;
-
-  const res = await apiFetch(`/sales/${saleId}/collector-documents`, {
-    method: "PATCH",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      delivered,
-      notes,
-    }),
-  });
-
-  if (!res.ok) {
-    const error = await res.json();
-
-    throw new Error(
-      error.message || "No se pudo actualizar la entrega de documentación",
-    );
-  }
-
-  const text = await res.text();
-
-  return text ? JSON.parse(text) : null;
 }

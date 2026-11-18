@@ -216,6 +216,17 @@ El registro del primer pago será requisito para que la Administración pueda re
 
 ---
 
+## BR-PAYMENT-028
+
+La primera cuota debe cobrarse completa en la entrega.
+
+- El backend rechaza un monto recibido menor al total a cobrar de la cuota 1 (como la cuota 1 no genera mora, equivale a su saldo).
+- En la hoja de ruta, el monto de la cuota 1 queda fijo en el total y no es editable.
+- En cobranzas de cuotas 2 en adelante se admiten pagos parciales: la cuota queda PARTIAL u OVERDUE con su saldo y reaparece en próximas hojas de ruta.
+- El campo "Monto recibido" se ingresa y muestra con formato de dinero.
+
+---
+
 # Integración con Cobranzas
 
 ## BR-PAYMENT-020
