@@ -1,13 +1,129 @@
-import { Injectable } from "@nestjs/common";
-import { RouteSheetStatus } from "../../../common/enums/route-sheet-status.enum";
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from "@nestjs/common";
+
+import { InjectRepository } from "@nestjs/typeorm";
+
+import { In, Repository } from "typeorm";
+
+import {
+  IRouteSheetsRepository,
+  ROUTE_SHEETS_REPOSITORY,
+  RouteSheetFilters,
+} from "../interfaces/route-sheets-repository.interface";
+
+import {
+  IRouteSheetItemsRepository,
+  ROUTE_SHEET_ITEMS_REPOSITORY,
+} from "../interfaces/route-sheet-items-repository.interface";
+
 import { CreateRouteSheetDto } from "../dto/create-route-sheet.dto";
+
 import { RouteSheet } from "../entities/route-sheet.entity";
-import { RouteSheetFilters } from "../interfaces/route-sheets-repository.interface";
+
+import { RouteSheetItem } from "../entities/route-sheet-item.entity";
+
+import { RouteSheetStatus } from "../../../common/enums/route-sheet-status.enum";
+
+import { RouteSheetItemType } from "../../../common/enums/route-sheet-item-type.enum";
+
+import { RouteSheetItemResult } from "../../../common/enums/route-sheet-item-result.enum";
+
+import { InstallmentStatus } from "../../../common/enums/installment-status.enum";
+
+import { SaleStatus } from "../../../common/enums/sale-status.enum";
+
+import { StaffRole } from "../../../common/enums/staff-role.enum";
+
+import { CollectionScheduleType } from "../../../common/enums/collection-schedule-type.enum";
+
+import { Zone } from "../../zones/entities/zone.entity";
+
+import {
+  StaffZone,
+  StaffZoneStatus,
+} from "../../zones/entities/staff-zone.entity";
+
+import { Staff } from "../../staff/entities/staff.entity";
+
+import { Client } from "../../clients/entities/client.entity";
+
+import { Installment } from "../../installments/entities/installment.entity";
+
+import { InstallmentsService } from "../../installments/services/installments.service";
+
+import { Sale } from "../../sales/entities/sale.entity";
+
 import { JwtPayload } from "../../auth/interfaces/jwt-payload.interface";
-import { RouteSheetQueryService } from "./route-sheet-query.service";
-import { RouteSheetGenerationService } from "./route-sheet-generation.service";
-import { RouteSheetInstallmentService } from "./route-sheet-installment.service";
-import { RouteSheetManagementService } from "./route-sheet-management.service";
+
+// ============================================================
+// ESTADOS DE CUOTA COBRABLES
+// ============================================================
+
+const OPEN_INSTALLMENT_STATUSES = [
+  InstallmentStatus.PENDING,
+  InstallmentStatus.OVERDUE,
+  InstallmentStatus.PARTIAL,
+];
+
+// ============================================================
+// TRANSICIONES DE HOJA
+// ============================================================
+
+const ALLOWED_TRANSITIONS: Record<RouteSheetStatus, RouteSheetStatus[]> = {
+  [RouteSheetStatus.PENDING]: [
+    RouteSheetStatus.IN_PROGRESS,
+    RouteSheetStatus.CANCELLED,
+  ],
+
+  [RouteSheetStatus.IN_PROGRESS]: [
+    RouteSheetStatus.COMPLETED,
+    RouteSheetStatus.CANCELLED,
+  ],
+
+  [RouteSheetStatus.COMPLETED]: [],
+
+  [RouteSheetStatus.CANCELLED]: [],
+};
+
+// ============================================================
+// CANDIDATO DE COBRANZA
+// ============================================================
+
+interface RouteCandidate {
+  installment: Installment;
+
+  sale: Sale;
+
+  client: Client;
+
+  lateInterestAmount: number;
+
+  daysLate: number;
+
+  totalToCollect: number;
+}
+
+// ============================================================
+// CANDIDATO DE ENTREGA
+// ============================================================
+
+interface DeliveryCandidate {
+  sale: Sale;
+
+  client: Client;
+
+  /**
+   * Si firstInstallmentOnDelivery === true,
+   * referencia la cuota Nº 1.
+   */
+  firstInstallment: Installment | null;
+}
 
 @Injectable()
 export class RouteSheetsService {
@@ -39,11 +155,15 @@ export class RouteSheetsService {
     private readonly saleRepo: Repository<Sale>,
   ) { }
 
+  // ============================================================
+  // LISTADOS
+  // ============================================================
+
   findBySociety(
     societyId: string,
     filters?: RouteSheetFilters,
   ): Promise<RouteSheet[]> {
-    return this.queryService.findBySociety(societyId, filters);
+    return this.routeSheetsRepo.findBySociety(societyId, filters);
   }
 
   findByStaff(
@@ -51,11 +171,21 @@ export class RouteSheetsService {
     societyId: string,
     filters?: RouteSheetFilters,
   ): Promise<RouteSheet[]> {
-    return this.queryService.findByStaff(staffId, societyId, filters);
+    return this.routeSheetsRepo.findByStaff(staffId, societyId, filters);
   }
 
-  findById(id: string): Promise<RouteSheet> {
-    return this.queryService.findById(id);
+  // ============================================================
+  // BUSCAR HOJA
+  // ============================================================
+
+  async findById(id: string): Promise<RouteSheet> {
+    const routeSheet = await this.routeSheetsRepo.findById(id);
+
+    if (!routeSheet) {
+      throw new NotFoundException(`Hoja de ruta ${id} no encontrada`);
+    }
+
+    return routeSheet;
   }
 
   // ============================================================
@@ -255,11 +385,32 @@ export class RouteSheetsService {
     return this.findByIdWithItems(routeSheet.routeSheetId, user);
   }
 
-  generateDaily(routeDate: string, user: JwtPayload) {
-    return this.generationService.generateDaily(routeDate, user);
+  // ============================================================
+  // GENERACIÓN MANUAL DEL DÍA
+  // ============================================================
+
+  async generateDaily(routeDate: string, user: JwtPayload) {
+    return this.generateDailyForSociety(user.societyId, routeDate, user.sub);
   }
 
-  generateDailyForSociety(
+  // ============================================================
+  // MOTOR DE GENERACIÓN
+  // ============================================================
+
+  /**
+   * Tiene DOS fuentes independientes de trabajo:
+   *
+   * 1. Entregas programadas:
+   *    PENDING_DELIVERY + deliveryDate.
+   *
+   * 2. Cobranzas recurrentes:
+   *    venta CLOSED + cuota 2+ + programación.
+   *
+   * Ambas se agrupan después por:
+   *
+   * zona + cobrador.
+   */
+  async generateDailyForSociety(
     societyId: string,
     routeDate: string,
     assignedBy?: string,
@@ -1139,9 +1290,61 @@ export class RouteSheetsService {
     routeSheetId: string,
     user: JwtPayload,
   ) {
-    return this.installmentService.getAvailableInstallmentsForRouteSheet(
-      routeSheetId,
-      user,
+    const routeSheet = await this.findById(routeSheetId);
+
+    if (routeSheet.societyId !== user.societyId) {
+      throw new ForbiddenException(
+        "La hoja de ruta no pertenece a esta sociedad",
+      );
+    }
+
+    if (
+      routeSheet.status === RouteSheetStatus.COMPLETED ||
+      routeSheet.status === RouteSheetStatus.CANCELLED
+    ) {
+      return [];
+    }
+
+    const installments = await this.installmentRepo.find({
+      where: {
+        societyId: user.societyId,
+        status: In(OPEN_INSTALLMENT_STATUSES),
+      },
+      order: {
+        dueDate: "ASC",
+        installmentNumber: "ASC",
+      },
+    });
+
+    if (installments.length === 0) {
+      return [];
+    }
+
+    const saleIds = [
+      ...new Set(installments.map((installment) => installment.saleId)),
+    ];
+
+    const clientIds = [
+      ...new Set(installments.map((installment) => installment.clientId)),
+    ];
+
+    const [sales, clients] = await Promise.all([
+      this.saleRepo.find({
+        where: {
+          saleId: In(saleIds),
+        },
+      }),
+
+      this.clientRepo.find({
+        where: {
+          clientId: In(clientIds),
+        },
+      }),
+    ]);
+
+    const salesById = new Map(sales.map((sale) => [sale.saleId, sale]));
+    const clientsById = new Map(
+      clients.map((client) => [client.clientId, client]),
     );
 
     const available = [];
@@ -1214,7 +1417,11 @@ export class RouteSheetsService {
     return available;
   }
 
-  addInstallmentManually(
+  // ============================================================
+  // AGREGAR CUOTA MANUALMENTE
+  // ============================================================
+
+  async addInstallmentManually(
     routeSheetId: string,
     installmentId: string,
     user: JwtPayload,
@@ -1368,15 +1575,60 @@ export class RouteSheetsService {
     return created[0];
   }
 
-  reassignCollector(routeSheetId: string, staffId: string, user: JwtPayload) {
-    return this.managementService.reassignCollector(
-      routeSheetId,
+  // ============================================================
+  // REASIGNAR COBRADOR
+  // ============================================================
+
+  async reassignCollector(
+    routeSheetId: string,
+    staffId: string,
+    user: JwtPayload,
+  ) {
+    const routeSheet = await this.findById(routeSheetId);
+
+    if (routeSheet.societyId !== user.societyId) {
+      throw new ForbiddenException(
+        "La hoja de ruta no pertenece a esta sociedad",
+      );
+    }
+
+    if (
+      routeSheet.status === RouteSheetStatus.COMPLETED ||
+      routeSheet.status === RouteSheetStatus.CANCELLED
+    ) {
+      throw new BadRequestException("No se puede reasignar una hoja cerrada");
+    }
+
+    await this.validateZoneAndCollector(
+      user.societyId,
+      routeSheet.zoneId,
       staffId,
-      user,
     );
+
+    const routeDate = this.formatDate(routeSheet.routeDate);
+
+    const existing = await this.routeSheetsRepo.findActiveForStaffZoneDate(
+      staffId,
+      routeSheet.zoneId,
+      routeDate,
+    );
+
+    if (existing && existing.routeSheetId !== routeSheet.routeSheetId) {
+      throw new ConflictException(
+        "El cobrador ya tiene una hoja activa para esta zona y fecha",
+      );
+    }
+
+    await this.routeSheetsRepo.updateStaff(routeSheetId, staffId, user.sub);
+
+    return this.findByIdWithItems(routeSheetId, user);
   }
 
-  updateStatus(
+  // ============================================================
+  // ACTUALIZAR ESTADO DE LA HOJA
+  // ============================================================
+
+  async updateStatus(
     id: string,
     status: RouteSheetStatus,
     user: JwtPayload,

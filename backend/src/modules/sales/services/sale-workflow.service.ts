@@ -24,7 +24,6 @@ import {
 
 import { ValidateSaleDto } from "../dto/validate-sale.dto";
 import { CloseSaleDto } from "../dto/close-sale.dto";
-import { MarkCollectorDocumentsDto } from "../dto/mark-collector-documents.dto";
 
 import { Sale } from "../entities/sale.entity";
 import { Installment } from "../../installments/entities/installment.entity";
@@ -167,32 +166,6 @@ export class SaleWorkflowService {
     }
 
     // ============================================================
-    // DOCUMENTACIÓN DE LA VISITA
-    // ============================================================
-
-    /**
-     * Si la visita se aprueba,
-     * el cobrador debe indicar expresamente
-     * qué documentación recibió.
-     *
-     * No obligamos a que todos los checks sean true,
-     * porque puede faltar documentación y eso debe
-     * quedar registrado mediante observaciones.
-     */
-
-    if (dto.status === "approved") {
-      if (
-        dto.dniCopyReceived === undefined ||
-        dto.salaryReceiptReceived === undefined ||
-        dto.otherDocumentsReceived === undefined
-      ) {
-        throw new BadRequestException(
-          "Debe completar el checklist de documentación recibida antes de aprobar la visita",
-        );
-      }
-    }
-
-    // ============================================================
     // NUEVO ESTADO
     // ============================================================
 
@@ -238,12 +211,6 @@ export class SaleWorkflowService {
 
       observations: dto.observations,
 
-      dniCopyReceived: dto.dniCopyReceived,
-
-      salaryReceiptReceived: dto.salaryReceiptReceived,
-
-      otherDocumentsReceived: dto.otherDocumentsReceived,
-
       validatedAt: new Date(),
     });
 
@@ -265,14 +232,6 @@ export class SaleWorkflowService {
         newStatus,
 
         observations: dto.observations ?? null,
-
-        documents: {
-          dniCopyReceived: dto.dniCopyReceived ?? null,
-
-          salaryReceiptReceived: dto.salaryReceiptReceived ?? null,
-
-          otherDocumentsReceived: dto.otherDocumentsReceived ?? null,
-        },
       } as object,
 
       performedBy: staffId,
@@ -422,112 +381,6 @@ export class SaleWorkflowService {
 
       performedByName: name,
     });
-  }
-
-  // ─────────────────────────────────────────────────────────────
-  // DOCUMENTACIÓN ENTREGADA AL COBRADOR
-  // ─────────────────────────────────────────────────────────────
-
-  async markCollectorDocumentsDelivered(
-    saleId: string,
-    dto: MarkCollectorDocumentsDto,
-    user: JwtPayload,
-  ): Promise<Sale> {
-    const { staffId, name } = this.extractUser(user);
-
-    const sale = await this.queryService.findById(saleId);
-
-    // ============================================================
-    // SOCIEDAD
-    // ============================================================
-
-    if (sale.societyId !== user.societyId) {
-      throw new ForbiddenException("La venta no pertenece a esta sociedad");
-    }
-
-    // ============================================================
-    // ETAPA VÁLIDA
-    // ============================================================
-
-    /**
-     * La entrega de documentación al cobrador
-     * pertenece al tramo de visita ambiental.
-     *
-     * Permitimos marcarla mientras la venta está:
-     *
-     * - pendiente de visita ambiental
-     * - pendiente de entrega
-     *
-     * Esto da margen operativo si Administración
-     * confirma los papeles inmediatamente después
-     * de aprobar la visita.
-     */
-    if (
-      sale.status !== SaleStatus.PENDING_ENVIRONMENTAL_VISIT &&
-      sale.status !== SaleStatus.PENDING_DELIVERY
-    ) {
-      throw new BadRequestException(
-        "La entrega de documentación sólo puede registrarse durante la etapa ambiental o antes de la entrega",
-      );
-    }
-
-    // ============================================================
-    // COBRADOR ASIGNADO
-    // ============================================================
-
-    if (!sale.assignedCollectorId) {
-      throw new BadRequestException(
-        "La venta debe tener un cobrador asignado antes de registrar la entrega de documentación",
-      );
-    }
-
-    // ============================================================
-    // ACTUALIZACIÓN
-    // ============================================================
-
-    const delivered = dto.delivered;
-
-    const deliveredAt = delivered ? new Date() : null;
-
-    const deliveredBy = delivered ? staffId : null;
-
-    await this.salesRepo.update(saleId, {
-      collectorDocumentsDelivered: delivered,
-
-      collectorDocumentsDeliveredAt: deliveredAt,
-
-      collectorDocumentsDeliveredBy: deliveredBy,
-    });
-
-    // ============================================================
-    // HISTORIAL
-    // ============================================================
-
-    await this.historyRepo.create({
-      saleId,
-
-      action: delivered
-        ? "COLLECTOR_DOCUMENTS_DELIVERED"
-        : "COLLECTOR_DOCUMENTS_DELIVERY_REVOKED",
-
-      snapshot: {
-        collectorDocumentsDelivered: delivered,
-
-        collectorDocumentsDeliveredAt: deliveredAt,
-
-        collectorDocumentsDeliveredBy: deliveredBy,
-
-        collectorId: sale.assignedCollectorId,
-
-        notes: dto.notes ?? null,
-      } as object,
-
-      performedBy: staffId,
-
-      performedByName: name,
-    });
-
-    return this.queryService.findById(saleId);
   }
 
   private extractUser(user: JwtPayload) {

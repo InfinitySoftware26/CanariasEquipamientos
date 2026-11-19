@@ -1,4 +1,10 @@
-import { Injectable, Inject, BadRequestException } from "@nestjs/common";
+import {
+  Injectable,
+  Inject,
+  BadRequestException,
+  NotFoundException,
+  ForbiddenException,
+} from "@nestjs/common";
 
 import { InjectRepository } from "@nestjs/typeorm";
 import { MoreThan, Repository } from "typeorm";
@@ -7,6 +13,16 @@ import {
   ISalesRepository,
   SALES_REPOSITORY,
 } from "../interfaces/sales-repository.interface";
+
+import {
+  ISaleValidationsRepository,
+  SALE_VALIDATIONS_REPOSITORY,
+} from "../interfaces/sale-validations-repository.interface";
+
+import {
+  IDeliveryAttemptsRepository,
+  DELIVERY_ATTEMPTS_REPOSITORY,
+} from "../interfaces/delivery-attempts-repository.interface";
 
 import {
   ISaleHistoryRepository,
@@ -24,22 +40,21 @@ import { Sale } from "../entities/sale.entity";
 import { SaleProduct } from "../entities/sale-product.entity";
 import { SaleValidation } from "../entities/sale-validation.entity";
 
+import { Installment } from "../../installments/entities/installment.entity";
 import { Society } from "../../societies/entities/society.entity";
 
 import { FinancingService } from "../../financing/services/financing.service";
 
 import { SaleStatus } from "../../../common/enums/sale-status.enum";
+import { ValidationStep } from "../../../common/enums/validation-step.enum";
+import { ValidationStatus } from "../../../common/enums/validation-status.enum";
+import { PaymentFrequency } from "../../../common/enums/payment-frequency.enum";
+import { InstallmentStatus } from "../../../common/enums/installment-status.enum";
 import { StaffRole } from "../../../common/enums/staff-role.enum";
 import { CommissionPeriod } from "../../../common/enums/commission-period.enum";
 import { CollectionScheduleType } from "../../../common/enums/collection-schedule-type.enum";
 
 import { JwtPayload } from "../../auth/interfaces/jwt-payload.interface";
-
-import { SalesQueryService } from "./sales-query.service";
-import { SellerCommissionService } from "./seller-commission.service";
-import { SaleInstallmentScheduleService } from "./sale-installment-schedule.service";
-import { SaleDeliveryService } from "./sale-delivery.service";
-import { SaleWorkflowService } from "./sale-workflow.service";
 
 const SELLER_COMMISSION_RATE = 0.1;
 
@@ -49,26 +64,25 @@ export class SalesService {
     @Inject(SALES_REPOSITORY)
     private readonly salesRepo: ISalesRepository,
 
+    @Inject(SALE_VALIDATIONS_REPOSITORY)
+    private readonly validationsRepo: ISaleValidationsRepository,
+
+    @Inject(DELIVERY_ATTEMPTS_REPOSITORY)
+    private readonly deliveryAttemptsRepo: IDeliveryAttemptsRepository,
+
     @Inject(SALE_HISTORY_REPOSITORY)
     private readonly historyRepo: ISaleHistoryRepository,
 
     @InjectRepository(SaleProduct)
     private readonly saleProductRepo: Repository<SaleProduct>,
 
+    @InjectRepository(Installment)
+    private readonly installmentRepo: Repository<Installment>,
+
     @InjectRepository(Society)
     private readonly societyRepo: Repository<Society>,
 
     private readonly financingService: FinancingService,
-
-    private readonly queryService: SalesQueryService,
-
-    private readonly commissionService: SellerCommissionService,
-
-    private readonly scheduleService: SaleInstallmentScheduleService,
-
-    private readonly deliveryService: SaleDeliveryService,
-
-    private readonly workflowService: SaleWorkflowService,
   ) {}
 
   // ─────────────────────────────────────────────────────────────
@@ -76,57 +90,93 @@ export class SalesService {
   // ─────────────────────────────────────────────────────────────
 
   findPendingValidation(societyId: string) {
-    return this.queryService.findPendingValidation(societyId);
+    return this.salesRepo.findPendingValidation(societyId);
   }
 
   findBySociety(societyId: string) {
-    return this.queryService.findBySociety(societyId);
+    return this.salesRepo.findBySociety(societyId);
   }
 
   findBySeller(staffId: string, societyId: string) {
-    return this.queryService.findBySeller(staffId, societyId);
+    return this.salesRepo.findBySeller(staffId, societyId);
   }
 
   findByCollector(collectorId: string, societyId: string) {
-    return this.queryService.findByCollector(collectorId, societyId);
+    return this.salesRepo.findByCollector(collectorId, societyId);
   }
 
   findByClient(clientId: string, societyId: string) {
-    return this.queryService.findByClient(clientId, societyId);
+    return this.salesRepo.findByClient(clientId, societyId);
   }
 
-  findById(id: string): Promise<Sale> {
-    return this.queryService.findById(id);
+  async findById(id: string): Promise<Sale> {
+    const sale = await this.salesRepo.findById(id);
+
+    if (!sale) {
+      throw new NotFoundException(`Venta ${id} no encontrada`);
+    }
+
+    return sale;
   }
 
   findValidations(saleId: string) {
-    return this.queryService.findValidations(saleId);
+    return this.validationsRepo.findBySale(saleId);
   }
 
   findDeliveryAttempts(saleId: string) {
-    return this.queryService.findDeliveryAttempts(saleId);
+    return this.deliveryAttemptsRepo.findBySale(saleId);
   }
 
   findHistory(saleId: string) {
-    return this.queryService.findHistory(saleId);
+    return this.historyRepo.findBySale(saleId);
   }
 
   // ─────────────────────────────────────────────────────────────
   // COMISIONES
   // ─────────────────────────────────────────────────────────────
 
-  getSellerCommissions(
+  async getSellerCommissions(
     staffId: string,
     societyId: string,
     period: CommissionPeriod,
     dateStr?: string,
   ) {
-    return this.commissionService.getSellerCommissions(
+    const { from, to } = this.resolveCommissionPeriodRange(period, dateStr);
+
+    const sales = await this.salesRepo.findBySellerInRange(
       staffId,
       societyId,
-      period,
-      dateStr,
+      from,
+      to,
     );
+
+    const closedSales = sales.filter(
+      (sale) => sale.status === SaleStatus.CLOSED,
+    );
+
+    const totalCommission =
+      Math.round(
+        closedSales.reduce(
+          (sum, sale) => sum + Number(sale.sellerCommission),
+          0,
+        ) * 100,
+      ) / 100;
+
+    const averageCommission =
+      closedSales.length > 0
+        ? Math.round((totalCommission / closedSales.length) * 100) / 100
+        : 0;
+
+    return {
+      period,
+      from: from.toISOString(),
+      to: to.toISOString(),
+      salesCount: sales.length,
+      closedSalesCount: closedSales.length,
+      totalCommission,
+      averageCommission,
+      sales,
+    };
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -353,15 +403,64 @@ export class SalesService {
   }
 
   // ─────────────────────────────────────────────────────────────
-  // VALIDACION ADMINISTRATIVA
+  // VALIDACIÓN ADMINISTRATIVA
   // ─────────────────────────────────────────────────────────────
 
-  adminValidate(
+  async adminValidate(
     saleId: string,
     dto: ValidateSaleDto,
     user: JwtPayload,
   ): Promise<void> {
-    return this.workflowService.adminValidate(saleId, dto, user);
+    const { staffId, name } = this.extractUser(user);
+
+    const sale = await this.findById(saleId);
+
+    if (sale.status !== SaleStatus.PENDING_ADMIN_VALIDATION) {
+      throw new BadRequestException(
+        `La venta debe estar en estado ${SaleStatus.PENDING_ADMIN_VALIDATION}`,
+      );
+    }
+
+    const newStatus =
+      dto.status === "approved"
+        ? SaleStatus.PENDING_ENVIRONMENTAL_VISIT
+        : SaleStatus.REJECTED_ADMIN;
+
+    await this.salesRepo.updateStatus(saleId, newStatus);
+
+    await this.validationsRepo.create({
+      saleId,
+      staffId,
+
+      step: ValidationStep.ADMIN_VALIDATION,
+
+      status:
+        dto.status === "approved"
+          ? ValidationStatus.APPROVED
+          : ValidationStatus.REJECTED,
+
+      observations: dto.observations,
+
+      validatedAt: new Date(),
+    });
+
+    await this.historyRepo.create({
+      saleId,
+
+      action: dto.status === "approved" ? "ADMIN_APPROVED" : "ADMIN_REJECTED",
+
+      snapshot: {
+        previousStatus: sale.status,
+
+        newStatus,
+
+        observations: dto.observations,
+      } as object,
+
+      performedBy: staffId,
+
+      performedByName: name,
+    });
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -568,7 +667,7 @@ export class SalesService {
      * La cuota 1 ya tiene un pago registrado.
      * Reprogramamos solamente cuota 2 en adelante.
      */
-    await this.scheduleService.rescheduleFutureInstallments(updatedSale);
+    await this.rescheduleFutureInstallments(updatedSale);
 
     const finalSale = await this.findById(saleId);
 
@@ -610,10 +709,10 @@ export class SalesService {
   }
 
   // ─────────────────────────────────────────────────────────────
-  // VALIDACION AMBIENTAL
+  // VALIDACIÓN AMBIENTAL
   // ─────────────────────────────────────────────────────────────
 
-  envValidate(
+  async envValidate(
     saleId: string,
     dto: ValidateSaleDto,
     user: JwtPayload,
@@ -718,39 +817,37 @@ export class SalesService {
       snapshot: {
         previousStatus: sale.status,
 
-  // ─────────────────────────────────────────────────────────────
-  // ENTREGA
-  // ─────────────────────────────────────────────────────────────
+        newStatus,
 
         observations: dto.observations ?? null,
       } as object,
 
-  // ─────────────────────────────────────────────────────────────
-  // COORDINAR ENTREGA
-  // ─────────────────────────────────────────────────────────────
+      performedBy: staffId,
 
-  scheduleDelivery(
-    saleId: string,
-    dto: ScheduleDeliveryDto,
-    user: JwtPayload,
-  ): Promise<void> {
-    return this.deliveryService.scheduleDelivery(saleId, dto, user);
-  }
-
-  // ─────────────────────────────────────────────────────────────
-  // OBSERVACIÓN
-  // ─────────────────────────────────────────────────────────────
-
-  async updateObservation(
-    saleId: string,
-    observation: string | undefined,
-  ): Promise<void> {
-    await this.findById(saleId);
-
-    await this.salesRepo.update(saleId, {
-      observation: observation ?? (null as any),
+      performedByName: name,
     });
   }
+  // ─────────────────────────────────────────────────────────────
+  // GENERACIÓN DE CUOTAS
+  // ─────────────────────────────────────────────────────────────
+
+  private async generateInstallments(
+    sale: Sale,
+    deliveryDate: string,
+  ): Promise<void> {
+    if (!deliveryDate) {
+      return;
+    }
+
+    const existingInstallments = await this.installmentRepo.find({
+      where: {
+        saleId: sale.saleId,
+      },
+
+      order: {
+        installmentNumber: "ASC",
+      },
+    });
 
     /*
      * Una vez que existe un pago,
@@ -858,34 +955,47 @@ export class SalesService {
   }
 
   // ─────────────────────────────────────────────────────────────
-  // HELPERS
+  // REPROGRAMAR CUOTAS FUTURAS
   // ─────────────────────────────────────────────────────────────
 
-  private parseDate(value: Date | string): Date {
-    return this.scheduleService.parseDate(value);
-  }
+  private async rescheduleFutureInstallments(sale: Sale): Promise<void> {
+    const installments = await this.installmentRepo.find({
+      where: {
+        saleId: sale.saleId,
+      },
 
-  private extractUser(user: JwtPayload) {
-    return {
-      staffId: user.sub,
+      order: {
+        installmentNumber: "ASC",
+      },
+    });
 
-      societyId: user.societyId,
+    if (installments.length <= 1) {
+      return;
+    }
 
-      name: user.email,
+    const firstInstallment = installments.find(
+      (installment) => Number(installment.installmentNumber) === 1,
+    );
 
-      role: user.role as StaffRole,
-    };
-  }
+    if (!firstInstallment) {
+      throw new BadRequestException(
+        "No se encontró la primera cuota de la venta",
+      );
+    }
 
-  markCollectorDocumentsDelivered(
-    saleId: string,
-    dto: MarkCollectorDocumentsDto,
-    user: JwtPayload,
-  ): Promise<Sale> {
-    return this.workflowService.markCollectorDocumentsDelivered(
-      saleId,
-      dto,
-      user,
+    const futureInstallments = installments.filter(
+      (installment) => Number(installment.installmentNumber) >= 2,
+    );
+
+    /*
+     * No modificamos cuotas 2+ que ya tengan
+     * movimientos financieros.
+     */
+    const hasFuturePayments = futureInstallments.some(
+      (installment) =>
+        Number(installment.paidAmount ?? 0) > 0 ||
+        installment.status === InstallmentStatus.PAID ||
+        installment.status === InstallmentStatus.PARTIAL,
     );
 
     if (hasFuturePayments) {
